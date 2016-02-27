@@ -8,6 +8,10 @@ libatbus
 > Status |  [![Build Status](https://travis-ci.org/owt5008137/libatbus.svg?branch=master)](https://travis-ci.org/owt5008137/libatbus) | [![Build status](https://ci.appveyor.com/api/projects/status/xa8jt1gmqkv0n8mi?svg=true)](https://ci.appveyor.com/project/owt5008137/libatbus) |
 >
 
+Gitter
+------
+[![Gitter](https://badges.gitter.im/owt5008137/libatbus.svg)](https://gitter.im/owt5008137/libatbus?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
+
 依赖
 ------
 工具依赖： 支持c++0x或c++11的编译器、cmake、msgpack（用于协议打解包）、libuv（用于网络通道）
