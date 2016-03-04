@@ -1,15 +1,3 @@
-# 使用文档
-
-## 编译构建
-### 准备工作
-+ 支持或部分支持C++11的编译器，至少要支持thread、atomic、智能指针、函数绑定、static_assert (如：GCC 4.4以上、VC 10以上、clang 3.0 以上等)
-+ cmake: 2.8.9 以上,如果系统自带cmake版本过低请手动编译安装[cmake](http://cmake.org/)，
-+ protocol文件夹内的协议文件是事先生成好的，当然也可以重新生成一份放里面
-
-### 提示
-+ GCC 4.4 以上会自动使用-std=gnu++0x, GCC 4.7 以上C++采用 -std=gnu++11， c采用 -std=gnu11。但不会开启C++1y/C++14标准
-+ Clang会自动开启到-std=c++11
-
 ### 编译选项
 除了cmake标准编译选项外，libatbus还提供一些额外选项
 

@@ -14,9 +14,15 @@ Gitter
 
 依赖
 ------
-工具依赖： 支持c++0x或c++11的编译器、cmake、msgpack（用于协议打解包）、libuv（用于网络通道）
 
-> 如果本地未安装libuv，请clone 3rd_party/libuv 子模块
++ 支持c++0x或c++11的编译器(为了代码尽量简洁,特别是少做无意义的平台兼容，依赖部分 C11和C++11的功能，所以不支持过低版本的编译器)
+> + GCC: 4.4 及以上（建议gcc 4.8.1及以上）
+> + Clang: 3.0 及以上 （建议 clang 3.4及以上）
+> + VC: 10 及以上 （建议VC 12及以上）
+
++ [cmake](https://cmake.org/download/) 2.8.9 以上(建议 3.4 以上)
++ [msgpack](https://github.com/msgpack/msgpack-c)（用于协议打解包,仅使用头文件）
++ [libuv](http://libuv.org/)（用于网络通道）
 
 
 Why not c?
@@ -34,58 +40,22 @@ Why not c?
 而且如果支持c++03/c++11的话也可以使用纯header库，这是一大优势。当然它和protobuf一样存在打包和解包过程所以性能会低于flatbuffer，而且数据维护比较裸露不像protobuf采用了很多COW和ZeroCopy的技术。解包后的逻辑内存结构也会比较大。
 但是考虑到在本lib中的应用，消息体的结构非常简单，并且附加信息很少，所以这些因素的影响都不是很大，反而CPU消耗和平台移植性显得更重要一些。
 
-
-注意
+环境准备和构建流程
 ------
-为了代码尽量简洁（特别是少做无意义的平台兼容），依赖部分 C11和C++11的功能，所以不支持过低版本的编译器：
-+ GCC: 4.4 及以上（建议gcc 4.8.1及以上）
-+ Clang: 3.0 及以上 （建议 clang 3.4及以上）
-+ VC: 10 及以上 （建议VC 12及以上）
+使用cmake标准构建方式，默认的编译目标为Debug版本，详见 [使用（编译）流程](doc/Build.md)
 
-
-环境准备(开发环境最小依赖)
+使用示例
 ------
-### Windows + MSVC
-1. [cmake](https://cmake.org/download/)
-2. [visual studio](https://www.visualstudio.com)
-3. [libuv](http://dist.libuv.org/dist)
-4. 执行 mkdir build && cd build && cmake .. -G "Visual Studio 14 2015 Win64" -DLIBUV_ROOT=[libuv安装目录]
+简要的使用示例见 [使用示例](doc/Usage.md)
 
-上面最后一条命令可以根据实际环境修改参数，这里只提供一个示例
+更加详细的请参考单元测试和[tools](tools)目录内的代码
 
-### Windows + MinGW(msys2)
-1. for pkg_name in m4 curl wget tar autoconf automake mingw-w64-i686-toolchain mingw-w64-x86_64-toolchain mingw-w64-x86_64-libtool mingw-w64-i686-libtool python; do pacman -S $pkg_name; done
-2. mingw shell 下执行 mkdir build && cd build && cmake .. 
-
-其他MinGW环境请自行安装依赖库
-
-### Linux
-1. gcc 4.4及以上
-2. autoconf
-3. gdb
-4. valgrind
-5. curl
-6. wget
-7. tar
-8. m4
-9. cmake
-10. automake
-11. make
-
-以上请用Linux发行版的包管理器安装，然后正常使用cmake即可
-
-### OSX
-1. [brew](http://brew.sh/)
-2. xcode
-3. sudo brew install gcc gdb autoconf automake make curl wget tar m4 cmake
-
-支持
+支持工具
 ------
 Linux下 GCC编译安装脚本(支持离线编译安装):
 
 1. [GCC 5.X.X](https://github.com/owent-utils/bash-shell/tree/master/GCC%20Installer/gcc-5)
-2. [GCC 4.9.X](https://github.com/owent-utils/bash-shell/tree/master/GCC%20Installer/gcc-4.9)
-3. [LLVM & Clang](https://github.com/owent-utils/bash-shell/tree/master/LLVM%26Clang%20Installer)
+2. [LLVM & Clang](https://github.com/owent-utils/bash-shell/tree/master/LLVM%26Clang%20Installer)
 
 LICENSE
 ------
