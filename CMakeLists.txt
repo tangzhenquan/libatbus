@@ -9,14 +9,14 @@ include ("${CMAKE_SOURCE_DIR}/3rd_party/c_cpp_utils/libc_cpp_utils.prepare.cmake
 ########################################################################
 # CMake 模块 (递归包含模块, 带颜色输出模块, 平台检测模块)
 set (PROJECT_CMAKE_MODULE_DIR "${3RD_PARTY_C_CPP_UTILS_PKG_DIR}/project/cmake")
-list(APPEND CMAKE_MODULE_PATH "${3RD_PARTY_C_CPP_UTILS_PKG_DIR}/modules")
+list(APPEND CMAKE_MODULE_PATH "${PROJECT_CMAKE_MODULE_DIR}/modules")
 
 
 include("${PROJECT_CMAKE_MODULE_DIR}/modules/IncludeDirectoryRecurse.cmake")
 include("${PROJECT_CMAKE_MODULE_DIR}/modules/EchoWithColor.cmake")
 include("${PROJECT_CMAKE_MODULE_DIR}/modules/FindConfigurePackage.cmake")
 
-include("${PROJECT_SOURCE_DIR}/project/cmake/ProjectBuildOption.cmake")
+include("${CMAKE_CURRENT_LIST_DIR}/project/cmake/ProjectBuildOption.cmake")
 include("${PROJECT_CMAKE_MODULE_DIR}/FindPlatform.cmake")
 include("${PROJECT_CMAKE_MODULE_DIR}/ProjectTools.cmake")
 
@@ -30,7 +30,17 @@ EchoWithColor(COLOR GREEN "-- Build Type: ${CMAKE_BUILD_TYPE}")
 ########################################################################
 # 导入项目配置
 ## 导入所有 macro 定义
-include_macro_recurse("${PROJECT_SOURCE_DIR}")
+include_macro_recurse("${CMAKE_CURRENT_LIST_DIR}")
 
-## 导入所有工程项目
-add_project_recurse("${PROJECT_SOURCE_DIR}")
+## 导入工程项目
+add_subdirectory(${3RD_PARTY_C_CPP_UTILS_PKG_DIR})
+add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/src")
+
+if (PROJECT_ENABLE_SAMPLE)
+    add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/sample")
+endif()
+
+if (PROJECT_ENABLE_UNITTEST)
+    include ("${3RD_PARTY_C_CPP_UTILS_PKG_DIR}/test/test.utils-macro.cmake")
+    add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/test")
+endif()

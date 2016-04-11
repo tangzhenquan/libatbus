@@ -6,10 +6,12 @@ if (ATFRAME_UTILS_ROOT)
     set (3RD_PARTY_C_CPP_UTILS_PKG_DIR ${ATFRAME_UTILS_ROOT})
 else()
     set (3RD_PARTY_C_CPP_UTILS_PKG_DIR "${3RD_PARTY_C_CPP_UTILS_BASE_DIR}/repo")
-    find_package(Git)
-    execute_process(COMMAND ${GIT_EXECUTABLE} clone "https://github.com/atframework/atframe_utils.git" ${3RD_PARTY_C_CPP_UTILS_PKG_DIR}
-        WORKING_DIRECTORY ${3RD_PARTY_C_CPP_UTILS_BASE_DIR}
-    )
+    if(NOT EXISTS ${3RD_PARTY_C_CPP_UTILS_PKG_DIR})
+        find_package(Git)
+        execute_process(COMMAND ${GIT_EXECUTABLE} clone "https://github.com/atframework/atframe_utils.git" ${3RD_PARTY_C_CPP_UTILS_PKG_DIR}
+            WORKING_DIRECTORY ${3RD_PARTY_C_CPP_UTILS_BASE_DIR}
+        )
+    endif()
 endif()
 
 set (3RD_PARTY_C_CPP_UTILS_INC_DIR "${3RD_PARTY_C_CPP_UTILS_PKG_DIR}/include")
