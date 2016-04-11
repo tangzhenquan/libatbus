@@ -5,7 +5,7 @@ set (3RD_PARTY_MSGPACK_PKG_DIR "${3RD_PARTY_MSGPACK_BASE_DIR}/pkg")
 
 set (3RD_PARTY_MSGPACK_ROOT_DIR "${CMAKE_CURRENT_LIST_DIR}/prebuilt/${PLATFORM_BUILD_PLATFORM_NAME}")
 
-set(3RD_PARTY_MSGPACK_VERSION "1.4.0")
+set(3RD_PARTY_MSGPACK_VERSION "1.4.1")
 
 if (Msgpack_ROOT)
     set(MSGPACK_ROOT ${Msgpack_ROOT})
@@ -13,7 +13,7 @@ endif()
 
 if (MSGPACK_ROOT)
     set(MSGPACK_INCLUDE_DIRS "${MSGPACK_ROOT}/include")
-    
+
     if (EXISTS "${MSGPACK_INCLUDE_DIRS}/msgpack.hpp")
         set(MSGPACK_FOUND YES)
     endif()
@@ -24,27 +24,28 @@ if(NOT MSGPACK_FOUND)
         message(STATUS "mkdir 3RD_PARTY_MSGPACK_PKG_DIR=${3RD_PARTY_MSGPACK_PKG_DIR}")
         file(MAKE_DIRECTORY ${3RD_PARTY_MSGPACK_PKG_DIR})
     endif()
-    
-    if(NOT EXISTS "${3RD_PARTY_MSGPACK_PKG_DIR}/msgpack-${3RD_PARTY_MSGPACK_VERSION}.tar.gz")
-        FindConfigurePackageDownloadFile("https://github.com/msgpack/msgpack-c/releases/download/cpp-${3RD_PARTY_MSGPACK_VERSION}/msgpack-${3RD_PARTY_MSGPACK_VERSION}.tar.gz" "${3RD_PARTY_MSGPACK_PKG_DIR}/msgpack-${3RD_PARTY_MSGPACK_VERSION}.tar.gz")
-    endif()
-    find_program(TAR_EXECUTABLE tar)
-    if(APPLE)
-        execute_process(COMMAND ${TAR_EXECUTABLE} -xvf "msgpack-${3RD_PARTY_MSGPACK_VERSION}.tar.gz"
-            WORKING_DIRECTORY ${3RD_PARTY_MSGPACK_PKG_DIR}
-        )
-    else()
-        execute_process(COMMAND ${TAR_EXECUTABLE} -axvf "msgpack-${3RD_PARTY_MSGPACK_VERSION}.tar.gz"
-            WORKING_DIRECTORY ${3RD_PARTY_MSGPACK_PKG_DIR}
-        )
+
+    if(NOT EXISTS "${3RD_PARTY_MSGPACK_ROOT_DIR}/include/msgpack.hpp")
+        if(NOT EXISTS "${3RD_PARTY_MSGPACK_PKG_DIR}/msgpack-${3RD_PARTY_MSGPACK_VERSION}.tar.gz")
+            FindConfigurePackageDownloadFile("https://github.com/msgpack/msgpack-c/releases/download/cpp-${3RD_PARTY_MSGPACK_VERSION}/msgpack-${3RD_PARTY_MSGPACK_VERSION}.tar.gz" "${3RD_PARTY_MSGPACK_PKG_DIR}/msgpack-${3RD_PARTY_MSGPACK_VERSION}.tar.gz")
+        endif()
+        find_program(TAR_EXECUTABLE tar)
+        if(APPLE)
+            execute_process(COMMAND ${TAR_EXECUTABLE} -xvf "msgpack-${3RD_PARTY_MSGPACK_VERSION}.tar.gz"
+                WORKING_DIRECTORY ${3RD_PARTY_MSGPACK_PKG_DIR}
+            )
+        else()
+            execute_process(COMMAND ${TAR_EXECUTABLE} -axvf "msgpack-${3RD_PARTY_MSGPACK_VERSION}.tar.gz"
+                WORKING_DIRECTORY ${3RD_PARTY_MSGPACK_PKG_DIR}
+            )
+        endif()
     endif()
 
-    
     if(NOT EXISTS "${3RD_PARTY_MSGPACK_ROOT_DIR}/include/msgpack.hpp")
         file(MAKE_DIRECTORY ${3RD_PARTY_MSGPACK_ROOT_DIR})
         file(RENAME "${3RD_PARTY_MSGPACK_PKG_DIR}/msgpack-${3RD_PARTY_MSGPACK_VERSION}/include" "${3RD_PARTY_MSGPACK_ROOT_DIR}/include")
     endif()
-    
+
     set(MSGPACK_INCLUDE_DIRS "${3RD_PARTY_MSGPACK_ROOT_DIR}/include")
     if (EXISTS "${MSGPACK_INCLUDE_DIRS}/msgpack.hpp")
         set(MSGPACK_FOUND YES)
@@ -68,4 +69,3 @@ endif()
 set (3RD_PARTY_MSGPACK_INC_DIR ${MSGPACK_INCLUDE_DIRS})
 
 include_directories(${3RD_PARTY_MSGPACK_INC_DIR})
-
