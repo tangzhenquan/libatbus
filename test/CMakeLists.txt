@@ -32,7 +32,7 @@ target_link_libraries(atbus_unit_test
     ${PROJECT_LIB_LINK}
     ${PROJECT_TEST_LIB_LINK}
     ${3RD_PARTY_LIBUV_LINK_NAME}
-    ${3RD_PARTY_C_CPP_UTILS_LINK_NAME}
+    ${3RD_PARTY_ATFRAME_UTILS_LINK_NAME}
     ${EXTENTION_LINK_LIB}
 )
 

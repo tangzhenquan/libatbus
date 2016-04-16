@@ -4,11 +4,11 @@ cmake_policy(SET CMP0054 NEW)
 project(libatbus)
 
 # 准备下载依赖组件
-include ("${CMAKE_SOURCE_DIR}/3rd_party/c_cpp_utils/libc_cpp_utils.prepare.cmake")
+include ("${CMAKE_SOURCE_DIR}/3rd_party/atframe_utils/libatframe_utils.prepare.cmake")
 
 ########################################################################
 # CMake 模块 (递归包含模块, 带颜色输出模块, 平台检测模块)
-set (PROJECT_CMAKE_MODULE_DIR "${3RD_PARTY_C_CPP_UTILS_PKG_DIR}/project/cmake")
+set (PROJECT_CMAKE_MODULE_DIR "${3RD_PARTY_ATFRAME_UTILS_PKG_DIR}/project/cmake")
 list(APPEND CMAKE_MODULE_PATH "${PROJECT_CMAKE_MODULE_DIR}/modules")
 
 
@@ -33,7 +33,7 @@ EchoWithColor(COLOR GREEN "-- Build Type: ${CMAKE_BUILD_TYPE}")
 include_macro_recurse("${CMAKE_CURRENT_LIST_DIR}")
 
 ## 导入工程项目
-add_subdirectory(${3RD_PARTY_C_CPP_UTILS_PKG_DIR})
+add_subdirectory(${3RD_PARTY_ATFRAME_UTILS_PKG_DIR})
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/src")
 
 if (PROJECT_ENABLE_SAMPLE)
@@ -41,6 +41,6 @@ if (PROJECT_ENABLE_SAMPLE)
 endif()
 
 if (PROJECT_ENABLE_UNITTEST)
-    include ("${3RD_PARTY_C_CPP_UTILS_PKG_DIR}/test/test.utils-macro.cmake")
+    include ("${3RD_PARTY_ATFRAME_UTILS_PKG_DIR}/test/test.utils-macro.cmake")
     add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/test")
 endif()
