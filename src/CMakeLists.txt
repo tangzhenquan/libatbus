@@ -1,6 +1,6 @@
 ﻿
 
-EchoWithColor(COLOR GREEN "-- Configure libraries")
+EchoWithColor(COLOR GREEN "-- Configure ${CMAKE_PROJECT_NAME}")
 
 include_directories(${PROJECT_ROOT_SRC_DIR})
 
