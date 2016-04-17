@@ -4,7 +4,7 @@ cmake_policy(SET CMP0054 NEW)
 project(libatbus)
 
 # 准备下载依赖组件
-include ("${CMAKE_SOURCE_DIR}/3rd_party/atframe_utils/libatframe_utils.prepare.cmake")
+include ("${CMAKE_CURRENT_LIST_DIR}/3rd_party/atframe_utils/libatframe_utils.prepare.cmake")
 
 ########################################################################
 # CMake 模块 (递归包含模块, 带颜色输出模块, 平台检测模块)
