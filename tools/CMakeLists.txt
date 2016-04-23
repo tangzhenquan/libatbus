@@ -1,6 +1,6 @@
 ﻿
 
-EchoWithColor(COLOR GREEN "-- Configure Tools Projects")
+EchoWithColor(COLOR GREEN "-- Configure ${CMAKE_CURRENT_LIST_DIR}")
 
 # ============ TOOLS - [...] ============
 include_directories(${PROJECT_ROOT_SRC_DIR})
@@ -24,19 +24,19 @@ set(EXECUTABLE_OUTPUT_PATH "${PROJECT_BINARY_DIR}/tools")
 
 foreach(TOOLS_SRC_FILE IN LISTS TOOLS_SRC_LIST)
     get_filename_component(TOOLS_SRC_BIN_NAME "${TOOLS_SRC_FILE}" NAME_WE)
-    
+
     add_executable("${TOOLS_SRC_BIN_NAME}" ${TOOLS_SRC_FILE})
-    target_link_libraries("${TOOLS_SRC_BIN_NAME}" 
+    target_link_libraries("${TOOLS_SRC_BIN_NAME}"
 	    ${PROJECT_LIB_LINK}
 		${PROJECT_TOOLS_LIB_LINK}
         ${3RD_PARTY_LIBUV_LINK_NAME}
         ${3RD_PARTY_C_CPP_UTILS_LINK_NAME}
 	)
-	
+
 	install(TARGETS "${TOOLS_SRC_BIN_NAME}"
         RUNTIME DESTINATION tools
         LIBRARY DESTINATION lib${PLATFORM_SUFFIX}
         ARCHIVE DESTINATION lib${PLATFORM_SUFFIX}
     )
-    
+
 endforeach()
