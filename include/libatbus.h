@@ -13,5 +13,4 @@
 #include "detail/libatbus_error.h"
 
 
-
 #endif /* LIBATBUS_H_ */

@@ -28,4 +28,4 @@ namespace atbus {
     }
 }
 
-#endif //LIBATBUS_LIBATBUS_ADAPTER_LIBUV_H
+#endif // LIBATBUS_LIBATBUS_ADAPTER_LIBUV_H
