@@ -1263,7 +1263,7 @@ namespace atbus {
 
         // 接收大小和msg size一致即可，可以只使用一块静态buffer
         iostream_conf_->recv_buffer_limit_size = conf_.msg_size;
-        iostream_conf_->recv_buffer_max_size = conf_.msg_size;
+        iostream_conf_->recv_buffer_max_size = conf_.msg_size + conf_.msg_size;
 
         iostream_conf_->send_buffer_static = conf_.send_buffer_number;
         iostream_conf_->send_buffer_max_size = conf_.send_buffer_size;
