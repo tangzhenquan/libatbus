@@ -446,13 +446,35 @@ namespace atbus {
             return EN_ATBUS_ERR_BUFF_LIMIT;
         }
 
+        atbus::protocol::msg m;
         if (tid == get_id()) {
             // 发送给自己的数据直接回调数据接口
-            on_recv_data(get_self_endpoint(), NULL, type, buffer, s);
+            m.init(tid, ATBUS_CMD_DATA_TRANSFORM_REQ, type, 0, alloc_msg_seq());
+
+            // fake body
+            protocol::forward_data data;
+            m.body.forward = &data;
+            m.body.forward->from = tid;
+            m.body.forward->to = tid;
+            m.body.forward->content.ptr = buffer;
+            m.body.forward->content.size = s;
+            if (require_rsp) {
+                m.body.forward->set_flag(atbus::protocol::forward_data::FLAG_REQUIRE_RSP);
+            }
+
+            on_recv_data(get_self_endpoint(), NULL, &m.head, buffer, s);
+
+            // fake response
+            if (require_rsp) {
+                m.init(tid, ATBUS_CMD_DATA_TRANSFORM_RSP, type, 0, m.head.sequence);
+                on_send_data_failed(get_self_endpoint(), NULL, &m);
+            }
+
+            // remove reference
+            m.body.forward = NULL;
             return EN_ATBUS_ERR_SUCCESS;
         }
-
-        atbus::protocol::msg m;
+        
         m.init(get_id(), ATBUS_CMD_DATA_TRANSFORM_REQ, type, 0, alloc_msg_seq());
 
         if (NULL == m.body.make_body(m.body.forward)) {
@@ -734,6 +756,7 @@ namespace atbus {
     }
 
     adapter::loop_t *node::get_evloop() {
+        assert(state_t::CREATED != state_);
         if (NULL != ev_loop_) {
             return ev_loop_;
         }
@@ -891,13 +914,13 @@ namespace atbus {
         }
     }
 
-    void node::on_recv_data(const endpoint *ep, connection *conn, int type, const void *buffer, size_t s) const {
+    void node::on_recv_data(const endpoint *ep, connection *conn, const protocol::msg_head *head, const void *buffer, size_t s) const {
         if (NULL == ep && NULL != conn) {
             ep = conn->get_binding();
         }
 
         if (event_msg_.on_recv_msg) {
-            event_msg_.on_recv_msg(*this, ep, conn, type, buffer, s);
+            event_msg_.on_recv_msg(*this, ep, conn, head, buffer, s);
         }
     }
 

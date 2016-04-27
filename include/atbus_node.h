@@ -93,7 +93,7 @@ namespace atbus {
         typedef std::map<bus_id_t, endpoint::ptr_t> endpoint_collection_t;
 
         struct evt_msg_t {
-            typedef std::function<int(const node &, const endpoint *, const connection *, int, const void *, size_t)> on_recv_msg_fn_t;
+            typedef std::function<int(const node &, const endpoint *, const connection *, const protocol::msg_head*, const void *, size_t)> on_recv_msg_fn_t;
             typedef std::function<int(const node &, const endpoint *, const connection *, const protocol::msg *m)> on_send_data_failed_fn_t;
             typedef std::function<int(const node &, const endpoint *, const connection *, int, int)> on_error_fn_t;
             typedef std::function<int(const node &, const endpoint *, const connection *, int)> on_reg_fn_t;
@@ -296,8 +296,13 @@ namespace atbus {
 
         inline const endpoint_collection_t &get_brother() const { return node_brother_; };
 
-    private:
+        /**
+         * @brief 获取关联的事件管理器,如果未设置则会初始化为默认时间管理器
+         * @return 关联的事件管理器
+         */
         adapter::loop_t *get_evloop();
+
+    private:
         channel::io_stream_conf *get_iostream_conf();
 
     public:
@@ -330,7 +335,7 @@ namespace atbus {
 
         void on_recv(connection *conn, protocol::msg *m, int status, int errcode);
 
-        void on_recv_data(const endpoint *ep, connection *conn, int type, const void *buffer, size_t s) const;
+        void on_recv_data(const endpoint *ep, connection *conn, const protocol::msg_head *head, const void *buffer, size_t s) const;
 
         void on_send_data_failed(const endpoint *, const connection *, const protocol::msg *m);
 
