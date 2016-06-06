@@ -16,5 +16,5 @@ fi
 
 sleep 2;
 
-./benchmark_shm_channel_send $ADDRESS $UNIT_SIZE 10000 $SHM_SIZE > send.log 2>&1 &
+./benchmark_shm_channel_send $ADDRESS $UNIT_SIZE $SHM_SIZE > send.log 2>&1 &
 
