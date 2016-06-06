@@ -29,7 +29,7 @@ int main(int argc, char* argv[])
     using namespace atbus::channel;
     size_t max_n = 1024;
     if (argc > 2)
-        max_n = (size_t)strtol(argv[2], NULL, 10) / sizeof(size_t);
+        max_n = (size_t)strtol(argv[2], NULL, 10);
 
     size_t sleep_times = std::numeric_limits<size_t>::max();
     if (argc > 3)

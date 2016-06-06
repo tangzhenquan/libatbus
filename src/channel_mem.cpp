@@ -324,7 +324,7 @@ namespace atbus {
             mem_channel_head_align *head = (mem_channel_head_align *)buf;
             if (channel) *channel = &head->channel;
 
-            if (0 != UTIL_STRFUNC_STRCASE_CMP(MEM_CHANNEL_NAME, head->channel.node_magic)) {
+            if (0 != UTIL_STRFUNC_STRNCASE_CMP(MEM_CHANNEL_NAME, head->channel.node_magic, strlen(MEM_CHANNEL_NAME))) {
                 return EN_ATBUS_ERR_CHANNEL_BUFFER_INVALID;
             }
 

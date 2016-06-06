@@ -1,9 +1,8 @@
 ﻿
 
-EchoWithColor(COLOR GREEN "-- Configure ${CMAKE_CURRENT_LIST_DIR}")
+EchoWithColor(COLOR GREEN "-- Configure Tools ${CMAKE_CURRENT_LIST_DIR}")
 
 # ============ TOOLS - [...] ============
-include_directories(${PROJECT_ROOT_SRC_DIR})
 include_directories(${PROJECT_TOOLS_INC_DIR})
 
 # ================ multi thread ================
@@ -13,7 +12,7 @@ if ( NOT MSVC )
 endif()
 
 
-file(GLOB TOOLS_SRC_LIST RELATIVE "${PROJECT_TOOLS_SRC_DIR}"
+file(GLOB TOOLS_SRC_LIST
     ${PROJECT_TOOLS_SRC_DIR}/*.cpp
     ${PROJECT_TOOLS_SRC_DIR}/*.cc
     ${PROJECT_TOOLS_SRC_DIR}/*.c

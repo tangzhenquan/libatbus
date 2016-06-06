@@ -24,7 +24,7 @@ int main(int argc, char* argv[])
     using namespace atbus::channel;
     size_t max_n = 1024;
     if (argc > 2)
-        max_n = (size_t)strtol(argv[2], NULL, 10) / sizeof(size_t);
+        max_n = (size_t)strtol(argv[2], NULL, 10);
 
     size_t buffer_len = 64 * 1024 * 1024; // 64MB
     if (argc > 3)
@@ -54,7 +54,7 @@ int main(int argc, char* argv[])
         while(true) {
             size_t n = 0; // 最大 4K-8K的包
 
-            int res = shm_recv(channel, buf_pool, sizeof(buf_pool), &n);
+            int res = shm_recv(channel, buf_pool, sizeof(size_t) * max_n, &n);
             n /= sizeof(size_t);
 
             if (res) {
