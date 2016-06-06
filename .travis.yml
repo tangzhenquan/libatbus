@@ -21,7 +21,7 @@ addons:
   apt:
     sources:
       - ubuntu-toolchain-r-test
-      - llvm-toolchain-precise-3.8
+      - llvm-toolchain-3.8
     packages:
       - gcc-4.9
       - gcc-4.9-multilib
