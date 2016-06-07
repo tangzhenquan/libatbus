@@ -5,7 +5,6 @@
  */
 
 #include <assert.h>
-#include <atomic>
 #include <cstddef>
 #include <cstdio>
 #include <cstdlib>
@@ -25,6 +24,7 @@
 #include "detail/libatbus_config.h"
 #include "detail/libatbus_error.h"
 #include "std/thread.h"
+#include <std/atomic.h>
 
 #ifndef ATBUS_MACRO_DATA_NODE_SIZE
 #define ATBUS_MACRO_DATA_NODE_SIZE 128
@@ -275,12 +275,12 @@ namespace atbus {
         //}
 
         static uint32_t mem_fetch_operation_seq(mem_channel *channel) {
-            uint32_t ret = std::atomic_load(&channel->atomic_operation_seq);
+            uint32_t ret = channel->atomic_operation_seq.load();
             // std::atomic_thread_fence(std::memory_order_seq_cst);
             bool f = false;
             while (!f) {
                 // CAS
-                f = std::atomic_compare_exchange_weak(&channel->atomic_operation_seq, &ret, (ret + 1) ? (ret + 1) : ret + 2);
+                f = channel->atomic_operation_seq.compare_exchange_weak(ret, (ret + 1) ? (ret + 1) : ret + 2);
             }
 
             return (ret + 1) ? (ret + 1) : ret + 2;
@@ -394,10 +394,10 @@ namespace atbus {
 
             // 游标操作
             size_t read_cur = 0;
-            size_t new_write_cur, write_cur = std::atomic_load(&channel->atomic_write_cur);
+            size_t new_write_cur, write_cur = channel->atomic_write_cur.load();
 
             while (true) {
-                read_cur = std::atomic_load(&channel->atomic_read_cur);
+                read_cur = channel->atomic_read_cur.load();
                 // std::atomic_thread_fence(std::memory_order_seq_cst);
 
                 // 要留下一个node做tail, 所以多减1
@@ -413,7 +413,7 @@ namespace atbus {
                 new_write_cur = (write_cur + node_count) % channel->node_count;
 
                 // CAS
-                bool f = std::atomic_compare_exchange_weak(&channel->atomic_write_cur, &write_cur, new_write_cur);
+                bool f = channel->atomic_write_cur.compare_exchange_weak(write_cur, new_write_cur);
 
                 if (f) break;
 
@@ -508,10 +508,10 @@ namespace atbus {
             void *buffer_start = NULL;
             size_t buffer_len = 0;
             mem_block_head *block_head = NULL;
-            size_t read_begin_cur = std::atomic_load(&channel->atomic_read_cur);
+            size_t read_begin_cur = channel->atomic_read_cur.load();
             size_t ori_read_cur = read_begin_cur;
             size_t read_end_cur;
-            size_t write_cur = std::atomic_load(&channel->atomic_write_cur);
+            size_t write_cur = channel->atomic_write_cur.load();
             // std::atomic_thread_fence(std::memory_order_seq_cst);
 
             while (true) {
@@ -651,7 +651,7 @@ namespace atbus {
             }
 
             // 设置游标
-            std::atomic_store(&channel->atomic_read_cur, read_end_cur);
+            channel->atomic_read_cur.store(read_end_cur);
             // std::atomic_thread_fence(std::memory_order_seq_cst);
 
             // 用于调试的节点编号信息
