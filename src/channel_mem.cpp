@@ -17,6 +17,10 @@
 #include <stdint.h>
 #include <utility>
 
+#if (defined(__cplusplus) && __cplusplus >= 201103L) || (defined(_MSC_VER) && _MSC_VER >= 1800)
+#include <type_traits>
+#endif
+
 #include "common/string_oprs.h"
 
 #include "detail/crc32.h"
@@ -24,7 +28,7 @@
 #include "detail/libatbus_config.h"
 #include "detail/libatbus_error.h"
 #include "std/thread.h"
-#include <std/atomic.h>
+#include "lock/atomic_int_type.h"
 
 #ifndef ATBUS_MACRO_DATA_NODE_SIZE
 #define ATBUS_MACRO_DATA_NODE_SIZE 128
@@ -72,7 +76,7 @@ namespace atbus {
 
             size_t write_retry_times;
             // TODO 接收端校验号(用于保证只有一个接收者)
-            volatile std::atomic<size_t> atomic_recver_identify;
+            volatile util::lock::atomic_int_type<size_t> atomic_recver_identify;
         } mem_conf;
 
         // 通道头
@@ -87,13 +91,13 @@ namespace atbus {
             // [atomic_read_cur, atomic_write_cur) 内的数据块都是已使用的数据块
             // atomic_write_cur指向的数据块一定是空块，故而必然有一个node的空洞
             // c11的stdatomic.h在很多编译器不支持并且还有些潜规则(gcc 不能使用-fno-builtin 和 -march=xxx)，故而使用c++版本
-            volatile std::atomic<size_t> atomic_read_cur;  // std::atomic也是POD类型
-            volatile std::atomic<size_t> atomic_write_cur; // std::atomic也是POD类型
+            volatile util::lock::atomic_int_type<size_t> atomic_read_cur;  // util::lock::atomic_int_type也是POD类型
+            volatile util::lock::atomic_int_type<size_t> atomic_write_cur; // util::lock::atomic_int_type也是POD类型
 
             // 第一次读到正在写入数据的时间
             uint64_t first_failed_writing_time;
 
-            volatile std::atomic<uint32_t> atomic_operation_seq; // 操作序列号(用于保证只有一个接收者)
+            volatile util::lock::atomic_int_type<uint32_t> atomic_operation_seq; // 操作序列号(用于保证只有一个接收者)
 
             // 配置
             mem_conf conf;
@@ -107,6 +111,10 @@ namespace atbus {
             size_t block_timeout_count; // 读取到写入超时块次数
             size_t node_bad_count;      // 读取到坏node次数
         } mem_channel;
+
+#if (defined(__cplusplus) && __cplusplus >= 201103L) || (defined(_MSC_VER) && _MSC_VER >= 1800)
+        static_assert(std::is_standard_layout<mem_channel>::value, "mem_channel must be a standard layout");
+#endif
 
         // 对齐头
         typedef struct {
