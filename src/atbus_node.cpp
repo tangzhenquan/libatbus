@@ -538,6 +538,9 @@ namespace atbus {
 
     int node::send_msg(bus_id_t tid, atbus::protocol::msg &m, endpoint::get_connection_fn_t fn, endpoint **ep_out, connection **conn_out) {
         if (tid == get_id()) {
+            // head 里永远是发起方bus_id
+            m.head.src_bus_id = get_id();
+
             // 发送给自己的数据直接回调数据接口
             on_recv(NULL, &m, 0, 0);
             return EN_ATBUS_ERR_SUCCESS;
