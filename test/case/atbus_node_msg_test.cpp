@@ -65,11 +65,11 @@ struct node_msg_test_recv_msg_record_t {
 static node_msg_test_recv_msg_record_t recv_msg_history;
 
 static int node_msg_test_recv_msg_test_record_fn(const atbus::node& n, const atbus::endpoint* ep, const atbus::connection* conn, 
-    int status, const void* buffer, size_t len) {
+    const atbus::protocol::msg_head* h, const void* buffer, size_t len) {
     recv_msg_history.n = &n;
     recv_msg_history.ep = ep;
     recv_msg_history.conn = conn;
-    recv_msg_history.status = status;
+    recv_msg_history.status = h->ret;
     ++recv_msg_history.count;
 
     if (NULL != buffer && len > 0) {

@@ -5,11 +5,11 @@
 #include <cstring>
 #include <ctime>
 #include <map>
-#include <atomic>
 #include <memory>
 #include <thread>
 #include <chrono>
 #include <functional>
+#include "lock/atomic_int_type.h"
 
 #include <detail/libatbus_error.h>
 #include "detail/libatbus_channel_export.h"
@@ -137,15 +137,15 @@ CASE_TEST(channel, mem_miso)
     srand(static_cast<unsigned>(time(NULL)));
 
     int left_sec = 16;
-    std::atomic<size_t> sum_send_len;
+    util::lock::atomic_int_type<size_t> sum_send_len;
     sum_send_len.store(0);
-    std::atomic<size_t> sum_send_times;
+    util::lock::atomic_int_type<size_t> sum_send_times;
     sum_send_times.store(0);
-    std::atomic<size_t> sum_send_full;
+    util::lock::atomic_int_type<size_t> sum_send_full;
     sum_send_full.store(0);
-    std::atomic<size_t> sum_send_err;
+    util::lock::atomic_int_type<size_t> sum_send_err;
     sum_send_err.store(0);
-    std::atomic<size_t> sum_seq;
+    util::lock::atomic_int_type<size_t> sum_seq;
     sum_seq.store(0);
     size_t sum_recv_len = 0;
     size_t sum_recv_times = 0;
@@ -187,7 +187,8 @@ CASE_TEST(channel, mem_miso)
                     std::this_thread::yield();
                 } else {
                     ++ sum_send_times;
-                    sum_send_len += n * sizeof(size_t);
+                    size_t cas_len = sum_send_len.load();
+                    while(false == sum_send_len.compare_exchange_strong(cas_len, cas_len + n * sizeof(size_t)));
 
                     ++ seq_body;
                     seq_body <<= head_len;
@@ -272,8 +273,8 @@ CASE_TEST(channel, mem_miso)
             CASE_MSG_INFO() << "NO." << secs << " second(s)" << std::endl;
             CASE_MSG_INFO() << "recv(" << sum_recv_times << " times, " << sum_recv_len << " Bytes) err " <<
                 sum_recv_err << " times" << std::endl;
-            CASE_MSG_INFO() << "send("<< sum_send_times << " times, "<< sum_send_len << " Bytes) "<<
-                "full "<< sum_send_full<< " times, err "<< sum_send_err<< " times"<< std::endl;
+            CASE_MSG_INFO() << "send("<< sum_send_times.load() << " times, "<< sum_send_len.load() << " Bytes) "<<
+                "full "<< sum_send_full.load()<< " times, err "<< sum_send_err.load()<< " times"<< std::endl;
 
         } while (left_sec >= 0);
     }

@@ -7,8 +7,8 @@
 
 #include <algorithm>
 #include <list>
-#include <vector>
 #include <stdint.h>
+#include <vector>
 
 #if defined(__cplusplus) && __cplusplus >= 201103L
 #include <type_traits>
@@ -17,13 +17,13 @@
 namespace atbus {
     namespace detail {
         namespace fn {
-            void* buffer_next(void* pointer, size_t step);
-            const void* buffer_next(const void* pointer, size_t step);
+            void *buffer_next(void *pointer, size_t step);
+            const void *buffer_next(const void *pointer, size_t step);
 
-            void* buffer_prev(void* pointer, size_t step);
-            const void* buffer_prev(const void* pointer, size_t step);
+            void *buffer_prev(void *pointer, size_t step);
+            const void *buffer_prev(const void *pointer, size_t step);
 
-            size_t buffer_offset(const void* l, const void* r);
+            size_t buffer_offset(const void *l, const void *r);
 
             /**
              * @brief try to read a dynamic int from buffer
@@ -34,7 +34,7 @@ namespace atbus {
              * @note can not used with signed integer
              * @return how much bytes the integer cost, 0 if failed
              **/
-            size_t read_vint(uint64_t& out, const void* pointer, size_t s);
+            size_t read_vint(uint64_t &out, const void *pointer, size_t s);
 
             /**
              * @brief try to write a dynamic int to buffer
@@ -45,7 +45,7 @@ namespace atbus {
              * @note can not used with signed integer
              * @return how much bytes the integer cost, 0 if failed
              **/
-            size_t write_vint(uint64_t in, void* pointer, size_t s);
+            size_t write_vint(uint64_t in, void *pointer, size_t s);
         }
 
         /**
@@ -53,23 +53,24 @@ namespace atbus {
          */
         class buffer_block {
         public:
-            void* data();
-            const void* data() const;
-            const void* raw_data() const;
+            void *data();
+            const void *data() const;
+            const void *raw_data() const;
 
             size_t size() const;
 
             size_t raw_size() const;
 
-            void* pop(size_t s);
+            void *pop(size_t s);
 
             size_t instance_size() const;
+
         public:
             /** alloc and init buffer_block **/
-            static buffer_block* malloc(size_t s);
+            static buffer_block *malloc(size_t s);
 
             /** destroy and free buffer_block **/
-            static void free(buffer_block* p);
+            static void free(buffer_block *p);
 
             /**
              * @brief init buffer_block as specify address
@@ -78,18 +79,19 @@ namespace atbus {
              * @param bs buffer size
              * @return unused data address
              **/
-            static void* create(void* pointer, size_t s, size_t bs);
+            static void *create(void *pointer, size_t s, size_t bs);
 
             /** init buffer_block as specify address **/
-            static void* destroy(buffer_block* p);
+            static void *destroy(buffer_block *p);
 
             static size_t padding_size(size_t s);
             static size_t head_size(size_t s);
             static size_t full_size(size_t s);
+
         private:
             size_t size_;
             size_t used_;
-            void* pointer_;
+            void *pointer_;
         };
 
 #if defined(__cplusplus) && __cplusplus >= 201103L
@@ -110,14 +112,14 @@ namespace atbus {
             };
 
         private:
-            buffer_manager(const buffer_manager&);
-            buffer_manager& operator=(const buffer_manager&);
+            buffer_manager(const buffer_manager &);
+            buffer_manager &operator=(const buffer_manager &);
 
         public:
             buffer_manager();
             ~buffer_manager();
 
-            const limit_t& limit() const;
+            const limit_t &limit() const;
 
             /**
              * @brief set limit when in dynamic mode
@@ -127,17 +129,17 @@ namespace atbus {
              */
             bool set_limit(size_t max_size, size_t max_number);
 
-            buffer_block* front();
+            buffer_block *front();
 
-            int front(void*& pointer, size_t& nread, size_t& nwrite);
+            int front(void *&pointer, size_t &nread, size_t &nwrite);
 
-            buffer_block* back();
+            buffer_block *back();
 
-            int back(void*& pointer, size_t& nread, size_t& nwrite);
+            int back(void *&pointer, size_t &nread, size_t &nwrite);
 
-            int push_back(void*& pointer, size_t s);
+            int push_back(void *&pointer, size_t s);
 
-            int push_front(void*& pointer, size_t s);
+            int push_front(void *&pointer, size_t s);
 
             int pop_back(size_t s, bool free_unwritable = true);
 
@@ -154,14 +156,15 @@ namespace atbus {
              * @note this api will clear buffer data already exists
              */
             void set_mode(size_t max_size, size_t max_number);
+
         private:
-            buffer_block* static_front();
+            buffer_block *static_front();
 
-            buffer_block* static_back();
+            buffer_block *static_back();
 
-            int static_push_back(void*& pointer, size_t s);
+            int static_push_back(void *&pointer, size_t s);
 
-            int static_push_front(void*& pointer, size_t s);
+            int static_push_front(void *&pointer, size_t s);
 
             int static_pop_back(size_t s, bool free_unwritable);
 
@@ -169,13 +172,13 @@ namespace atbus {
 
             bool static_empty() const;
 
-            buffer_block* dynamic_front();
+            buffer_block *dynamic_front();
 
-            buffer_block* dynamic_back();
+            buffer_block *dynamic_back();
 
-            int dynamic_push_back(void*& pointer, size_t s);
+            int dynamic_push_back(void *&pointer, size_t s);
 
-            int dynamic_push_front(void*& pointer, size_t s);
+            int dynamic_push_front(void *&pointer, size_t s);
 
             int dynamic_pop_back(size_t s, bool free_unwritable);
 
@@ -185,20 +188,20 @@ namespace atbus {
 
         private:
             struct static_buffer_t {
-                void* buffer_;
+                void *buffer_;
                 size_t size_;
 
                 size_t head_;
                 size_t tail_;
-                std::vector<buffer_block*> circle_index_;
+                std::vector<buffer_block *> circle_index_;
             };
 
             static_buffer_t static_buffer_;
-            std::list<buffer_block*> dynamic_buffer_;
+            std::list<buffer_block *> dynamic_buffer_;
 
             limit_t limit_;
         };
     }
 }
 
-#endif //LIBATBUS_BUFFER_H
+#endif // LIBATBUS_BUFFER_H
