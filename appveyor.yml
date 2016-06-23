@@ -12,7 +12,7 @@ environment:
         PREBUILT_ROOT: C:/Users/appveyor/prebuilt
         SETUP_ROOT: C:/Users/appveyor/setup
         PKG_SRC_ROOT: C:/Users/appveyor/pkg_src
-        LIBUV_VERSION: 1.8.0 # 1.9.0版本编译不过
+        LIBUV_VERSION: 1.9.1
         MSYS2_PREFIX: C:/tools/msys64
         MSYS2_LOG_FILE: C:/Users/appveyor/pkg_src/output.log
     matrix:

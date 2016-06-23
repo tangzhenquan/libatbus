@@ -5,6 +5,8 @@ env:
     - LANG="zh_CN.UTF-8"
     - CMAKE_PREFIX=$HOME/prebuilt/cmake ;
     - CMAKE_VERSION=3.5.2 ;
+    - MSGPACK_PREFIX=$HOME/prebuilt/msgpack-1.4.2 ;
+    - MSGPACK_VERSION=1.4.2 ;
 matrix:
   include:
     - os: osx
