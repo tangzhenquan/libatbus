@@ -93,7 +93,8 @@ namespace atbus {
         typedef std::map<bus_id_t, endpoint::ptr_t> endpoint_collection_t;
 
         struct evt_msg_t {
-            typedef std::function<int(const node &, const endpoint *, const connection *, const protocol::msg_head*, const void *, size_t)> on_recv_msg_fn_t;
+            typedef std::function<int(const node &, const endpoint *, const connection *, const protocol::msg_head *, const void *, size_t)>
+                on_recv_msg_fn_t;
             typedef std::function<int(const node &, const endpoint *, const connection *, const protocol::msg *m)> on_send_data_failed_fn_t;
             typedef std::function<int(const node &, const endpoint *, const connection *, int, int)> on_error_fn_t;
             typedef std::function<int(const node &, const endpoint *, const connection *, int)> on_reg_fn_t;
@@ -375,14 +376,26 @@ namespace atbus {
         void set_on_recv_handle(evt_msg_t::on_recv_msg_fn_t fn);
         evt_msg_t::on_recv_msg_fn_t get_on_recv_handle() const;
 
+        void set_on_send_data_failed_handle(evt_msg_t::on_send_data_failed_fn_t fn);
+        evt_msg_t::on_send_data_failed_fn_t get_on_send_data_failed_handle() const;
+
+        void set_on_error_handle(evt_msg_t::on_error_fn_t fn);
+        evt_msg_t::on_error_fn_t get_on_error_handle() const;
+
+        void set_on_register_handle(evt_msg_t::on_reg_fn_t fn);
+        evt_msg_t::on_reg_fn_t get_on_register_handle() const;
+
         void set_on_shutdown_handle(evt_msg_t::on_node_down_fn_t fn);
         evt_msg_t::on_node_down_fn_t get_on_shutdown_handle() const;
 
+        void set_on_available_handle(evt_msg_t::on_node_up_fn_t fn);
+        evt_msg_t::on_node_up_fn_t get_on_available_handle() const;
+
+        void set_on_invalid_connection_handle(evt_msg_t::on_invalid_connection_fn_t fn);
+        evt_msg_t::on_invalid_connection_fn_t get_on_invalid_connection_handle() const;
+
         void set_on_custom_cmd_handle(evt_msg_t::on_custom_cmd_fn_t fn);
         evt_msg_t::on_custom_cmd_fn_t get_on_custom_cmd_handle() const;
-
-        void set_on_send_data_failed_handle(evt_msg_t::on_send_data_failed_fn_t fn);
-        evt_msg_t::on_send_data_failed_fn_t get_on_send_data_failed_handle() const;
 
         void set_on_add_endpoint_handle(evt_msg_t::on_add_endpoint_fn_t fn);
         evt_msg_t::on_add_endpoint_fn_t get_on_add_endpoint_handle() const;

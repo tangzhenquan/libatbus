@@ -21,6 +21,7 @@
 #include <ctime>
 #include <sstream>
 #include <stdint.h>
+#include <std/ref.h>
 
 #include <common/string_oprs.h>
 
@@ -244,7 +245,7 @@ namespace atbus {
                 // 已无效对象则忽略
                 if (top.second && false == top.second->is_connected()) {
                     if (event_msg_.on_invalid_connection) {
-                        event_msg_.on_invalid_connection(*this, top.second.get(), EN_ATBUS_ERR_NODE_TIMEOUT);
+                        event_msg_.on_invalid_connection(std::cref(*this), top.second.get(), EN_ATBUS_ERR_NODE_TIMEOUT);
                     }
 
                     top.second->reset();
@@ -474,7 +475,7 @@ namespace atbus {
             m.body.forward = NULL;
             return EN_ATBUS_ERR_SUCCESS;
         }
-        
+
         m.init(get_id(), ATBUS_CMD_DATA_TRANSFORM_REQ, type, 0, alloc_msg_seq());
 
         if (NULL == m.body.make_body(m.body.forward)) {
@@ -675,7 +676,7 @@ namespace atbus {
 
                 // event
                 if (event_msg_.on_endpoint_added) {
-                    event_msg_.on_endpoint_added(*this, ep.get(), EN_ATBUS_ERR_SUCCESS);
+                    event_msg_.on_endpoint_added(std::cref(*this), ep.get(), EN_ATBUS_ERR_SUCCESS);
                 }
 
                 return EN_ATBUS_ERR_SUCCESS;
@@ -726,7 +727,7 @@ namespace atbus {
 
             // event
             if (event_msg_.on_endpoint_removed) {
-                event_msg_.on_endpoint_removed(*this, ep.get(), EN_ATBUS_ERR_SUCCESS);
+                event_msg_.on_endpoint_removed(std::cref(*this), ep.get(), EN_ATBUS_ERR_SUCCESS);
             }
             return EN_ATBUS_ERR_SUCCESS;
         }
@@ -920,13 +921,13 @@ namespace atbus {
         }
 
         if (event_msg_.on_recv_msg) {
-            event_msg_.on_recv_msg(*this, ep, conn, head, buffer, s);
+            event_msg_.on_recv_msg(std::cref(*this), ep, conn, head, buffer, s);
         }
     }
 
     void node::on_send_data_failed(const endpoint *ep, const connection *conn, const protocol::msg *m) {
         if (event_msg_.on_send_data_failed) {
-            event_msg_.on_send_data_failed(*this, ep, conn, m);
+            event_msg_.on_send_data_failed(std::cref(*this), ep, conn, m);
         }
     }
 
@@ -936,7 +937,7 @@ namespace atbus {
         }
 
         if (event_msg_.on_error) {
-            event_msg_.on_error(*this, ep, conn, status, errcode);
+            event_msg_.on_error(std::cref(*this), ep, conn, status, errcode);
         }
 
         return status;
@@ -984,7 +985,7 @@ namespace atbus {
         // flags_.set(flag_t::EN_FT_ACTIVED, false); // will be reset in reset()
 
         if (event_msg_.on_node_down) {
-            event_msg_.on_node_down(*this, reason);
+            event_msg_.on_node_down(std::cref(*this), reason);
         }
 
         return EN_ATBUS_ERR_SUCCESS;
@@ -992,7 +993,7 @@ namespace atbus {
 
     int node::on_reg(const endpoint *ep, const connection *conn, int status) {
         if (event_msg_.on_reg) {
-            event_msg_.on_reg(*this, ep, conn, status);
+            event_msg_.on_reg(std::cref(*this), ep, conn, status);
         }
 
         return EN_ATBUS_ERR_SUCCESS;
@@ -1007,7 +1008,7 @@ namespace atbus {
 
         flags_.set(flag_t::EN_FT_ACTIVED, true);
         if (event_msg_.on_node_up) {
-            event_msg_.on_node_up(*this, EN_ATBUS_ERR_SUCCESS);
+            event_msg_.on_node_up(std::cref(*this), EN_ATBUS_ERR_SUCCESS);
         }
 
         return EN_ATBUS_ERR_SUCCESS;
@@ -1021,7 +1022,7 @@ namespace atbus {
     int node::on_custom_cmd(const endpoint *ep, const connection *conn, bus_id_t from,
                             const std::vector<std::pair<const void *, size_t> > &cmd_args) {
         if (event_msg_.on_custom_cmd) {
-            event_msg_.on_custom_cmd(*this, ep, conn, from, cmd_args);
+            event_msg_.on_custom_cmd(std::cref(*this), ep, conn, from, std::cref(cmd_args));
         }
         return EN_ATBUS_ERR_SUCCESS;
     }
@@ -1094,27 +1095,33 @@ namespace atbus {
     }
 
     void node::set_on_recv_handle(evt_msg_t::on_recv_msg_fn_t fn) { event_msg_.on_recv_msg = fn; }
-
     node::evt_msg_t::on_recv_msg_fn_t node::get_on_recv_handle() const { return event_msg_.on_recv_msg; }
 
-    void node::set_on_shutdown_handle(evt_msg_t::on_node_down_fn_t fn) { event_msg_.on_node_down = fn; }
-
-    node::evt_msg_t::on_node_down_fn_t node::get_on_shutdown_handle() const { return event_msg_.on_node_down; }
-
-    void node::set_on_custom_cmd_handle(evt_msg_t::on_custom_cmd_fn_t fn) { event_msg_.on_custom_cmd = fn; }
-
-    node::evt_msg_t::on_custom_cmd_fn_t node::get_on_custom_cmd_handle() const { return event_msg_.on_custom_cmd; }
-
     void node::set_on_send_data_failed_handle(evt_msg_t::on_send_data_failed_fn_t fn) { event_msg_.on_send_data_failed = fn; }
-
     node::evt_msg_t::on_send_data_failed_fn_t node::get_on_send_data_failed_handle() const { return event_msg_.on_send_data_failed; }
 
-    void node::set_on_add_endpoint_handle(evt_msg_t::on_add_endpoint_fn_t fn) { event_msg_.on_endpoint_added = fn; }
+    void node::set_on_error_handle(node::evt_msg_t::on_error_fn_t fn) { event_msg_.on_error = fn; }
+    node::evt_msg_t::on_error_fn_t node::get_on_error_handle() const { return event_msg_.on_error; }
 
+    void node::set_on_register_handle(node::evt_msg_t::on_reg_fn_t fn) { event_msg_.on_reg = fn; }
+    node::evt_msg_t::on_reg_fn_t node::get_on_register_handle() const { return event_msg_.on_reg; }
+
+    void node::set_on_shutdown_handle(evt_msg_t::on_node_down_fn_t fn) { event_msg_.on_node_down = fn; }
+    node::evt_msg_t::on_node_down_fn_t node::get_on_shutdown_handle() const { return event_msg_.on_node_down; }
+
+    void node::set_on_available_handle(node::evt_msg_t::on_node_up_fn_t fn) { event_msg_.on_node_up = fn; }
+    node::evt_msg_t::on_node_up_fn_t node::get_on_available_handle() const { return event_msg_.on_node_up; }
+
+    void node::set_on_invalid_connection_handle(node::evt_msg_t::on_invalid_connection_fn_t fn) { event_msg_.on_invalid_connection = fn; }
+    node::evt_msg_t::on_invalid_connection_fn_t node::get_on_invalid_connection_handle() const { return event_msg_.on_invalid_connection; }
+
+    void node::set_on_custom_cmd_handle(evt_msg_t::on_custom_cmd_fn_t fn) { event_msg_.on_custom_cmd = fn; }
+    node::evt_msg_t::on_custom_cmd_fn_t node::get_on_custom_cmd_handle() const { return event_msg_.on_custom_cmd; }
+
+    void node::set_on_add_endpoint_handle(evt_msg_t::on_add_endpoint_fn_t fn) { event_msg_.on_endpoint_added = fn; }
     node::evt_msg_t::on_add_endpoint_fn_t node::get_on_add_endpoint_handle() const { return event_msg_.on_endpoint_added; }
 
     void node::set_on_remove_endpoint_handle(evt_msg_t::on_remove_endpoint_fn_t fn) { event_msg_.on_endpoint_removed = fn; }
-
     node::evt_msg_t::on_remove_endpoint_fn_t node::get_on_remove_endpoint_handle() const { return event_msg_.on_endpoint_removed; }
 
     void node::ref_object(void *obj) {
@@ -1167,7 +1174,7 @@ namespace atbus {
 
             // event
             if (event_msg_.on_endpoint_added) {
-                event_msg_.on_endpoint_added(*this, ep.get(), EN_ATBUS_ERR_SUCCESS);
+                event_msg_.on_endpoint_added(std::cref(*this), ep.get(), EN_ATBUS_ERR_SUCCESS);
             }
             return true;
         }
@@ -1194,7 +1201,7 @@ namespace atbus {
 
         // event
         if (event_msg_.on_endpoint_added) {
-            event_msg_.on_endpoint_added(*this, ep.get(), EN_ATBUS_ERR_SUCCESS);
+            event_msg_.on_endpoint_added(std::cref(*this), ep.get(), EN_ATBUS_ERR_SUCCESS);
         }
         return true;
     }
@@ -1214,7 +1221,7 @@ namespace atbus {
 
         // event
         if (event_msg_.on_endpoint_removed) {
-            event_msg_.on_endpoint_removed(*this, ep.get(), EN_ATBUS_ERR_SUCCESS);
+            event_msg_.on_endpoint_removed(std::cref(*this), ep.get(), EN_ATBUS_ERR_SUCCESS);
         }
         return true;
     }
@@ -1225,7 +1232,7 @@ namespace atbus {
 
         if (event_msg_.on_endpoint_removed) {
             for (endpoint_collection_t::iterator iter = ec.begin(); iter != ec.end(); ++iter) {
-                event_msg_.on_endpoint_removed(*this, iter->second.get(), EN_ATBUS_ERR_SUCCESS);
+                event_msg_.on_endpoint_removed(std::cref(*this), iter->second.get(), EN_ATBUS_ERR_SUCCESS);
             }
         }
 

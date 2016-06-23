@@ -1,5 +1,5 @@
 ﻿//
-// Created by ĹˇÎÄčş on 2015/9/15.
+// Created by owent on 2015/9/15.
 //
 
 #ifndef LIBATBUS_LIBATBUS_ADAPTER_LIBUV_H
