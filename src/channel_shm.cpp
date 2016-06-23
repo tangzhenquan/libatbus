@@ -12,7 +12,7 @@
 #include <ctime>
 #include <map>
 #include <stdint.h>
-#include <std/atomic.h>
+#include "lock/atomic_int_type.h"
 
 #include "common/string_oprs.h"
 
