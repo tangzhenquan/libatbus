@@ -5,7 +5,6 @@
  */
 
 #include <assert.h>
-#include <atomic>
 #include <cstddef>
 #include <cstdio>
 #include <cstdlib>
@@ -13,6 +12,7 @@
 #include <ctime>
 #include <map>
 #include <stdint.h>
+#include <std/atomic.h>
 
 #include "common/string_oprs.h"
 

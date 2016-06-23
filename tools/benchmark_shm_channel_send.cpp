@@ -22,22 +22,18 @@
 int main(int argc, char* argv[])
 {
     if (argc < 2) {
-        printf("usage: %s <shm key> [max unit size] [sleep every n sends] [shm size]\n", argv[0]);
+        printf("usage: %s <shm key> [max unit size] [shm size]\n", argv[0]);
         return 0;
     }
 
     using namespace atbus::channel;
     size_t max_n = 1024;
     if (argc > 2)
-        max_n = (size_t)strtol(argv[2], NULL, 10) / sizeof(size_t);
-
-    size_t sleep_times = std::numeric_limits<size_t>::max();
-    if (argc > 3)
-        sleep_times = (size_t)strtol(argv[3], NULL, 10);
+        max_n = (size_t)strtol(argv[2], NULL, 10);
 
     size_t buffer_len = 64 * 1024 * 1024; // 64MB
-    if (argc > 4)
-        buffer_len = (size_t)strtol(argv[4], NULL, 10);
+    if (argc > 3)
+        buffer_len = (size_t)strtol(argv[3], NULL, 10);
 
     shm_channel* channel = NULL;
     key_t shm_key = (key_t)strtol(argv[1], NULL, 10);
@@ -59,8 +55,8 @@ int main(int argc, char* argv[])
     // 创建写线程
     std::thread* write_threads = new std::thread([&]{
         size_t* buf_pool = new size_t[max_n];
-        size_t left_sleep_count = sleep_times;
-
+        int sleep_msec = 8;
+        
         while(true) {
             size_t n = rand() % max_n; // 最大 4K-8K的包
             if (0 == n) n = 1; // 保证一定有数据包，保证收发次数一致
@@ -82,18 +78,18 @@ int main(int argc, char* argv[])
                         res, (int)last_action.first, (int)last_action.second
                     );
                 }
-                std::this_thread::sleep_for(std::chrono::milliseconds(32));
+                
+                std::this_thread::sleep_for(std::chrono::milliseconds(sleep_msec));
+                if (sleep_msec < 32)
+                    sleep_msec *= 2;
+                    
             } else {
                 ++ sum_send_times;
                 sum_send_len += n * sizeof(size_t);
                 ++ sum_seq;
-            }
-
-            if (0 == left_sleep_count) {
-                std::this_thread::sleep_for(std::chrono::milliseconds(8));
-                left_sleep_count = sleep_times;
-            } else {
-                -- left_sleep_count;
+                
+                if (sleep_msec > 8)
+                    sleep_msec /= 2;
             }
         }
 
