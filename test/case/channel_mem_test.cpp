@@ -121,6 +121,7 @@ CASE_TEST(channel, mem_siso)
     delete []buffer;
 }
 
+#if defined(UTIL_CONFIG_COMPILER_CXX_LAMBDAS) && UTIL_CONFIG_COMPILER_CXX_LAMBDAS
 
 CASE_TEST(channel, mem_miso)
 {
@@ -287,3 +288,5 @@ CASE_TEST(channel, mem_miso)
     delete read_thread;
     delete []buffer;
 }
+
+#endif
