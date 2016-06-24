@@ -78,9 +78,10 @@ int main(int argc, char* argv[])
                     );
                 }
                 
-                std::this_thread::sleep_for(std::chrono::milliseconds(sleep_msec));
-                if (sleep_msec < 32)
+                CASE_THREAD_SLEEP_MS(sleep_msec);
+                if (sleep_msec < 32) {
                     sleep_msec *= 2;
+                }
                     
             } else {
                 ++ sum_send_times;
@@ -105,7 +106,7 @@ int main(int argc, char* argv[])
     while (true) {
         ++ secs;
         std::chrono::seconds dura( 60 );
-        std::this_thread::sleep_for( dura );
+        CASE_THREAD_SLEEP_MS(60000);
 
         while ( sum_send_len / unit_devi[unit_index] > 1024 && unit_index < sizeof(unit_devi) / sizeof(size_t) - 1)
             ++ unit_index;

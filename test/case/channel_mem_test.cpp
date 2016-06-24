@@ -173,7 +173,7 @@ CASE_TEST(channel, mem_miso)
                     buf_pool[i] = seq;
                 }
 
-                //std::this_thread::sleep_for(std::chrono::milliseconds(800));
+                //CASE_THREAD_SLEEP_MS(800)
                 //std::cout<< "[ RUNNING  ] seq_head="<< seq_head<< ", seq_body="<< seq_body<< std::endl;
                 int res = mem_send(channel, buf_pool, n * sizeof(size_t));
 
@@ -184,7 +184,7 @@ CASE_TEST(channel, mem_miso)
                         ++ sum_send_err;
                     }
 
-                    std::this_thread::yield();
+                    CASE_THREAD_YIELD();
                 } else {
                     ++ sum_send_times;
                     size_t cas_len = sum_send_len.load();
@@ -199,7 +199,6 @@ CASE_TEST(channel, mem_miso)
     }
 
     // 读进程
-    std::chrono::milliseconds dura( 200 );
     std::thread* read_thread = new std::thread([&]{
         size_t buff_recv[1024]; // 最大 4K-8K的包
         int read_failcount = 10;
@@ -211,11 +210,11 @@ CASE_TEST(channel, mem_miso)
 
         while(read_failcount >= 0) {
             size_t len = 0;
-            //std::this_thread::sleep_for( std::chrono::milliseconds( 500 ) );
+            //CASE_THREAD_SLEEP_MS(500);
             int res = mem_recv(channel, buff_recv, sizeof(buff_recv), &len);
             if (res) {
                 if (EN_ATBUS_ERR_NO_DATA == res) {
-                    std::this_thread::yield();
+                    CASE_THREAD_YIELD();
                     -- read_failcount;
                 } else {
                     CASE_EXPECT_LE(EN_ATBUS_ERR_NODE_BAD_BLOCK_CSEQ_ID, res);
@@ -268,8 +267,7 @@ CASE_TEST(channel, mem_miso)
         do {
             -- left_sec;
             ++ secs;
-            std::chrono::milliseconds dura( 1000 );
-            std::this_thread::sleep_for( dura );
+            CASE_THREAD_SLEEP_MS(1000);
             CASE_MSG_INFO() << "NO." << secs << " second(s)" << std::endl;
             CASE_MSG_INFO() << "recv(" << sum_recv_times << " times, " << sum_recv_len << " Bytes) err " <<
                 sum_recv_err << " times" << std::endl;
