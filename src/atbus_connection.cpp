@@ -54,6 +54,7 @@ namespace atbus {
     connection::connection() : state_(state_t::DISCONNECTED), owner_(NULL), binding_(NULL) {
         flags_.reset();
         memset(&conn_data_, 0, sizeof(conn_data_));
+        memset(&stat_, 0, sizeof(stat_));
     }
 
     connection::ptr_t connection::create(node *owner) {
@@ -103,6 +104,9 @@ namespace atbus {
         // 只要connection存在，则它一定存在于owner_的某个位置。
         // 并且这个值只能在创建时指定，所以不能重置这个值
         // owner_ = NULL;
+
+        // reset statistics
+        memset(&stat_, 0, sizeof(stat_));
     }
 
     int connection::proc(node &n, time_t sec, time_t usec) {
@@ -333,11 +337,20 @@ namespace atbus {
     }
 
     int connection::push(const void *buffer, size_t s) {
+        ++ stat_.push_start_times;
+        stat_.push_start_size += s;
+
         if (state_t::CONNECTED != state_ && state_t::HANDSHAKING != state_) {
+            ++ stat_.push_failed_times;
+            stat_.push_failed_size += s; 
+
             return EN_ATBUS_ERR_NOT_INITED;
         }
 
         if (NULL == conn_data_.push_fn) {
+            ++ stat_.push_failed_times;
+            stat_.push_failed_size += s; 
+
             return EN_ATBUS_ERR_ACCESS_DENY;
         }
 
@@ -443,6 +456,10 @@ namespace atbus {
             return;
         }
 
+        // statistic
+        ++ conn->stat_.pull_times;
+        conn->stat_.pull_size += s; 
+
         // unpack
         msgpack::unpacked result;
         protocol::msg m;
@@ -480,7 +497,8 @@ namespace atbus {
     }
 
     void connection::iostream_on_connected(channel::io_stream_channel *channel, channel::io_stream_connection *conn_ios, int status,
-                                           void *buffer, size_t s) {}
+                                           void *buffer, size_t s) {
+    }
 
     void connection::iostream_on_disconnected(channel::io_stream_channel *channel, channel::io_stream_connection *conn_ios, int status,
                                               void *buffer, size_t s) {
@@ -493,6 +511,35 @@ namespace atbus {
 
         ATBUS_FUNC_NODE_DEBUG(*conn->owner_, conn->get_binding(), conn, NULL, "connection reset by peer");
         conn->reset();
+    }
+
+    void connection::iostream_on_written(channel::io_stream_channel *channel, channel::io_stream_connection *conn_ios, int status,
+                                           void *buffer, size_t s) {
+        node *n = reinterpret_cast<node *>(channel->data);
+        assert(NULL != n);
+        connection *conn = reinterpret_cast<connection *>(conn_ios->data);
+
+        if(EN_ATBUS_ERR_SUCCESS != status) {
+            if (NULL != conn) {
+                ++ conn->stat_.push_failed_times;
+                conn->stat_.push_failed_size += s;
+
+                ATBUS_FUNC_NODE_DEBUG(*n, conn->get_binding(), conn, NULL, "write data to %p failed, err=%d, status=%d", conn_ios, channel->error_code, status);
+            } else {
+                ATBUS_FUNC_NODE_DEBUG(*n, NULL, conn, NULL, "write data to %p failed, err=%d, status=%d", conn_ios, channel->error_code, status);
+            }
+
+            ATBUS_FUNC_NODE_ERROR(*n, NULL, conn, status, channel->error_code);
+        } else {
+            if (NULL != conn) { 
+                ++ conn->stat_.push_success_times;
+                conn->stat_.push_success_size += s;
+
+                ATBUS_FUNC_NODE_DEBUG(*n, conn->get_binding(), conn, NULL, "write data to %p success", conn_ios);
+            } else {
+                ATBUS_FUNC_NODE_DEBUG(*n, NULL, conn, NULL, "write data to %p success", conn_ios);
+            }
+        }
     }
 
     int connection::shm_proc_fn(node &n, connection &conn, time_t sec, time_t usec) {
@@ -517,6 +564,10 @@ namespace atbus {
                 n.on_recv(&conn, NULL, res, res);
                 break;
             } else {
+                // statistic
+                ++ conn.stat_.pull_times;
+                conn.stat_.pull_size += s;
+
                 // unpack
                 msgpack::unpacked result;
                 protocol::msg m;
@@ -560,6 +611,10 @@ namespace atbus {
                 n.on_recv(&conn, NULL, res, res);
                 break;
             } else {
+                // statistic
+                ++ conn.stat_.pull_times;
+                conn.stat_.pull_size += s;
+
                 // unpack
                 msgpack::unpacked result;
                 protocol::msg m;
@@ -578,7 +633,15 @@ namespace atbus {
     int connection::mem_free_fn(node &n, connection &conn) { return 0; }
 
     int connection::mem_push_fn(connection &conn, const void *buffer, size_t s) {
-        return channel::mem_send(conn.conn_data_.shared.mem.channel, buffer, s);
+        int ret = channel::mem_send(conn.conn_data_.shared.mem.channel, buffer, s);
+        if (ret >= 0) {
+            ++ conn.stat_.push_success_times;
+            conn.stat_.push_success_size += s;
+        } else {
+            ++ conn.stat_.push_failed_times;
+            conn.stat_.push_failed_size += s;
+        }
+        return ret;
     }
 
     int connection::ios_free_fn(node &n, connection &conn) {
@@ -590,7 +653,15 @@ namespace atbus {
     }
 
     int connection::ios_push_fn(connection &conn, const void *buffer, size_t s) {
-        return channel::io_stream_send(conn.conn_data_.shared.ios_fd.conn, buffer, s);
+        int ret = channel::io_stream_send(conn.conn_data_.shared.ios_fd.conn, buffer, s);
+        if (ret >= 0) {
+            ++ conn.stat_.push_success_times;
+            conn.stat_.push_success_size += s;
+        } else {
+            ++ conn.stat_.push_failed_times;
+            conn.stat_.push_failed_size += s;
+        }
+        return ret;
     }
 
     bool connection::unpack(void *res, connection &conn, atbus::protocol::msg &m, void *buffer, size_t s) {

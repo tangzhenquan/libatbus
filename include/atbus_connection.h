@@ -60,6 +60,17 @@ namespace atbus {
             };
         } flag_t;
 
+        struct stat_t {
+            size_t push_start_times;
+            size_t push_start_size;
+            size_t push_success_times;
+            size_t push_success_size;
+            size_t push_failed_times;
+            size_t push_failed_size;
+
+            size_t pull_times;
+            size_t pull_size;
+        };
     private:
         connection();
 
@@ -143,6 +154,7 @@ namespace atbus {
         /** 是否正在连接、或者握手或者已连接 **/
         bool is_running() const;
 
+        inline const stat_t& get_statistic() const { return stat_; }
     public:
         static void iostream_on_listen_cb(channel::io_stream_channel *channel, channel::io_stream_connection *connection, int status,
                                           void *buffer, size_t s);
@@ -157,6 +169,8 @@ namespace atbus {
                                           void *buffer, size_t s);
         static void iostream_on_disconnected(channel::io_stream_channel *channel, channel::io_stream_connection *connection, int status,
                                              void *buffer, size_t s);
+        static void iostream_on_written(channel::io_stream_channel *channel, channel::io_stream_connection *connection, int status,
+                                        void *buffer, size_t s);
 
         static int shm_proc_fn(node &n, connection &conn, time_t sec, time_t usec);
 
@@ -219,6 +233,7 @@ namespace atbus {
             push_fn_t push_fn;
         } connection_data_t;
         connection_data_t conn_data_;
+        stat_t stat_;
 
         friend class endpoint;
     };
