@@ -586,7 +586,16 @@ namespace atbus {
     int connection::shm_free_fn(node &n, connection &conn) { return channel::shm_close(conn.conn_data_.shared.shm.shm_key); }
 
     int connection::shm_push_fn(connection &conn, const void *buffer, size_t s) {
-        return channel::shm_send(conn.conn_data_.shared.shm.channel, buffer, s);
+        int ret = channel::shm_send(conn.conn_data_.shared.shm.channel, buffer, s);
+        if (ret >= 0) {
+            ++ conn.stat_.push_success_times;
+            conn.stat_.push_success_size += s;
+        } else {
+            ++ conn.stat_.push_failed_times;
+            conn.stat_.push_failed_size += s;
+        }
+
+        return ret;
     }
 
     int connection::mem_proc_fn(node &n, connection &conn, time_t sec, time_t usec) {
@@ -654,10 +663,7 @@ namespace atbus {
 
     int connection::ios_push_fn(connection &conn, const void *buffer, size_t s) {
         int ret = channel::io_stream_send(conn.conn_data_.shared.ios_fd.conn, buffer, s);
-        if (ret >= 0) {
-            ++ conn.stat_.push_success_times;
-            conn.stat_.push_success_size += s;
-        } else {
+        if (ret < 0) {
             ++ conn.stat_.push_failed_times;
             conn.stat_.push_failed_size += s;
         }
