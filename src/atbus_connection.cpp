@@ -566,7 +566,7 @@ namespace atbus {
             } else {
                 // statistic
                 ++ conn.stat_.pull_times;
-                conn.stat_.pull_size += s;
+                conn.stat_.pull_size += recv_len;
 
                 // unpack
                 msgpack::unpacked result;
@@ -613,7 +613,7 @@ namespace atbus {
             } else {
                 // statistic
                 ++ conn.stat_.pull_times;
-                conn.stat_.pull_size += s;
+                conn.stat_.pull_size += recv_len;
 
                 // unpack
                 msgpack::unpacked result;
