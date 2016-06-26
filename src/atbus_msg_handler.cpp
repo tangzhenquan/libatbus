@@ -355,12 +355,12 @@ namespace atbus {
             for (size_t i = 0; i < m.body.reg->channels.size(); ++i) {
                 const protocol::channel_data &chan = m.body.reg->channels[i];
 
-                // if n is not a temporary node, connect to other nodes
-                if (0 != n.get_id()) {
+                // TODO if n is not a temporary node, connect to other nodes
+                // if (0 != n.get_id()) {
                     res = n.connect(chan.address.c_str(), ep);
-                } else {
-                    res = 0;
-                }
+                // } else {
+                //     res = 0;
+                // }
                 if (res < 0) {
                     ATBUS_FUNC_NODE_ERROR(n, ep, conn, res, 0);
                 } else {
