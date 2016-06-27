@@ -63,7 +63,7 @@ int main(int argc, char *argv[]) {
                             (int)last_action.second);
                     ++sum_recv_err;
                 } else {
-                    CASE_THREAD_SLEEP_MS(128);
+                    std::this_thread::sleep_for(std::chrono::milliseconds(128));
                 }
             } else {
                 ++sum_recv_times;
@@ -108,7 +108,7 @@ int main(int argc, char *argv[]) {
 
     while (true) {
         ++secs;
-        CASE_THREAD_SLEEP_MS(60000);
+        std::this_thread::sleep_for(std::chrono::milliseconds(60000));
 
         while (sum_recv_len / unit_devi[unit_index] > 1024 && unit_index < sizeof(unit_devi) / sizeof(size_t) - 1)
             ++unit_index;
