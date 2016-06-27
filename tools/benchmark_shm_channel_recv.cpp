@@ -9,7 +9,7 @@
 #include <memory>
 #include <thread>
 
-
+#include "config/compiler_features.h"
 #include <detail/libatbus_channel_export.h>
 #include <detail/libatbus_error.h>
 
