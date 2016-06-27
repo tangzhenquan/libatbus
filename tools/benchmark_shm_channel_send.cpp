@@ -20,7 +20,7 @@
 #undef max
 #endif
 
-#if define(UTIL_CONFIG_COMPILER_CXX_LAMBDAS) && UTIL_CONFIG_COMPILER_CXX_LAMBDAS
+#if defined(UTIL_CONFIG_COMPILER_CXX_LAMBDAS) && UTIL_CONFIG_COMPILER_CXX_LAMBDAS
 
 int main(int argc, char *argv[]) {
     if (argc < 2) {
