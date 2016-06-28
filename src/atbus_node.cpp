@@ -20,8 +20,8 @@
 #include <cstring>
 #include <ctime>
 #include <sstream>
-#include <stdint.h>
 #include <std/ref.h>
+#include <stdint.h>
 
 #include <common/string_oprs.h>
 
@@ -110,7 +110,7 @@ namespace atbus {
         self_->set_flag(endpoint::flag_t::GLOBAL_ROUTER, conf_.flags.test(conf_flag_t::EN_CONF_GLOBAL_ROUTER));
 
         static_buffer_ = detail::buffer_block::malloc(conf_.msg_size + detail::buffer_block::head_size(conf_.msg_size) +
-                                                      16); // 预留crc32长度和vint长度);
+                                                      16); // 预留hash码32位长度和vint长度);
 
         state_ = state_t::INITED;
         return EN_ATBUS_ERR_SUCCESS;

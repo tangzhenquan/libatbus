@@ -2,7 +2,7 @@
 
 ADDRESS=12345679 ;
 UNIT_SIZE=1024 ;
-SHM_SIZE=8388608 ; # 8MB
+SHM_SIZE=67108864 ; # 64MB
 
 if [ $# -gt 1 ]; then
     ADDRESS="$1";

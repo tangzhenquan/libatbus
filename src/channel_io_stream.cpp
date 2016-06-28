@@ -22,10 +22,12 @@
 #include "common/string_oprs.h"
 #include "std/smart_ptr.h"
 
+#include "algorithm/murmur_hash.h"
+
 #include "detail/buffer.h"
-#include "detail/crc32.h"
 #include "detail/libatbus_channel_export.h"
 #include "detail/libatbus_error.h"
+
 
 #ifdef ATBUS_MACRO_ENABLE_STATIC_ASSERT
 #include <detail/libatbus_channel_types.h>
@@ -331,7 +333,7 @@ namespace atbus {
                 // 可能包含多条消息
                 while (buff_left_len > sizeof(uint32_t)) {
                     uint64_t msg_len = 0;
-                    // 前4 字节为crc32
+                    // 前4 字节为32位hash
                     size_t vint_len = detail::fn::read_vint(msg_len, buff_start + sizeof(uint32_t), buff_left_len - sizeof(uint32_t));
 
                     // 剩余数据不足以解动态长度整数，直接中断退出
@@ -342,12 +344,12 @@ namespace atbus {
                     // 如果读取vint成功，判定是否有小数据包。并对小数据包直接回调
                     if (buff_left_len >= sizeof(uint32_t) + vint_len + msg_len) {
                         channel->error_code = 0;
-                        uint32_t check_crc =
-                            atbus::detail::crc32(0, reinterpret_cast<unsigned char *>(buff_start) + sizeof(uint32_t) + vint_len, msg_len);
-                        uint32_t expect_crc;
-                        memcpy(&expect_crc, buff_start, sizeof(uint32_t));
+                        uint32_t check_hash =
+                            util::hash::murmur_hash3_x86_32(buff_start + sizeof(uint32_t) + vint_len, static_cast<int>(msg_len), 0);
+                        uint32_t expect_hash;
+                        memcpy(&expect_hash, buff_start, sizeof(uint32_t));
                         int errcode = EN_ATBUS_ERR_SUCCESS;
-                        if (check_crc != expect_crc) {
+                        if (check_hash != expect_hash) {
                             errcode = EN_ATBUS_ERR_BAD_DATA;
                         } else if (channel->conf.recv_buffer_limit_size > 0 && msg_len > channel->conf.recv_buffer_limit_size) {
                             errcode = EN_ATBUS_ERR_INVALID_SIZE;
@@ -358,14 +360,14 @@ namespace atbus {
                                                    // 这里的地址未对齐，所以buffer不能直接保存内存数据
                                                    msg_len);
 
-                        // crc32+vint+buffer
+                        // 32bits hash+vint+buffer
                         buff_start += sizeof(uint32_t) + vint_len + msg_len;
                         buff_left_len -= sizeof(uint32_t) + vint_len + msg_len;
                     } else {
                         // 大数据包，使用缓冲区，并且剩余数据一定是在一个包内
-                        // CRC32 也暂存在这里
+                        // 32位hash 也暂存在这里
                         if (EN_ATBUS_ERR_SUCCESS == conn_raw_ptr->read_buffers.push_back(data, sizeof(uint32_t) + msg_len)) {
-                            memcpy(data, buff_start, sizeof(uint32_t)); // CRC32
+                            memcpy(data, buff_start, sizeof(uint32_t)); // 32位hash
                             memcpy(reinterpret_cast<char *>(data) + sizeof(uint32_t), buff_start + sizeof(uint32_t) + vint_len,
                                    buff_left_len - sizeof(uint32_t) - vint_len);
                             conn_raw_ptr->read_buffers.pop_back(buff_left_len - vint_len, false); // vint_len不用保存
@@ -402,22 +404,22 @@ namespace atbus {
                 channel->error_code = 0;
                 data = detail::fn::buffer_prev(data, sread);
 
-                // CRC校验和
-                uint32_t check_crc =
-                    atbus::detail::crc32(0, reinterpret_cast<unsigned char *>(data) + sizeof(uint32_t), sread - sizeof(uint32_t));
-                uint32_t expect_crc;
-                memcpy(&expect_crc, data, sizeof(uint32_t));
-                size_t msg_len = sread - sizeof(uint32_t); // - crc32 header
+                // 32位Hash校验和
+                uint32_t check_hash = util::hash::murmur_hash3_x86_32(reinterpret_cast<char *>(data) + sizeof(uint32_t),
+                                                                      static_cast<int>(sread - sizeof(uint32_t)), 0);
+                uint32_t expect_hash;
+                memcpy(&expect_hash, data, sizeof(uint32_t));
+                size_t msg_len = sread - sizeof(uint32_t); // - hash32 header
 
                 int errcode = EN_ATBUS_ERR_SUCCESS;
-                if (check_crc != expect_crc) {
+                if (check_hash != expect_hash) {
                     errcode = EN_ATBUS_ERR_BAD_DATA;
                 } else if (channel->conf.recv_buffer_limit_size > 0 && msg_len > channel->conf.recv_buffer_limit_size) {
                     errcode = EN_ATBUS_ERR_INVALID_SIZE;
                 }
 
                 io_stream_channel_callback(io_stream_callback_evt_t::EN_FN_RECVED, channel, conn_raw_ptr, 0, errcode,
-                                           reinterpret_cast<char *>(data) + sizeof(uint32_t), // + crc32 header
+                                           reinterpret_cast<char *>(data) + sizeof(uint32_t), // + hash32 header
                                            // 由于buffer_block内取出的数据已经保证了字节对齐，所以这里一定是4字节对齐
                                            msg_len);
 
@@ -1352,7 +1354,7 @@ namespace atbus {
                 assert(0 == nread);
                 assert(req == data);
 
-                // nwrite = uv_write_t的大小+crc32+vint的大小+数据区长度
+                // nwrite = uv_write_t的大小+32bits hash+vint的大小+数据区长度
                 char *buff_start = reinterpret_cast<char *>(data);
                 buff_start += sizeof(uv_write_t) + sizeof(uint32_t);
                 uint64_t out;
@@ -1385,7 +1387,7 @@ namespace atbus {
 
             char vint[16];
             size_t vint_len = detail::fn::write_vint(len, vint, sizeof(vint));
-            // 计算需要的内存块大小（uv_write_t的大小+crc32+vint的大小+len）
+            // 计算需要的内存块大小（uv_write_t的大小+32bits hash+vint的大小+len）
             size_t total_buffer_size = sizeof(uv_write_t) + sizeof(uint32_t) + vint_len + len;
 
             // 判定内存限制
@@ -1403,9 +1405,9 @@ namespace atbus {
             // req
             buff_start += sizeof(uv_write_t);
 
-            // crc32
-            uint32_t crc32 = atbus::detail::crc32(0, reinterpret_cast<const unsigned char *>(buf), len);
-            memcpy(buff_start, &crc32, sizeof(uint32_t));
+            // 32bits hash
+            uint32_t hash32 = util::hash::murmur_hash3_x86_32(reinterpret_cast<const char *>(buf), static_cast<int>(len), 0);
+            memcpy(buff_start, &hash32, sizeof(uint32_t));
 
             // vint
             memcpy(buff_start + sizeof(uint32_t), vint, vint_len);

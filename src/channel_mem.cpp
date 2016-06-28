@@ -21,14 +21,15 @@
 #include <type_traits>
 #endif
 
+#include "algorithm/murmur_hash.h"
 #include "common/string_oprs.h"
 
-#include "detail/crc32.h"
-#include "detail/crc64.h"
+
 #include "detail/libatbus_config.h"
 #include "detail/libatbus_error.h"
-#include "std/thread.h"
 #include "lock/atomic_int_type.h"
+#include "std/thread.h"
+
 
 #ifndef ATBUS_MACRO_DATA_NODE_SIZE
 #define ATBUS_MACRO_DATA_NODE_SIZE 128
@@ -47,21 +48,25 @@ namespace atbus {
             THREAD_TLS size_t last_action_channel_end_node_index = 0;
             THREAD_TLS size_t last_action_channel_begin_node_index = 0;
 
-            template <bool is_crc64>
-            struct crc_factor;
+            template <bool is_hash64>
+            struct hash_factor;
 
 
             template <>
-            struct crc_factor<false> {
-                static uint32_t crc(uint32_t crc, const void *s, size_t l) {
-                    return atbus::detail::crc32(crc, static_cast<const unsigned char *>(s), l);
+            struct hash_factor<false> {
+                static uint32_t hash(uint32_t seed, const void *s, size_t l) {
+                    return util::hash::murmur_hash3_x86_32(s, static_cast<int>(l), seed);
+                    // CRC算法性能太差，包长度也不太可能超过2GB
+                    // return atbus::detail::crc32(crc, static_cast<const unsigned char *>(s), l);
                 }
             };
 
             template <>
-            struct crc_factor<true> {
-                static uint64_t crc(uint64_t crc, const void *s, size_t l) {
-                    return atbus::detail::crc64(crc, static_cast<const unsigned char *>(s), l);
+            struct hash_factor<true> {
+                static uint64_t hash(uint64_t seed, const void *s, size_t l) {
+                    return util::hash::murmur_hash3_x86_32(s, static_cast<int>(l), static_cast<uint32_t>(seed));
+                    // CRC算法性能太差，包长度也不太可能超过2GB
+                    // return atbus::detail::crc64(crc, static_cast<const unsigned char *>(s), l);
                 }
             };
         }
@@ -309,10 +314,10 @@ namespace atbus {
          * @brief 生成校验码
          * @param src 源数据
          * @param len 数据长度
-         * @note CRC 循环冗余校验
+         * @note Hash 快速校验
          */
         static data_align_type mem_fast_check(const void *src, size_t len) {
-            return static_cast<data_align_type>(detail::crc_factor<sizeof(data_align_type) >= sizeof(uint64_t)>::crc(0, src, len));
+            return static_cast<data_align_type>(detail::hash_factor<sizeof(data_align_type) >= sizeof(uint64_t)>::hash(0, src, len));
         }
 
         // 对齐单位的大小必须是2的N次方
