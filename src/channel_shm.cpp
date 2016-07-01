@@ -4,6 +4,7 @@
  *        附带c++的部分是为了避免命名空间污染并且c++的跨平台适配更加简单
  */
 
+#include "lock/atomic_int_type.h"
 #include <assert.h>
 #include <cstddef>
 #include <cstdio>
@@ -12,7 +13,7 @@
 #include <ctime>
 #include <map>
 #include <stdint.h>
-#include "lock/atomic_int_type.h"
+
 
 #include "common/string_oprs.h"
 
@@ -175,13 +176,18 @@ namespace atbus {
             // linux下阻止从交换分区分配物理页
             shmflag |= SHM_NORESERVE;
 
-#ifdef ATBUS_MACRO_HUGETLB_SIZE
-            // 如果大于4倍的大页表，则对齐到大页表并使用大页表
-            if (len > (4 * ATBUS_MACRO_HUGETLB_SIZE)) {
-                len = (len + (ATBUS_MACRO_HUGETLB_SIZE)-1) & (~((ATBUS_MACRO_HUGETLB_SIZE)-1));
-                shmflag |= SHM_HUGETLB;
-            }
-#endif
+// 临时关闭大页表功能，等后续增加了以下判定之后再看情况加回来
+// 使用大页表要先判定 /proc/meminfo 内的一些字段内容，再配置大页表
+// -- Hugepagesize: 大页表的分页大小，如果ATBUS_MACRO_HUGETLB_SIZE小于这个值，要对齐到这个值
+// -- HugePages_Total: 大页表总大小
+// -- HugePages_Free: 大页表可用大小，如果可用值小于需要分配的空间，也不能用大页表
+//#ifdef ATBUS_MACRO_HUGETLB_SIZE
+//            // 如果大于4倍的大页表，则对齐到大页表并使用大页表
+//            if (len > (4 * ATBUS_MACRO_HUGETLB_SIZE)) {
+//                len = (len + (ATBUS_MACRO_HUGETLB_SIZE)-1) & (~((ATBUS_MACRO_HUGETLB_SIZE)-1));
+//                shmflag |= SHM_HUGETLB;
+//            }
+//#endif
 
 #endif
             shm_record.shm_id = shmget(shm_key, len, shmflag);
