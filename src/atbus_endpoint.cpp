@@ -1,10 +1,11 @@
-﻿#include <cstdio>
-#include <assert.h>
+﻿#include <assert.h>
 #include <cstddef>
+#include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <ctime>
 #include <stdint.h>
+
 
 #include "detail/buffer.h"
 
@@ -309,4 +310,124 @@ namespace atbus {
     time_t endpoint::get_stat_ping_delay() const { return stat_.ping_delay; }
 
     time_t endpoint::get_stat_last_pong() const { return stat_.last_pong_time; }
+
+    size_t endpoint::get_stat_push_start_times() const {
+        size_t ret = 0;
+        for (std::list<connection::ptr_t>::iterator iter = data_conn_.begin(); iter != data_conn_.end(); ++iter) {
+            if ((*iter) {
+                ret += (*iter)->get_statistic().push_start_times;
+            }
+        }
+
+        if (ctrl_conn_) {
+            ret += ctrl_conn_->get_statistic().push_start_times;
+        }
+
+        return ret;
+    }
+
+    size_t endpoint::get_stat_push_start_size() const {
+        size_t ret = 0;
+        for (std::list<connection::ptr_t>::iterator iter = data_conn_.begin(); iter != data_conn_.end(); ++iter) {
+            if ((*iter) {
+                ret += (*iter)->get_statistic().push_start_size;
+            }
+        }
+
+        if (ctrl_conn_) {
+            ret += ctrl_conn_->get_statistic().push_start_size;
+        }
+
+        return ret;
+    }
+
+    size_t endpoint::get_stat_push_success_times() const {
+        size_t ret = 0;
+        for (std::list<connection::ptr_t>::iterator iter = data_conn_.begin(); iter != data_conn_.end(); ++iter) {
+            if ((*iter) {
+                ret += (*iter)->get_statistic().push_success_times;
+            }
+        }
+
+        if (ctrl_conn_) {
+            ret += ctrl_conn_->get_statistic().push_success_times;
+        }
+
+        return ret;
+    }
+
+    size_t endpoint::get_stat_push_success_size() const {
+        size_t ret = 0;
+        for (std::list<connection::ptr_t>::iterator iter = data_conn_.begin(); iter != data_conn_.end(); ++iter) {
+            if ((*iter) {
+                ret += (*iter)->get_statistic().push_success_size;
+            }
+        }
+
+        if (ctrl_conn_) {
+            ret += ctrl_conn_->get_statistic().push_success_size;
+        }
+
+        return ret;
+    }
+
+    size_t endpoint::get_stat_push_failed_times() const {
+        size_t ret = 0;
+        for (std::list<connection::ptr_t>::iterator iter = data_conn_.begin(); iter != data_conn_.end(); ++iter) {
+            if ((*iter) {
+                ret += (*iter)->get_statistic().push_failed_times;
+            }
+        }
+
+        if (ctrl_conn_) {
+            ret += ctrl_conn_->get_statistic().push_failed_times;
+        }
+
+        return ret;
+    }
+
+    size_t endpoint::get_stat_push_failed_size() const {
+        size_t ret = 0;
+        for (std::list<connection::ptr_t>::iterator iter = data_conn_.begin(); iter != data_conn_.end(); ++iter) {
+            if ((*iter) {
+                ret += (*iter)->get_statistic().push_failed_size;
+            }
+        }
+
+        if (ctrl_conn_) {
+            ret += ctrl_conn_->get_statistic().push_failed_size;
+        }
+
+        return ret;
+    }
+
+    size_t endpoint::get_stat_pull_times() const {
+        size_t ret = 0;
+        for (std::list<connection::ptr_t>::iterator iter = data_conn_.begin(); iter != data_conn_.end(); ++iter) {
+            if ((*iter) {
+                ret += (*iter)->get_statistic().pull_times;
+            }
+        }
+
+        if (ctrl_conn_) {
+            ret += ctrl_conn_->get_statistic().pull_times;
+        }
+
+        return ret;
+    }
+
+    size_t endpoint::get_stat_pull_size() const {
+        size_t ret = 0;
+        for (std::list<connection::ptr_t>::iterator iter = data_conn_.begin(); iter != data_conn_.end(); ++iter) {
+            if ((*iter) {
+                ret += (*iter)->get_statistic().pull_size;
+            }
+        }
+
+        if (ctrl_conn_) {
+            ret += ctrl_conn_->get_statistic().pull_size;
+        }
+
+        return ret;
+    }
 }

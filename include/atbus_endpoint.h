@@ -143,6 +143,15 @@ namespace atbus {
 
         time_t get_stat_last_pong() const;
 
+        size_t get_stat_push_start_times() const;
+        size_t get_stat_push_start_size() const;
+        size_t get_stat_push_success_times() const;
+        size_t get_stat_push_success_size() const;
+        size_t get_stat_push_failed_times() const;
+        size_t get_stat_push_failed_size() const;
+        size_t get_stat_pull_times() const;
+        size_t get_stat_pull_size() const;
+
         inline const node *get_owner() const { return owner_; }
 
     private:
