@@ -313,8 +313,8 @@ namespace atbus {
 
     size_t endpoint::get_stat_push_start_times() const {
         size_t ret = 0;
-        for (std::list<connection::ptr_t>::iterator iter = data_conn_.begin(); iter != data_conn_.end(); ++iter) {
-            if ((*iter) {
+        for (std::list<connection::ptr_t>::const_iterator iter = data_conn_.begin(); iter != data_conn_.end(); ++iter) {
+            if (*iter) {
                 ret += (*iter)->get_statistic().push_start_times;
             }
         }
@@ -328,8 +328,8 @@ namespace atbus {
 
     size_t endpoint::get_stat_push_start_size() const {
         size_t ret = 0;
-        for (std::list<connection::ptr_t>::iterator iter = data_conn_.begin(); iter != data_conn_.end(); ++iter) {
-            if ((*iter) {
+        for (std::list<connection::ptr_t>::const_iterator iter = data_conn_.begin(); iter != data_conn_.end(); ++iter) {
+            if (*iter) {
                 ret += (*iter)->get_statistic().push_start_size;
             }
         }
@@ -343,8 +343,8 @@ namespace atbus {
 
     size_t endpoint::get_stat_push_success_times() const {
         size_t ret = 0;
-        for (std::list<connection::ptr_t>::iterator iter = data_conn_.begin(); iter != data_conn_.end(); ++iter) {
-            if ((*iter) {
+        for (std::list<connection::ptr_t>::const_iterator iter = data_conn_.begin(); iter != data_conn_.end(); ++iter) {
+            if (*iter) {
                 ret += (*iter)->get_statistic().push_success_times;
             }
         }
@@ -358,8 +358,8 @@ namespace atbus {
 
     size_t endpoint::get_stat_push_success_size() const {
         size_t ret = 0;
-        for (std::list<connection::ptr_t>::iterator iter = data_conn_.begin(); iter != data_conn_.end(); ++iter) {
-            if ((*iter) {
+        for (std::list<connection::ptr_t>::const_iterator iter = data_conn_.begin(); iter != data_conn_.end(); ++iter) {
+            if (*iter) {
                 ret += (*iter)->get_statistic().push_success_size;
             }
         }
@@ -373,8 +373,8 @@ namespace atbus {
 
     size_t endpoint::get_stat_push_failed_times() const {
         size_t ret = 0;
-        for (std::list<connection::ptr_t>::iterator iter = data_conn_.begin(); iter != data_conn_.end(); ++iter) {
-            if ((*iter) {
+        for (std::list<connection::ptr_t>::const_iterator iter = data_conn_.begin(); iter != data_conn_.end(); ++iter) {
+            if (*iter) {
                 ret += (*iter)->get_statistic().push_failed_times;
             }
         }
@@ -388,8 +388,8 @@ namespace atbus {
 
     size_t endpoint::get_stat_push_failed_size() const {
         size_t ret = 0;
-        for (std::list<connection::ptr_t>::iterator iter = data_conn_.begin(); iter != data_conn_.end(); ++iter) {
-            if ((*iter) {
+        for (std::list<connection::ptr_t>::const_iterator iter = data_conn_.begin(); iter != data_conn_.end(); ++iter) {
+            if (*iter) {
                 ret += (*iter)->get_statistic().push_failed_size;
             }
         }
@@ -403,8 +403,8 @@ namespace atbus {
 
     size_t endpoint::get_stat_pull_times() const {
         size_t ret = 0;
-        for (std::list<connection::ptr_t>::iterator iter = data_conn_.begin(); iter != data_conn_.end(); ++iter) {
-            if ((*iter) {
+        for (std::list<connection::ptr_t>::const_iterator iter = data_conn_.begin(); iter != data_conn_.end(); ++iter) {
+            if (*iter) {
                 ret += (*iter)->get_statistic().pull_times;
             }
         }
@@ -418,8 +418,8 @@ namespace atbus {
 
     size_t endpoint::get_stat_pull_size() const {
         size_t ret = 0;
-        for (std::list<connection::ptr_t>::iterator iter = data_conn_.begin(); iter != data_conn_.end(); ++iter) {
-            if ((*iter) {
+        for (std::list<connection::ptr_t>::const_iterator iter = data_conn_.begin(); iter != data_conn_.end(); ++iter) {
+            if (*iter) {
                 ret += (*iter)->get_statistic().pull_size;
             }
         }
