@@ -228,16 +228,6 @@ namespace atbus {
             ret += iter->second->proc(*this, sec, usec);
         }
 
-        // 点对点IO流通道
-        int loop_left = conf_.loop_times;
-        size_t stat_dispatch = stat_.dispatch_times;
-        while (iostream_channel_ && loop_left > 0 &&
-               EN_ATBUS_ERR_EV_RUN == channel::io_stream_run(get_iostream_channel(), adapter::RUN_NOWAIT)) {
-            --loop_left;
-        }
-
-        ret += static_cast<int>(stat_.dispatch_times - stat_dispatch);
-
         // connection超时下线
         while (!event_timer_.connecting_list.empty()) {
             evt_timer_t::timer_desc_ls<connection::ptr_t>::pair_type &top = event_timer_.connecting_list.front();
@@ -248,8 +238,10 @@ namespace atbus {
                         event_msg_.on_invalid_connection(std::cref(*this), top.second.get(), EN_ATBUS_ERR_NODE_TIMEOUT);
                     }
 
-                    top.second->reset();
-                    ATBUS_FUNC_NODE_ERROR(*this, NULL, top.second.get(), EN_ATBUS_ERR_NODE_TIMEOUT, 0);
+                    if (atbus::connection::state_t::DISCONNECTED != top.second->get_status()) {
+                        top.second->reset();
+                        ATBUS_FUNC_NODE_ERROR(*this, NULL, top.second.get(), EN_ATBUS_ERR_NODE_TIMEOUT, 0);
+                    }
                 }
 
                 event_timer_.connecting_list.pop_front();
@@ -333,6 +325,18 @@ namespace atbus {
         }
 
         return ret;
+    }
+
+    int node::poll() {
+        // point to point IO stream channels
+        int loop_left = conf_.loop_times;
+        size_t stat_dispatch = stat_.dispatch_times;
+        while (iostream_channel_ && loop_left > 0 &&
+            EN_ATBUS_ERR_EV_RUN == channel::io_stream_run(get_iostream_channel(), adapter::RUN_NOWAIT)) {
+            --loop_left;
+        }
+
+        return static_cast<int>(stat_.dispatch_times - stat_dispatch);
     }
 
     int node::listen(const char *addr_str) {

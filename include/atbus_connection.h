@@ -71,6 +71,7 @@ namespace atbus {
             size_t pull_times;
             size_t pull_size;
         };
+
     private:
         connection();
 
@@ -84,7 +85,7 @@ namespace atbus {
         /**
          * @brief 执行一帧
          * @param sec 当前时间-秒
-         * @param sec 当前时间-微秒
+         * @param usec 当前时间-微秒
          * @return 本帧处理的消息数
          */
         int proc(node &n, time_t sec, time_t usec);
@@ -154,7 +155,8 @@ namespace atbus {
         /** 是否正在连接、或者握手或者已连接 **/
         bool is_running() const;
 
-        inline const stat_t& get_statistic() const { return stat_; }
+        inline const stat_t &get_statistic() const { return stat_; }
+
     public:
         static void iostream_on_listen_cb(channel::io_stream_channel *channel, channel::io_stream_connection *connection, int status,
                                           void *buffer, size_t s);

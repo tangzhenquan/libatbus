@@ -48,6 +48,8 @@ namespace atbus {
             size_t write_vint(uint64_t in, void *pointer, size_t s);
         }
 
+        class buffer_manager;
+
         /**
          * @brief buffer block, not thread safe
          */
@@ -89,6 +91,7 @@ namespace atbus {
             static size_t full_size(size_t s);
 
         private:
+            friend class buffer_manager;
             size_t size_;
             size_t used_;
             void *pointer_;
@@ -145,6 +148,24 @@ namespace atbus {
 
             int pop_front(size_t s, bool free_unwritable = true);
 
+            /**
+             * @brief append buffer and merge to the tail of the last buffer block
+             * @note if manager is empty now, just like push_back
+             * @param pointer output the writable buffer address
+             * @param s buffer size
+             * @return 0 or error code
+             */
+            int merge_back(void *&pointer, size_t s);
+
+            /**
+             * @brief append buffer and merge to the tail of the first buffer block
+             * @note if manager is empty now, just like push_front
+             * @param pointer output the writable buffer address
+             * @param s buffer size
+             * @return 0 or error code
+             */
+            int merge_front(void *&pointer, size_t s);
+
             bool empty() const;
 
             void reset();
@@ -170,6 +191,10 @@ namespace atbus {
 
             int static_pop_front(size_t s, bool free_unwritable);
 
+            int static_merge_back(void *&pointer, size_t s);
+
+            int static_merge_front(void *&pointer, size_t s);
+
             bool static_empty() const;
 
             buffer_block *dynamic_front();
@@ -183,6 +208,10 @@ namespace atbus {
             int dynamic_pop_back(size_t s, bool free_unwritable);
 
             int dynamic_pop_front(size_t s, bool free_unwritable);
+
+            int dynamic_merge_back(void *&pointer, size_t s);
+
+            int dynamic_merge_front(void *&pointer, size_t s);
 
             bool dynamic_empty() const;
 

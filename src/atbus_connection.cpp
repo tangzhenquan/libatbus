@@ -491,6 +491,9 @@ namespace atbus {
         conn->conn_data_.shared.ios_fd.conn = conn_ios;
         conn_ios->data = conn.get();
 
+        // copy address
+        conn->address_ = conn_ios->addr;
+
 
         ATBUS_FUNC_NODE_DEBUG(*n, NULL, conn.get(), NULL, "connection accepted");
         n->on_new_connection(conn.get());

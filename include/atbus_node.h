@@ -164,6 +164,13 @@ namespace atbus {
         int proc(time_t sec, time_t usec);
 
         /**
+         * @brief poll libuv
+         * @note can not be call in any libuv's callback
+         * @return the number of message dispatched
+         */
+        int poll();
+
+        /**
          * @brief 监听数据接收地址
          * @param addr 监听地址
          * @param is_caddr 是否是控制节点

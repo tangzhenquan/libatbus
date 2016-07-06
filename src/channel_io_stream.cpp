@@ -1390,6 +1390,8 @@ namespace atbus {
             // 计算需要的内存块大小（uv_write_t的大小+32bits hash+vint的大小+len）
             size_t total_buffer_size = sizeof(uv_write_t) + sizeof(uint32_t) + vint_len + len;
 
+            // TODO 发送未完成时进行合包，即便多拷贝一次也比分多次发送要快
+
             // 判定内存限制
             void *data;
             int res = connection->write_buffers.push_back(data, total_buffer_size);

@@ -77,12 +77,22 @@ namespace atbus {
     }
 
     bool endpoint::is_child_node(bus_id_t id) const {
+        // id_ == 0 means a temporary node, and has no child
+        if (0 == id_) {
+            return false;
+        }
+
         // 目前id是整数，直接位运算即可
         bus_id_t mask = ~((1 << children_mask_) - 1);
         return (id & mask) == (id_ & mask);
     }
 
     bool endpoint::is_brother_node(bus_id_t id, uint32_t father_mask) const {
+        // id_ == 0 means a temporary node, and all other node is a brother
+        if (0 == id_) {
+            return true;
+        }
+
         // 兄弟节点的子节点也视为兄弟节点
         // 目前id是整数，直接位运算即可
         bus_id_t c_mask = ~((1 << children_mask_) - 1);
