@@ -76,57 +76,9 @@ Why not c?
 更加详细的请参考单元测试和[tools](tools)目录内的代码
 
 
-Benchmark - Run On 2016-07-01
+Benchmark
 ------
-环境: CentOS 7.1, GCC 4.8.5
-CPU: Xeon E3-1230 v2 (sender和receiver都只用一个核心)
-内存: 24GB (这是总内存，具体使用数根据配置不同而不同)
-网络: 千兆网卡 * 1
-编译选项: -O2 -g -DNDEBUG -ggdb -Wall -Werror -Wno-unused-local-typedefs -std=gnu++11 -D_POSIX_MT_
-配置选项: -DATBUS_MACRO_BUSID_TYPE=uint64_t -DATBUS_MACRO_CONNECTION_BACKLOG=128 -DATBUS_MACRO_CONNECTION_CONFIRM_TIMEOUT=30 -DATBUS_MACRO_DATA_ALIGN_TYPE=uint64_t -DATBUS_MACRO_DATA_NODE_SIZE=128 -DATBUS_MACRO_DATA_SMALL_SIZE=512 -DATBUS_MACRO_HUGETLB_SIZE=4194304 -DATBUS_MACRO_MSG_LIMIT=65536
-
-
-                   测试项                |      连接数     |        包长度        |      CPU消耗     |    内存消耗   |    吞吐量     |      QPS
-----------------------------------------|----------------|---------------------|-----------------|--------------|--------------|---------------
-Linux+本地回环+ipv6+静态缓冲区             |         1      |      8-16384字节     |     93%/100%    |   5.6MB/24MB |    467MB/s   |      80K/s
-Linux+本地回环+ipv6+静态缓冲区             |         1      | 8-128字节(模拟ping包) |     97%/100%    |   5.6MB/28MB |    8.67MB/s  |     165K/s
-Linux+本地回环+ipv6+动态缓冲区(ptmalloc)   |         1      |      8-16384字节     |     95%/100%    |   5.6MB/28MB |    484MB/s   |    82.6K/s
-Linux+本地回环+ipv6+动态缓冲区(ptmalloc)   |         1      | 8-128字节(模拟ping包) |     97%/100%    |   5.6MB/28MB |    8.5MB/s   |     163K/s
-Linux+共享内存                           |         1      |      8-16384字节     |      98%/98%    |   74MB/74MB  |    1.56GB/s  |     199K/s
-Linux+共享内存                           |         1      | 8-128字节(模拟ping包) |     100%/83%    |   74MB/74MB  |    303MB/s   |    5253K/s
-
-
-压力测试说明:
-
-1. 动态缓冲区指发送者发送缓冲区使用malloc和free来保存发送中的数据,静态缓冲区指使用内置的内存池来缓存。
-2. 由于发送者的CPU消耗会高于接收者（接收者没有任何逻辑，发送者会有一次随机数操作），所以动态缓冲区时其实内存会持续增加。（内存碎片原因，实际测试过程中3分钟由20MB涨到28MB）
-3. Windows下除了不支持Unix Socket外，共享内存和ipv4/ipv6连接都是支持的，但是没有跑压力测试。
-
-*PS: 目前没写多连接测试工具，后面有空再写吧*
-
-测试命令如下（需要把tools/script里的脚本拷贝到[构建目录]/tools内）
-
-```bash
-# Linux+本地回环+ipv6+静态缓冲区:8-16384字节 测试命令
-./startup_benchmark_io_stream.sh ipv6://::1:16389 2048 4194304 8096
-
-# Linux+本地回环+ipv6+静态缓冲区:8-128字节(模拟ping包) 测试命令
-./startup_benchmark_io_stream.sh ipv6://::1:16389 16 4194304 8096
-
-# Linux+本地回环+动态缓冲区(ptmalloc):8-16384字节 测试命令
-./startup_benchmark_io_stream.sh ipv6://::1:16389 2048 4194304 0
-
-# Linux+本地回环+动态缓冲区(ptmalloc):8-128字节(模拟ping包) 测试命令
-./startup_benchmark_io_stream.sh ipv6://::1:16389 16 4194304 0
-
-# Linux+共享内存:8-16384字节 测试命令
-./startup_benchmark_shm.sh 12345679 2048
-
-# Linux+共享内存:8-128字节(模拟ping包) 测试命令
-./startup_benchmark_shm.sh 12345679 16
-
-
-```
+压力测试和对比见[doc/Benchmark.md](doc/Benchmark.md)
 
 支持工具
 ------
