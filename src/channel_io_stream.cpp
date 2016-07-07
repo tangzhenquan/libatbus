@@ -20,8 +20,9 @@
 #endif
 
 #include "common/string_oprs.h"
-#include "std/smart_ptr.h"
 #include "config/compiler_features.h"
+#include "std/smart_ptr.h"
+
 
 #include "algorithm/murmur_hash.h"
 
@@ -54,7 +55,7 @@
 namespace atbus {
     namespace channel {
         namespace detail {
-            static char * io_stream_get_msg_buffer() {
+            static char *io_stream_get_msg_buffer() {
                 static UTIL_CONFIG_THREAD_LOCAL char ret[ATBUS_MACRO_TLS_MERGE_BUFFER_LEN];
                 return ret;
             }
@@ -77,7 +78,9 @@ namespace atbus {
                 }
             }
 
-            static void init_pthread_io_stream_get_msg_buffer_tls() { (void)pthread_key_create(&gt_io_stream_get_msg_buffer_tls_key, dtor_pthread_io_stream_get_msg_buffer_tls); }
+            static void init_pthread_io_stream_get_msg_buffer_tls() {
+                (void)pthread_key_create(&gt_io_stream_get_msg_buffer_tls_key, dtor_pthread_io_stream_get_msg_buffer_tls);
+            }
 
             static char *io_stream_get_msg_buffer() {
                 (void)pthread_once(&gt_io_stream_get_msg_buffer_tls_once, init_pthread_io_stream_get_msg_buffer_tls);
@@ -381,7 +384,8 @@ namespace atbus {
                 while (buff_left_len > sizeof(uint32_t)) {
                     uint64_t msg_len = 0;
                     // 前4 字节为32位hash
-                    size_t vint_len = ::atbus::detail::fn::read_vint(msg_len, buff_start + sizeof(uint32_t), buff_left_len - sizeof(uint32_t));
+                    size_t vint_len =
+                        ::atbus::detail::fn::read_vint(msg_len, buff_start + sizeof(uint32_t), buff_left_len - sizeof(uint32_t));
 
                     // 剩余数据不足以解动态长度整数，直接中断退出
                     if (0 == vint_len) {
@@ -1422,7 +1426,7 @@ namespace atbus {
                     }
 
                     io_stream_channel_callback(io_stream_callback_evt_t::EN_FN_WRITEN, connection->channel, connection, status,
-                        req == data ? EN_ATBUS_ERR_SUCCESS : EN_ATBUS_ERR_NODE_TIMEOUT, buff_start, out);
+                                               req == data ? EN_ATBUS_ERR_SUCCESS : EN_ATBUS_ERR_NODE_TIMEOUT, buff_start, out);
 
                     buff_start += static_cast<size_t>(out);
 
@@ -1464,7 +1468,7 @@ namespace atbus {
             // closing or closed, cancle writing
             if (ATBUS_CHANNEL_IOS_CHECK_FLAG(connection->flags, io_stream_connection::EN_CF_CLOSING)) {
                 while (!connection->write_buffers.empty()) {
-                    ::atbus::detail::buffer_block* bb = connection->write_buffers.front();
+                    ::atbus::detail::buffer_block *bb = connection->write_buffers.front();
                     size_t nwrite = bb->raw_size();
                     // nwrite = sizeof(uv_write_t) + [data block...]
                     // data block = 32bits hash+vint+data length
@@ -1484,7 +1488,7 @@ namespace atbus {
                             left_length = 0;
                         }
                         io_stream_channel_callback(io_stream_callback_evt_t::EN_FN_WRITEN, connection->channel, connection, UV_ECANCELED,
-                            EN_ATBUS_ERR_CLOSING, buff_start, out);
+                                                   EN_ATBUS_ERR_CLOSING, buff_start, out);
 
                         buff_start += static_cast<size_t>(out);
 
@@ -1504,12 +1508,12 @@ namespace atbus {
             if (connection->write_buffers.limit().cost_number_ > 1 &&
                 connection->write_buffers.front()->raw_size() <= ATBUS_MACRO_DATA_SMALL_SIZE) {
                 size_t available_bytes = ATBUS_MACRO_TLS_MERGE_BUFFER_LEN;
-                char* buffer_start = ::atbus::channel::detail::io_stream_get_msg_buffer();
-                char* free_buffer = buffer_start;
+                char *buffer_start = ::atbus::channel::detail::io_stream_get_msg_buffer();
+                char *free_buffer = buffer_start;
 
-                ::atbus::detail::buffer_block* preview_bb = NULL;
+                ::atbus::detail::buffer_block *preview_bb = NULL;
                 while (!connection->write_buffers.empty() && available_bytes > 0) {
-                    ::atbus::detail::buffer_block* bb = connection->write_buffers.front();
+                    ::atbus::detail::buffer_block *bb = connection->write_buffers.front();
                     if (bb->raw_size() > available_bytes) {
                         break;
                     }
@@ -1537,15 +1541,15 @@ namespace atbus {
                 assert(data);
                 // at least merge one block
                 assert(free_buffer > buffer_start);
-                assert(free_buffer - buffer_start <= ATBUS_MACRO_TLS_MERGE_BUFFER_LEN);
+                assert(static_cast<size_t>(free_buffer - buffer_start) <= ATBUS_MACRO_TLS_MERGE_BUFFER_LEN);
 
                 data = ::atbus::detail::fn::buffer_next(data, sizeof(uv_write_t));
                 // copy back merged data
                 memcpy(data, buffer_start, free_buffer - buffer_start);
             }
 
-            
-            ::atbus::detail::buffer_block* writing_block = connection->write_buffers.front();
+
+            ::atbus::detail::buffer_block *writing_block = connection->write_buffers.front();
 
             // should always exist, empty will cause return before
             if (NULL == writing_block) {
@@ -1567,7 +1571,7 @@ namespace atbus {
             buff_start += sizeof(uv_write_t);
 
             // call write ，bufs[] will be copied in libuv, but the real data will not
-            uv_buf_t bufs[1] = { uv_buf_init(buff_start, static_cast<unsigned int>(writing_block->raw_size() - sizeof(uv_write_t))) };
+            uv_buf_t bufs[1] = {uv_buf_init(buff_start, static_cast<unsigned int>(writing_block->raw_size() - sizeof(uv_write_t)))};
 
             ATBUS_CHANNEL_IOS_SET_FLAG(connection->flags, io_stream_connection::EN_CF_WRITING);
             int res = uv_write(req, connection->handle.get(), bufs, 1, io_stream_on_written_fn);
