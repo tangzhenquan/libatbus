@@ -1,5 +1,5 @@
 
-Benchmark - Run On 2016-07-01
+Benchmark - Run On 2016-07-07
 ======
 环境
 ------
@@ -11,12 +11,12 @@ Benchmark - Run On 2016-07-01
 + 配置选项: -DATBUS_MACRO_BUSID_TYPE=uint64_t -DATBUS_MACRO_CONNECTION_BACKLOG=128 -DATBUS_MACRO_CONNECTION_CONFIRM_TIMEOUT=30 -DATBUS_MACRO_DATA_ALIGN_TYPE=uint64_t -DATBUS_MACRO_DATA_NODE_SIZE=128 -DATBUS_MACRO_DATA_SMALL_SIZE=512 -DATBUS_MACRO_HUGETLB_SIZE=4194304 -DATBUS_MACRO_MSG_LIMIT=65536
 
 
-测试项                    |      连接数     |        包长度        |      CPU消耗     |    内存消耗   |    吞吐量     |      QPS
--------------------------|----------------|---------------------|-----------------|--------------|--------------|---------------
-Linux+本地回环+ipv6+静态缓冲区             |         1      |      8-16384字节     |     93%/100%    |   5.6MB/24MB |    467MB/s   |      80K/s
-Linux+本地回环+ipv6+静态缓冲区             |         1      | 8-128字节(模拟ping包) |     97%/100%    |   5.6MB/28MB |    8.67MB/s  |     165K/s
-Linux+本地回环+ipv6+动态缓冲区(ptmalloc)   |         1      |      8-16384字节     |     95%/100%    |   5.6MB/28MB |    484MB/s   |    82.6K/s
-Linux+本地回环+ipv6+动态缓冲区(ptmalloc)   |         1      | 8-128字节(模拟ping包) |     97%/100%    |   5.6MB/28MB |    8.5MB/s   |     163K/s
+测试项                                   |      连接数     |        包长度        |      CPU消耗     |    内存消耗   |    吞吐量     |      QPS
+----------------------------------------|----------------|---------------------|-----------------|--------------|--------------|---------------
+Linux+本地回环+ipv6+静态缓冲区             |         1      |      8-16384字节     |     90%/100%    |   5.8MB/24MB |    601MB/s   |      95K/s
+Linux+本地回环+ipv6+静态缓冲区             |         1      | 8-128字节(模拟ping包) |     48%/100%    |   5.8MB/27MB |    163MB/s   |    2822K/s
+Linux+本地回环+ipv6+动态缓冲区(ptmalloc)   |         1      |      8-16384字节     |     90%/100%    |   5.8MB/24MB |    607MB/s   |      96K/s
+Linux+本地回环+ipv6+动态缓冲区(ptmalloc)   |         1      | 8-128字节(模拟ping包) |     48%/100%    |   5.8MB/27MB |    165MB/s   |    2857K/s
 Linux+共享内存                           |         1      |      8-16384字节     |      98%/98%    |   74MB/74MB  |    1.56GB/s  |     199K/s
 Linux+共享内存                           |         1      | 8-128字节(模拟ping包) |     100%/83%    |   74MB/74MB  |    303MB/s   |    5253K/s
 
@@ -87,10 +87,3 @@ Linux+共享内存                           | 3(仅一个连接压力测试) | 
 
 1. atbus的吞吐量基本上高于tbus
 2. [共享内存] QPS方面，atbus比tbus的的发送端性能高，接收端相近
-3. [TCP] tbus的虽然在大数据块上吞吐量和QPS都远低于atbus，但是在小数据块上的吞吐量和QPS都高得多
-
-将来的优化点
-------
-由于在实际应用中，其实很少会发大数据包，大多数情况下都是小数据包。
-
-对比分析结果-3，将来可以考虑对tcp通信的proxy层做包合并。估计这也是tbus小数据和大数据包吞吐量都相近并且非常高的原因
