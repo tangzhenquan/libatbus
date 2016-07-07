@@ -736,6 +736,11 @@ namespace atbus {
             if (event_msg_.on_endpoint_removed) {
                 event_msg_.on_endpoint_removed(std::cref(*this), ep.get(), EN_ATBUS_ERR_SUCCESS);
             }
+
+            // if not activited, shutdown
+            if (!flags_.test(flag_t::EN_FT_ACTIVED)) {
+                shutdown(0);
+            }
             return EN_ATBUS_ERR_SUCCESS;
         }
 

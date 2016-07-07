@@ -94,6 +94,8 @@ namespace atbus {
                 EN_CF_LISTEN = 0,
                 EN_CF_CONNECT,
                 EN_CF_ACCEPT,
+                EN_CF_WRITING,
+                EN_CF_CLOSING,
                 EN_CF_MAX,
             } flag_t;
 
@@ -111,7 +113,7 @@ namespace atbus {
             io_stream_callback_t act_disc_cbk; // 主动关闭连接的回调（为了减少额外分配而采用的缓存策略）
 
             // 数据区域
-            detail::buffer_manager read_buffers; // 读数据缓冲区(两种Buffer管理方式，一种动态，一种静态)
+            ::atbus::detail::buffer_manager read_buffers; // 读数据缓冲区(两种Buffer管理方式，一种动态，一种静态)
                                                  /**
                                                   * @brief 由于大多数数据包都比较小
                                                   *        当数据包比较小时和动态直接放在动态int的数据包一起，这样可以减少内存拷贝次数
@@ -121,7 +123,7 @@ namespace atbus {
                 size_t len;                               // varint数据暂存区和小数据包存储区已使用长度
             } read_head_t;
             read_head_t read_head;
-            detail::buffer_manager write_buffers; // 写数据缓冲区(两种Buffer管理方式，一种动态，一种静态)
+            ::atbus::detail::buffer_manager write_buffers; // 写数据缓冲区(两种Buffer管理方式，一种动态，一种静态)
 
             // 自定义数据区域
             void *data;

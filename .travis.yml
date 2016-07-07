@@ -114,6 +114,15 @@ before_script:
 script:
   - REPO_DIR=$PWD;
   - mkdir -p $REPO_DIR/build && cd $REPO_DIR/build ;
+  - if [ "$USE_CC" == "gcc-4.4" ]; then
+      mkdir msgpack-c;
+      cd msgpack-c;
+      git init;
+      git checkout -b redboltz-fix_498;
+      git pull https://github.com/redboltz/msgpack-c.git fix_498;
+      cd -;
+      export MSGPACK_PREFIX="$REPO_DIR/msgpack-c";
+    fi
   - $CMAKE_PREFIX/bin/cmake .. -DCMAKE_C_COMPILER=$USE_CC -DCMAKE_CXX_COMPILER=$USE_CXX -DPROJECT_ENABLE_UNITTEST=ON -DPROJECT_ENABLE_SAMPLE=ON -DPROJECT_ENABLE_TOOLS=ON -DLIBUV_ROOT=$LIBUV_PREFIX -DMSGPACK_ROOT=$MSGPACK_PREFIX ;
   - make -j4
 

@@ -91,6 +91,8 @@ namespace atbus {
 
         const void *buffer_block::data() const { return fn::buffer_next(pointer_, used_); }
 
+        void *buffer_block::raw_data() { return pointer_; }
+
         const void *buffer_block::raw_data() const { return pointer_; }
 
         size_t buffer_block::size() const { return size_ - used_; }
@@ -198,7 +200,7 @@ namespace atbus {
             return false;
         }
 
-        buffer_block *buffer_manager::front() { return NULL == static_buffer_.buffer_ ? dynamic_front() : static_front(); }
+        buffer_block *buffer_manager::front() { return is_dynamic_mode() ? dynamic_front() : static_front(); }
 
         int buffer_manager::front(void *&pointer, size_t &nread, size_t &nwrite) {
             buffer_block *res = front();
@@ -215,7 +217,7 @@ namespace atbus {
             return EN_ATBUS_ERR_SUCCESS;
         }
 
-        buffer_block *buffer_manager::back() { return NULL == static_buffer_.buffer_ ? dynamic_back() : static_back(); }
+        buffer_block *buffer_manager::back() { return is_dynamic_mode() ? dynamic_back() : static_back(); }
 
         int buffer_manager::back(void *&pointer, size_t &nread, size_t &nwrite) {
             buffer_block *res = back();
@@ -242,7 +244,7 @@ namespace atbus {
                 return EN_ATBUS_ERR_BUFF_LIMIT;
             }
 
-            int res = NULL == static_buffer_.buffer_ ? dynamic_push_back(pointer, s) : static_push_back(pointer, s);
+            int res = is_dynamic_mode() ? dynamic_push_back(pointer, s) : static_push_back(pointer, s);
             if (res >= 0) {
                 ++limit_.cost_number_;
                 limit_.cost_size_ += s;
@@ -261,7 +263,7 @@ namespace atbus {
                 return EN_ATBUS_ERR_BUFF_LIMIT;
             }
 
-            int res = NULL == static_buffer_.buffer_ ? dynamic_push_front(pointer, s) : static_push_front(pointer, s);
+            int res = is_dynamic_mode() ? dynamic_push_front(pointer, s) : static_push_front(pointer, s);
             if (res >= 0) {
                 ++limit_.cost_number_;
                 limit_.cost_size_ += s;
@@ -271,11 +273,11 @@ namespace atbus {
         }
 
         int buffer_manager::pop_back(size_t s, bool free_unwritable) {
-            return NULL == static_buffer_.buffer_ ? dynamic_pop_back(s, free_unwritable) : static_pop_back(s, free_unwritable);
+            return is_dynamic_mode() ? dynamic_pop_back(s, free_unwritable) : static_pop_back(s, free_unwritable);
         }
 
         int buffer_manager::pop_front(size_t s, bool free_unwritable) {
-            return NULL == static_buffer_.buffer_ ? dynamic_pop_front(s, free_unwritable) : static_pop_front(s, free_unwritable);
+            return is_dynamic_mode() ? dynamic_pop_front(s, free_unwritable) : static_pop_front(s, free_unwritable);
         }
 
         int buffer_manager::merge_back(void *&pointer, size_t s) {
@@ -288,7 +290,7 @@ namespace atbus {
                 return EN_ATBUS_ERR_BUFF_LIMIT;
             }
 
-            int res = NULL == static_buffer_.buffer_ ? dynamic_merge_back(pointer, s) : static_merge_back(pointer, s);
+            int res = is_dynamic_mode() ? dynamic_merge_back(pointer, s) : static_merge_back(pointer, s);
             if (res >= 0) {
                 limit_.cost_size_ += s;
             }
@@ -306,7 +308,7 @@ namespace atbus {
                 return EN_ATBUS_ERR_BUFF_LIMIT;
             }
 
-            int res = NULL == static_buffer_.buffer_ ? dynamic_merge_front(pointer, s) : static_merge_front(pointer, s);
+            int res = is_dynamic_mode() ? dynamic_merge_front(pointer, s) : static_merge_front(pointer, s);
             if (res >= 0) {
                 limit_.cost_size_ += s;
             }
@@ -314,7 +316,7 @@ namespace atbus {
             return res;
         }
 
-        bool buffer_manager::empty() const { return NULL == static_buffer_.buffer_ ? dynamic_empty() : static_empty(); }
+        bool buffer_manager::empty() const { return is_dynamic_mode() ? dynamic_empty() : static_empty(); }
 
         buffer_block *buffer_manager::static_front() {
             if (static_empty()) {

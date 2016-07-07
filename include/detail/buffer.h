@@ -57,6 +57,7 @@ namespace atbus {
         public:
             void *data();
             const void *data() const;
+            void *raw_data();
             const void *raw_data() const;
 
             size_t size() const;
@@ -178,6 +179,8 @@ namespace atbus {
              */
             void set_mode(size_t max_size, size_t max_number);
 
+            inline bool is_static_mode() const { return NULL != static_buffer_.buffer_; }
+            inline bool is_dynamic_mode() const { return NULL == static_buffer_.buffer_; }
         private:
             buffer_block *static_front();
 

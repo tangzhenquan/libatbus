@@ -42,7 +42,6 @@ typedef enum {
 
     EN_ATBUS_ERR_NODE_TIMEOUT = -211, // 操作超时
 
-
     EN_ATBUS_ERR_SHM_GET_FAILED = -301, // 连接共享内存出错，具体错误原因可以查看errno或类似的位置
     EN_ATBUS_ERR_SHM_NOT_FOUND = -302,  // 共享内存未找到
 
@@ -60,6 +59,7 @@ typedef enum {
     EN_ATBUS_ERR_READ_FAILED = -604,          // 底层API读失败
     EN_ATBUS_ERR_EV_RUN = -605,               // 底层API事件循环失败
     EN_ATBUS_ERR_NO_LISTEN = -606,            // 尚未监听（绑定）
+    EN_ATBUS_ERR_CLOSING = -607,              // 正在关闭或已关闭
 } ATBUS_ERROR_TYPE;
 
 #endif
