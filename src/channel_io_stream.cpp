@@ -266,7 +266,8 @@ namespace atbus {
 
                 free(channel->ev_loop);
             } else {
-                while (!channel->conn_pool.empty()) {
+                // both connection and pending gc connection should all be erased
+                while (!channel->conn_pool.empty() || !channel->conn_gc_pool.empty()) {
                     uv_run(channel->ev_loop, UV_RUN_ONCE);
                 }
 
@@ -560,7 +561,7 @@ namespace atbus {
 
         static void io_stream_connection_on_close(uv_handle_t *handle) {
             io_stream_connection *conn_raw_ptr = reinterpret_cast<io_stream_connection *>(handle->data);
-            // 连接尚未初始化完毕,或通过其他途径走过关闭流程，直接退出
+            // connect not completed, directly exit
             if (NULL == conn_raw_ptr) {
                 return;
             }
@@ -571,20 +572,18 @@ namespace atbus {
 
             io_stream_flag_guard flag_guard(channel->flags, io_stream_channel::EN_CF_IN_CALLBACK);
 
-            io_stream_channel::conn_pool_t::iterator iter = channel->conn_pool.end();
-            iter = channel->conn_pool.find(conn_raw_ptr->fd);
+            io_stream_channel::conn_gc_pool_t::iterator iter = channel->conn_gc_pool.find(reinterpret_cast<uintptr_t>(conn_raw_ptr));
+            assert(iter != channel->conn_gc_pool.end());
 
-            if (iter != channel->conn_pool.end()) {
-                iter->second->status = io_stream_connection::EN_ST_DISCONNECTIED;
-                io_stream_channel_callback(io_stream_callback_evt_t::EN_FN_DISCONNECTED, channel, iter->second.get(), 0,
-                                           EN_ATBUS_ERR_SUCCESS, NULL, 0);
+            iter->second->status = io_stream_connection::EN_ST_DISCONNECTIED;
+            io_stream_channel_callback(io_stream_callback_evt_t::EN_FN_DISCONNECTED, channel, iter->second.get(), 0,
+                                        EN_ATBUS_ERR_SUCCESS, NULL, 0);
 
-                if (NULL != conn_raw_ptr->act_disc_cbk) {
-                    conn_raw_ptr->act_disc_cbk(channel, conn_raw_ptr, EN_ATBUS_ERR_SUCCESS, NULL, 0);
-                }
-
-                channel->conn_pool.erase(iter);
+            if (NULL != conn_raw_ptr->act_disc_cbk) {
+                conn_raw_ptr->act_disc_cbk(channel, conn_raw_ptr, EN_ATBUS_ERR_SUCCESS, NULL, 0);
             }
+
+            channel->conn_gc_pool.erase(iter);
         }
 
         static void io_stream_async_data_on_close(uv_handle_t *handle) {
@@ -609,6 +608,14 @@ namespace atbus {
         static int io_stream_shutdown_ev_handle(io_stream_connection *conn) {
             assert(conn && conn->handle);
             assert(conn->handle->data == conn);
+            assert(conn->channel);
+
+            // move to gc pool
+            io_stream_channel::conn_pool_t::iterator iter = conn->channel->conn_pool.find(conn->fd);
+            assert(iter != conn->channel->conn_pool.end());
+
+            conn->channel->conn_gc_pool[reinterpret_cast<uintptr_t>(conn)] = iter->second;
+            conn->channel->conn_pool.erase(iter);
 
             // ATBUS_CHANNEL_REQ_START(conn->channel);
             // 被动断开也会触发回调，这里的流程不计数active的req

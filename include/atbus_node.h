@@ -132,6 +132,10 @@ namespace atbus {
     private:
         node();
 
+        struct io_stream_channel_del {
+            void operator()(channel::io_stream_channel *p) const;
+        };
+
     public:
         static ptr_t create();
         ~node();
@@ -457,7 +461,7 @@ namespace atbus {
         // ============ IO事件数据 ============
         // 事件分发器
         adapter::loop_t *ev_loop_;
-        std::shared_ptr<channel::io_stream_channel> iostream_channel_;
+        std::unique_ptr<channel::io_stream_channel, io_stream_channel_del> iostream_channel_;
         std::unique_ptr<channel::io_stream_conf> iostream_conf_;
         evt_msg_t event_msg_;
 

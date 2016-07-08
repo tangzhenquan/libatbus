@@ -160,6 +160,8 @@ namespace atbus {
 
             typedef ATBUS_ADVANCE_TYPE_MAP(adapter::fd_t, std::shared_ptr<io_stream_connection>) conn_pool_t;
             conn_pool_t conn_pool;
+            typedef ATBUS_ADVANCE_TYPE_MAP(uintptr_t, std::shared_ptr<io_stream_connection>) conn_gc_pool_t;
+            conn_gc_pool_t conn_gc_pool;
 
             // 事件响应
             io_stream_callback_evt_t evt;

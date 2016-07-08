@@ -34,15 +34,6 @@
 #include "detail/libatbus_protocol.h"
 
 namespace atbus {
-    namespace detail {
-        struct io_stream_channel_del {
-            void operator()(channel::io_stream_channel *p) const {
-                channel::io_stream_close(p);
-                delete p;
-            }
-        };
-    }
-
     node::node() : state_(state_t::CREATED), ev_loop_(NULL), static_buffer_(NULL), on_debug(NULL) {
         event_timer_.sec = 0;
         event_timer_.usec = 0;
@@ -50,6 +41,11 @@ namespace atbus {
         event_timer_.father_opr_time_point = 0;
 
         flags_.reset();
+    }
+
+    void node::io_stream_channel_del::operator()(channel::io_stream_channel *p) const {
+        channel::io_stream_close(p);
+        delete p;
     }
 
     node::~node() {
@@ -184,6 +180,7 @@ namespace atbus {
         }
 
         // 引用的数据(正在进行的连接)也必须全部释放完成
+        // 保证延迟释放的连接也释放完成
         while (!ref_objs_.empty()) {
             uv_run(get_evloop(), UV_RUN_ONCE);
         }
@@ -1295,7 +1292,7 @@ namespace atbus {
         if (iostream_channel_) {
             return iostream_channel_.get();
         }
-        iostream_channel_ = std::shared_ptr<channel::io_stream_channel>(new channel::io_stream_channel(), detail::io_stream_channel_del());
+        iostream_channel_.reset(new channel::io_stream_channel());
 
         channel::io_stream_init(iostream_channel_.get(), get_evloop(), get_iostream_conf());
         iostream_channel_->data = this;
