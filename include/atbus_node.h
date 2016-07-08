@@ -53,8 +53,7 @@ namespace atbus {
                 INITED,
                 LOST_PARENT,
                 CONNECTING_PARENT,
-                RUNNING,
-                CLOSING,
+                RUNNING
             };
         };
 
@@ -367,6 +366,10 @@ namespace atbus {
          */
         int shutdown(int reason);
 
+
+        /** do not use this directly **/
+        int fatal_shutdown(const char *file_path, size_t line, const endpoint *, const connection *, int status, int errcode);
+
         inline const detail::buffer_block *get_temp_static_buffer() const { return static_buffer_; }
         inline detail::buffer_block *get_temp_static_buffer() { return static_buffer_; }
 
@@ -516,6 +519,7 @@ namespace atbus {
 
 
 #define ATBUS_FUNC_NODE_ERROR(n, ep, conn, status, errorcode) (n).on_error(__FILE__, __LINE__, (ep), (conn), (status), (errorcode))
+#define ATBUS_FUNC_NODE_FATAL_SHUTDOWN(n, ep, conn, status, errorcode) (n).fatal_shutdown(__FILE__, __LINE__, (ep), (conn), (status), (errorcode))
 
 #ifdef _MSC_VER
 #define ATBUS_FUNC_NODE_DEBUG(n, ep, conn, m, fmt, ...)                             \

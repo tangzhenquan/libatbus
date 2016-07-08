@@ -103,7 +103,7 @@ namespace atbus {
             std::shared_ptr<adapter::stream_t> handle; // 流设备
             adapter::fd_t fd;                          // 文件描述符
 
-            typedef enum { EN_ST_CREATED = 0, EN_ST_CONNECTING, EN_ST_CONNECTED, EN_ST_DISCONNECTING, EN_ST_DISCONNECTIED } status_t;
+            typedef enum { EN_ST_CREATED = 0, EN_ST_CONNECTED, EN_ST_DISCONNECTING, EN_ST_DISCONNECTIED } status_t;
             status_t status; // 状态
             int flags;       // flag
             io_stream_channel *channel;

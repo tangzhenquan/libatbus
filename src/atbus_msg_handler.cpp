@@ -401,18 +401,21 @@ namespace atbus {
                 n.add_check_list(ep->watch());
             }
 
-            ATBUS_FUNC_NODE_ERROR(n, ep, conn, m.head.ret, errcode);
-
-            // 如果是父节点回的错误注册包，且未被激活过，则要关闭进程
-            conn->disconnect();
-            if (conn->get_address().address == n.get_conf().father_address) {
-                if (!n.check(node::flag_t::EN_FT_ACTIVED)) {
-
-                    ATBUS_FUNC_NODE_DEBUG(n, ep, conn, &m, "node register to parent node failed, shutdown");
-                    n.shutdown(m.head.ret);
+            do {
+                // 如果是父节点回的错误注册包，且未被激活过，则要关闭进程
+                if (conn->get_address().address == n.get_conf().father_address) {
+                    if (!n.check(node::flag_t::EN_FT_ACTIVED)) {
+                        ATBUS_FUNC_NODE_DEBUG(n, ep, conn, &m, "node register to parent node failed, shutdown");
+                        ATBUS_FUNC_NODE_FATAL_SHUTDOWN(n, ep, conn, m.head.ret, errcode);
+                        break;
+                    }
                 }
-            }
 
+                ATBUS_FUNC_NODE_ERROR(n, ep, conn, m.head.ret, errcode);
+            } while (false);
+
+
+            conn->disconnect();
             return m.head.ret;
         } else if (node::state_t::CONNECTING_PARENT == n.get_state()) {
             // 父节点返回的rsp成功则可以上线

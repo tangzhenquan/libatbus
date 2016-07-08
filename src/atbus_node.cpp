@@ -739,7 +739,7 @@ namespace atbus {
 
             // if not activited, shutdown
             if (!flags_.test(flag_t::EN_FT_ACTIVED)) {
-                shutdown(0);
+                ATBUS_FUNC_NODE_FATAL_SHUTDOWN(*this, ep.get(), NULL, EN_ATBUS_ERR_ATNODE_MASK_CONFLICT, 0);
             }
             return EN_ATBUS_ERR_SUCCESS;
         }
@@ -966,6 +966,12 @@ namespace atbus {
 
             // set reconnect to father into retry interval
             event_timer_.father_opr_time_point = get_timer_sec() + conf_.retry_interval;
+
+            // if not activited, shutdown
+            if (!flags_.test(flag_t::EN_FT_ACTIVED)) {
+                // lost conflict response from the parent, maybe cancled.
+                ATBUS_FUNC_NODE_FATAL_SHUTDOWN(*this, NULL, conn, EN_ATBUS_ERR_ATNODE_MASK_CONFLICT, UV_ECANCELED);
+            }
         }
         return EN_ATBUS_ERR_SUCCESS;
     }
@@ -1045,6 +1051,16 @@ namespace atbus {
             flags_.set(flag_t::EN_FT_SHUTDOWN, true);
         }
         return ret;
+    }
+
+    int node::fatal_shutdown(const char *file_path, size_t line, const endpoint * ep, const connection * conn, int status, int errcode) {
+        if (flags_.test(flag_t::EN_FT_SHUTDOWN)) {
+            return 0;
+        }
+
+        shutdown(status);
+        on_error(file_path, line, ep, conn, status, errcode);
+        return 0;
     }
 
     int node::ping_endpoint(endpoint &ep) {

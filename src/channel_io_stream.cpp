@@ -1349,6 +1349,23 @@ namespace atbus {
             return EN_ATBUS_ERR_SUCCESS;
         }
 
+        static int io_stream_disconnect_run(io_stream_connection *connection) {
+            if (NULL == connection) {
+                return EN_ATBUS_ERR_PARAMS;
+            }
+
+            // already running closing, skip
+            if (ATBUS_CHANNEL_IOS_CHECK_FLAG(connection->flags, io_stream_connection::EN_CF_CLOSING)) {
+                return EN_ATBUS_ERR_SUCCESS;
+            }
+
+            // real do closing
+            ATBUS_CHANNEL_IOS_SET_FLAG(connection->flags, io_stream_connection::EN_CF_CLOSING);
+            io_stream_shutdown_ev_handle(connection);
+
+            return EN_ATBUS_ERR_SUCCESS;
+        }
+
         int io_stream_disconnect(io_stream_channel *channel, io_stream_connection *connection, io_stream_callback_t callback) {
             if (NULL == channel || NULL == connection) {
                 return EN_ATBUS_ERR_PARAMS;
@@ -1356,13 +1373,18 @@ namespace atbus {
 
             connection->act_disc_cbk = callback;
 
-            if (io_stream_connection::EN_ST_CONNECTED == connection->status) {
-                connection->status = io_stream_connection::EN_ST_DISCONNECTING;
-
-                ATBUS_CHANNEL_IOS_SET_FLAG(connection->flags, io_stream_connection::EN_CF_CLOSING);
-                io_stream_shutdown_ev_handle(connection);
+            if (io_stream_connection::EN_ST_CONNECTED != connection->status) {
+                return EN_ATBUS_ERR_SUCCESS;
             }
-            return EN_ATBUS_ERR_SUCCESS;
+
+            connection->status = io_stream_connection::EN_ST_DISCONNECTING;
+
+            // if there is any writing data, closing this connection later
+            if (ATBUS_CHANNEL_IOS_CHECK_FLAG(connection->flags, io_stream_connection::EN_CF_WRITING)) {
+                return EN_ATBUS_ERR_SUCCESS;
+            }
+
+            return io_stream_disconnect_run(connection);
         }
 
         int io_stream_disconnect_fd(io_stream_channel *channel, adapter::fd_t fd, io_stream_callback_t callback) {
@@ -1448,6 +1470,13 @@ namespace atbus {
 
             // write left data
             io_stream_try_write(connection);
+
+            // if in disconnecting status and there is no more data to write, close it
+            if (io_stream_connection::EN_ST_DISCONNECTING == connection->status &&
+                !ATBUS_CHANNEL_IOS_CHECK_FLAG(connection->flags, io_stream_connection::EN_CF_WRITING)) {
+
+                io_stream_disconnect_run(connection);
+            }
         }
 
         int io_stream_try_write(io_stream_connection *connection) {
@@ -1594,7 +1623,7 @@ namespace atbus {
                 return EN_ATBUS_ERR_INVALID_SIZE;
             }
 
-            if (ATBUS_CHANNEL_IOS_CHECK_FLAG(connection->flags, io_stream_connection::EN_CF_CLOSING)) {
+            if (io_stream_connection::EN_ST_CONNECTED != connection->status) {
                 return EN_ATBUS_ERR_CLOSING;
             }
 
