@@ -120,8 +120,8 @@ script:
       cd msgpack-c;
       git init;
       git pull https://github.com/redboltz/msgpack-c.git fix_498;
+      USE_MSGPACK_ROOT=$PWD;
       cd -;
-      USE_MSGPACK_ROOT="$REPO_DIR/msgpack-c";
     fi
   - $CMAKE_PREFIX/bin/cmake .. -DCMAKE_C_COMPILER=$USE_CC -DCMAKE_CXX_COMPILER=$USE_CXX -DPROJECT_ENABLE_UNITTEST=ON -DPROJECT_ENABLE_SAMPLE=ON -DPROJECT_ENABLE_TOOLS=ON -DLIBUV_ROOT=$LIBUV_PREFIX -DMSGPACK_ROOT=$USE_MSGPACK_ROOT ;
   - make -j4

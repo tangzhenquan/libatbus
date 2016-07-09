@@ -34,8 +34,8 @@ static void node_msg_test_on_debug(const char *file_path, size_t line, const atb
 
     std::streamsize w = std::cout.width();
     CASE_MSG_INFO() << "[Log Debug][" << std::setw(24) << file_path << ":" << std::setw(4) << line << "] node=0x" << std::setfill('0')
-                    << std::hex << std::setw(8) << n.get_id() << ", endpoint=0x" << std::setw(8) << (NULL == ep ? 0 : ep->get_id())
-                    << ", connection=" << conn << std::setfill(' ') << std::setw(w) << std::dec << "\t";
+                    << std::hex << std::setw(8) << n.get_id() << ", ep=0x" << std::setw(8) << (NULL == ep ? 0 : ep->get_id())
+                    << ", c=" << conn << std::setfill(' ') << std::setw(w) << std::dec << "\t";
 
     va_list ap;
     va_start(ap, fmt);
@@ -136,7 +136,7 @@ CASE_TEST(atbus_node_reg, ping_pong) {
         node2->poll();
         node1->proc(proc_t, 0);
         node2->proc(proc_t, 0);
-        
+
         node1->connect("ipv4://127.0.0.1:16388");
 
         for (int i = 0; i < 256; ++i) {
@@ -224,7 +224,7 @@ CASE_TEST(atbus_node_reg, custom_cmd) {
         node2->poll();
         node1->proc(proc_t, 0);
         node2->proc(proc_t, 0);
-        
+
         node1->connect("ipv4://127.0.0.1:16388");
 
         for (int i = 0; i < 256; ++i) {
@@ -344,7 +344,7 @@ CASE_TEST(atbus_node_reg, parent_and_child) {
             node_child->poll();
             node_parent->proc(proc_t, 0);
             node_child->proc(proc_t, 0);
-            
+
 
             atbus::endpoint *ep1 = node_child->get_endpoint(node_parent->get_id());
             atbus::endpoint *ep2 = node_parent->get_endpoint(node_child->get_id());
@@ -448,7 +448,7 @@ CASE_TEST(atbus_node_reg, transfer_and_connect) {
             node_parent->proc(proc_t, 0);
             node_child_1->proc(proc_t, 0);
             node_child_2->proc(proc_t, 0);
-            
+
 
             atbus::endpoint *ep1 = node_child_1->get_endpoint(node_parent->get_id());
             atbus::endpoint *ep2 = node_parent->get_endpoint(node_child_1->get_id());
@@ -546,7 +546,7 @@ CASE_TEST(atbus_node_reg, transfer_only) {
             node_parent_2->proc(proc_t, 0);
             node_child_1->proc(proc_t, 0);
             node_child_2->proc(proc_t, 0);
-            
+
 
             atbus::endpoint *ep1 = node_child_1->get_endpoint(node_parent_1->get_id());
             atbus::endpoint *ep2 = node_parent_1->get_endpoint(node_child_1->get_id());
@@ -664,7 +664,7 @@ CASE_TEST(atbus_node_reg, transfer_failed) {
             node_child_1->poll();
             node_parent->proc(proc_t, 0);
             node_child_1->proc(proc_t, 0);
-            
+
 
             atbus::endpoint *ep1 = node_child_1->get_endpoint(node_parent->get_id());
             atbus::endpoint *ep2 = node_parent->get_endpoint(node_child_1->get_id());

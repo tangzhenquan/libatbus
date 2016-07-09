@@ -34,8 +34,8 @@ static void node_reg_test_on_debug(const char *file_path, size_t line, const atb
 
     std::streamsize w = std::cout.width();
     CASE_MSG_INFO() << "[Log Debug][" << std::setw(24) << file_path << ":" << std::setw(4) << line << "] node=0x" << std::setfill('0')
-                    << std::hex << std::setw(8) << n.get_id() << ", endpoint=0x" << std::setw(8) << (NULL == ep ? 0 : ep->get_id())
-                    << ", connection=" << conn << std::setfill(' ') << std::setw(w) << std::dec << "\t";
+                    << std::hex << std::setw(8) << n.get_id() << ", ep=0x" << std::setw(8) << (NULL == ep ? 0 : ep->get_id())
+                    << ", c=" << conn << std::setfill(' ') << std::setw(w) << std::dec << "\t";
 
     va_list ap;
     va_start(ap, fmt);
@@ -150,7 +150,7 @@ CASE_TEST(atbus_node_reg, reset_and_send) {
         node2->poll();
         node1->proc(proc_t + 1, 0);
         node2->proc(proc_t + 1, 0);
-        
+
 
         // 连接兄弟节点回调测试
         int check_ep_count = recv_msg_history.add_endpoint_count;
@@ -181,7 +181,7 @@ CASE_TEST(atbus_node_reg, reset_and_send) {
         node2->poll();
         node1->proc(proc_t + 1000, 0);
         node2->proc(proc_t + 1000, 0);
-        
+
 
         int count = recv_msg_history.count;
         node2->set_on_recv_handle(node_reg_test_recv_msg_test_record_fn);
@@ -211,7 +211,7 @@ CASE_TEST(atbus_node_reg, reset_and_send) {
             node2->poll();
             node1->proc(proc_t + 1000 + i, 0);
             node2->proc(proc_t + 1000 + i, 0);
-            
+
 
             atbus::endpoint *ep1 = node2->get_endpoint(node1->get_id());
             atbus::endpoint *ep2 = node1->get_endpoint(node2->get_id());
@@ -260,7 +260,7 @@ CASE_TEST(atbus_node_reg, destruct) {
         node2->poll();
         node1->proc(proc_t + 1, 0);
         node2->proc(proc_t + 1, 0);
-        
+
         node1->connect("ipv4://127.0.0.1:16388");
 
         for (int i = 0; i < 512; ++i) {
@@ -342,7 +342,7 @@ CASE_TEST(atbus_node_reg, reg_success) {
         node_child->poll();
         node_parent->proc(proc_t + 1, 0);
         node_child->proc(proc_t + 1, 0);
-        
+
 
         // 注册成功自动会有可用的端点
         for (int i = 0; i < 512; ++i) {
@@ -425,7 +425,7 @@ CASE_TEST(atbus_node_reg, conflict) {
             node_parent->proc(proc_t, 0);
             node_child->proc(proc_t, 0);
             node_child_fail->proc(proc_t, 0);
-            
+
 
             CASE_THREAD_SLEEP_MS(8);
             uv_run(&ev_loop, UV_RUN_NOWAIT);
@@ -487,7 +487,7 @@ CASE_TEST(atbus_node_reg, reconnect_father_failed) {
 
             node_parent->proc(proc_t, 0);
             node_child->proc(proc_t, 0);
-            
+
 
             CASE_THREAD_SLEEP_MS(8);
             uv_run(&ev_loop, UV_RUN_NOWAIT);
@@ -504,10 +504,10 @@ CASE_TEST(atbus_node_reg, reconnect_father_failed) {
             proc_t += conf.retry_interval + 1;
             // node_parent->poll();
             // node_parent->proc(proc_t, 0);
-            
+
             node_child->poll();
             node_child->proc(proc_t, 0);
-            
+
 
             if (atbus::node::state_t::RUNNING != node_child->get_state()) {
                 ++retry_times;
@@ -538,7 +538,7 @@ CASE_TEST(atbus_node_reg, reconnect_father_failed) {
 
             node_parent->proc(proc_t, 0);
             node_child->proc(proc_t, 0);
-            
+
 
             CASE_THREAD_SLEEP_MS(8);
             uv_run(&ev_loop, UV_RUN_NOWAIT);
