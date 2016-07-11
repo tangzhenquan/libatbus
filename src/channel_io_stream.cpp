@@ -576,8 +576,8 @@ namespace atbus {
             assert(iter != channel->conn_gc_pool.end());
 
             iter->second->status = io_stream_connection::EN_ST_DISCONNECTIED;
-            io_stream_channel_callback(io_stream_callback_evt_t::EN_FN_DISCONNECTED, channel, iter->second.get(), 0,
-                                        EN_ATBUS_ERR_SUCCESS, NULL, 0);
+            io_stream_channel_callback(io_stream_callback_evt_t::EN_FN_DISCONNECTED, channel, iter->second.get(), 0, EN_ATBUS_ERR_SUCCESS,
+                                       NULL, 0);
 
             if (NULL != conn_raw_ptr->act_disc_cbk) {
                 conn_raw_ptr->act_disc_cbk(channel, conn_raw_ptr, EN_ATBUS_ERR_SUCCESS, NULL, 0);
@@ -1429,12 +1429,13 @@ namespace atbus {
                     break;
                 }
 
-                if (0 == nwrite) {
-                    connection->write_buffers.pop_front(0, true);
-                }
-
                 assert(0 == nread);
                 assert(req == data);
+
+                if (0 == nwrite) {
+                    connection->write_buffers.pop_front(0, true);
+                    break;
+                }
 
                 // nwrite = sizeof(uv_write_t) + [data block...]
                 // data block = 32bits hash+vint+data length
