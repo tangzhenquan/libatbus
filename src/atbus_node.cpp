@@ -142,11 +142,21 @@ namespace atbus {
         }
         flags_.set(flag_t::EN_FT_RESETTING, true);
 
-        // 所有连接断开
-        for (detail::auto_select_map<std::string, connection::ptr_t>::type::iterator iter = proc_connections_.begin();
-             iter != proc_connections_.end(); ++iter) {
-            if (iter->second) {
-                iter->second->reset();
+        // first save all connection, and then reset it
+        typedef detail::auto_select_map<std::string, connection::ptr_t>::type auto_map_t;
+        {
+            std::vector<auto_map_t::mapped_type> temp_vec;
+            temp_vec.reserve(proc_connections_.size());
+            for (auto_map_t::iterator iter = proc_connections_.begin();
+                iter != proc_connections_.end(); ++iter) {
+                if (iter->second) {
+                    temp_vec.push_back(iter->second);
+                }
+            }
+
+            // 所有连接断开
+            for (size_t i = 0; i < temp_vec.size(); ++i) {
+                temp_vec[i]->reset();
             }
         }
         proc_connections_.clear();
