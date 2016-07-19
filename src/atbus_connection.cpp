@@ -281,6 +281,13 @@ namespace atbus {
 
             return res;
         } else {
+            // redirect loopback address to local address
+            if (0 == UTIL_STRFUNC_STRNCASE_CMP("ipv4", address_.scheme.c_str(), 4) && "0.0.0.0" == address_.host) {
+                make_address("ipv4", "127.0.0.1", address_.port, address_);
+            } else if (0 == UTIL_STRFUNC_STRNCASE_CMP("ipv6", address_.scheme.c_str(), 4) && "::" == address_.host) {
+                make_address("ipv6", "::1", address_.port, address_);
+            }
+
             detail::connection_async_data *async_data = new detail::connection_async_data(owner_);
             if (NULL == async_data) {
                 return EN_ATBUS_ERR_MALLOC;

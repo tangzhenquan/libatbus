@@ -351,27 +351,35 @@ namespace atbus {
             ATBUS_FUNC_NODE_DEBUG(n, ep, conn, &m, "node add a new endpoint, res: %d", res);
             // 新的endpoint要建立所有连接
             ep->add_connection(conn, false);
-            bool has_data_conn = false;
-            for (size_t i = 0; i < m.body.reg->channels.size(); ++i) {
-                const protocol::channel_data &chan = m.body.reg->channels[i];
 
-                // if n is not a temporary node, connect to other nodes
-                if (0 != n.get_id()) {
-                    res = n.connect(chan.address.c_str(), ep);
-                } else {
-                    res = 0;
-                }
-                if (res < 0) {
-                    ATBUS_FUNC_NODE_ERROR(n, ep, conn, res, 0);
-                } else {
-                    ep->add_listen(chan.address);
-                    has_data_conn = true;
-                }
-            }
+            // If EN_CONF_NO_CONNECT_REG is false, connect all address reported by REG message
+            // If two atbus::node will connect to each other outside the register message(most time, they are brother of each other),
+            //   there is no need for them to connect to the addresses in register message. Although they can still do so.
+            // If these nodes still connect to each other's addresses in register message, there could be some connections that will never be used.
+            //   Those useless connection will cost some resource because of the heartbeat packages.
+            if (false == n.get_conf().flags.test(::atbus::node::conf_flag_t::EN_CONF_NO_CONNECT_REG)) {
+                bool has_data_conn = false;
+                for (size_t i = 0; i < m.body.reg->channels.size(); ++i) {
+                    const protocol::channel_data &chan = m.body.reg->channels[i];
 
-            // 如果没有成功进行的数据连接，加入检测列表，下一帧释放
-            if (!has_data_conn) {
-                n.add_check_list(new_ep);
+                    // if n is not a temporary node, connect to other nodes
+                    if (0 != n.get_id()) {
+                        res = n.connect(chan.address.c_str(), ep);
+                    } else {
+                        res = 0;
+                    }
+                    if (res < 0) {
+                        ATBUS_FUNC_NODE_ERROR(n, ep, conn, res, 0);
+                    } else {
+                        ep->add_listen(chan.address);
+                        has_data_conn = true;
+                    }
+                }
+
+                // 如果没有成功进行的数据连接，加入检测列表，下一帧释放
+                if (!has_data_conn) {
+                    n.add_check_list(new_ep);
+                }
             }
         } while (false);
 
