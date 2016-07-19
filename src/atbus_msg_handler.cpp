@@ -125,7 +125,7 @@ namespace atbus {
         }
 
         reg->children_id_mask = n.get_self_endpoint()->get_children_mask();
-        reg->has_global_tree = n.get_self_endpoint()->get_flag(endpoint::flag_t::GLOBAL_ROUTER);
+        reg->flags = n.get_self_endpoint()->get_flags();
 
         return send_msg(n, conn, m);
     }
@@ -198,8 +198,8 @@ namespace atbus {
                 const std::list<std::string> &listen_addrs = to_ep->get_listen();
                 for (std::list<std::string>::const_iterator iter = listen_addrs.begin(); iter != listen_addrs.end(); ++iter) {
                     // 通知连接控制通道，控制通道不能是（共享）内存通道
-                    if (0 != UTIL_STRFUNC_STRNCASE_CMP("mem", iter->c_str(), 3) &&
-                        0 != UTIL_STRFUNC_STRNCASE_CMP("shm", iter->c_str(), 3)) {
+                    if (0 != UTIL_STRFUNC_STRNCASE_CMP("mem:", iter->c_str(), 4) &&
+                        0 != UTIL_STRFUNC_STRNCASE_CMP("shm:", iter->c_str(), 4)) {
                         new_conn->address.address = *iter;
                         break;
                     }
@@ -314,8 +314,10 @@ namespace atbus {
             }
 
             // 创建新端点时需要判定全局路由表权限
+            std::bitset<endpoint::flag_t::MAX> reg_flags(m.body.reg->flags);
+
             if (n.is_child_node(m.body.reg->bus_id)) {
-                if (m.body.reg->has_global_tree && false == n.get_self_endpoint()->get_flag(endpoint::flag_t::GLOBAL_ROUTER)) {
+                if (reg_flags.test(endpoint::flag_t::GLOBAL_ROUTER) && false == n.get_self_endpoint()->get_flag(endpoint::flag_t::GLOBAL_ROUTER)) {
                     rsp_code = EN_ATBUS_ERR_ACCESS_DENY;
 
                     ATBUS_FUNC_NODE_DEBUG(n, ep, conn, &m, "self has no global tree, children reg access deny");
@@ -346,40 +348,58 @@ namespace atbus {
                 rsp_code = res;
                 break;
             }
-            ep->set_flag(endpoint::flag_t::GLOBAL_ROUTER, m.body.reg->has_global_tree);
+            ep->set_flag(endpoint::flag_t::GLOBAL_ROUTER, reg_flags.test(endpoint::flag_t::GLOBAL_ROUTER));
 
             ATBUS_FUNC_NODE_DEBUG(n, ep, conn, &m, "node add a new endpoint, res: %d", res);
             // 新的endpoint要建立所有连接
             ep->add_connection(conn, false);
 
-            // If EN_CONF_NO_CONNECT_REG is false, connect all address reported by REG message
-            // If two atbus::node will connect to each other outside the register message(most time, they are brother of each other),
-            //   there is no need for them to connect to the addresses in register message. Although they can still do so.
-            // If these nodes still connect to each other's addresses in register message, there could be some connections that will never be used.
-            //   Those useless connection will cost some resource because of the heartbeat packages.
-            if (false == n.get_conf().flags.test(::atbus::node::conf_flag_t::EN_CONF_NO_CONNECT_REG)) {
-                bool has_data_conn = false;
-                for (size_t i = 0; i < m.body.reg->channels.size(); ++i) {
-                    const protocol::channel_data &chan = m.body.reg->channels[i];
+            // 如果双方一边有IOS通道，另一边没有，则没有的连接有的
+            // 如果双方都有IOS通道，则ID小的连接ID大的
+            bool has_ios_listen = false;
+            for (std::list<std::string>::const_iterator iter = n.get_listen_list().begin();
+                !has_ios_listen && iter != n.get_listen_list().end(); ++iter) {
+                if (0 != UTIL_STRFUNC_STRNCASE_CMP("mem:", iter->c_str(), 4) &&
+                    0 != UTIL_STRFUNC_STRNCASE_CMP("shm:", iter->c_str(), 4)) {
+                    has_ios_listen = true;
+                }
+            }
 
-                    // if n is not a temporary node, connect to other nodes
-                    if (0 != n.get_id()) {
-                        res = n.connect(chan.address.c_str(), ep);
-                    } else {
-                        res = 0;
-                    }
-                    if (res < 0) {
-                        ATBUS_FUNC_NODE_ERROR(n, ep, conn, res, 0);
-                    } else {
-                        ep->add_listen(chan.address);
-                        has_data_conn = true;
+            // io_stream channel only need one connection
+            bool has_data_conn = false;
+            for (size_t i = 0; i < m.body.reg->channels.size(); ++i) {
+                const protocol::channel_data &chan = m.body.reg->channels[i];
+
+                if (has_ios_listen && n.get_id() > ep->get_id()) {
+                    if (0 != UTIL_STRFUNC_STRNCASE_CMP("mem:", chan.address.c_str(), 4) &&
+                        0 != UTIL_STRFUNC_STRNCASE_CMP("shm:", chan.address.c_str(), 4)) {
+                        continue;
                     }
                 }
 
-                // 如果没有成功进行的数据连接，加入检测列表，下一帧释放
-                if (!has_data_conn) {
-                    n.add_check_list(new_ep);
+                // unix sock only available in the same host
+                if (0 == UTIL_STRFUNC_STRNCASE_CMP("unix:", chan.address.c_str(), 5) &&
+                    ep->get_hostname() != n.get_hostname()) {
+                    continue;
                 }
+
+                // if n is not a temporary node, connect to other nodes
+                if (0 != n.get_id()) {
+                    res = n.connect(chan.address.c_str(), ep);
+                } else {
+                    res = 0;
+                }
+                if (res < 0) {
+                    ATBUS_FUNC_NODE_ERROR(n, ep, conn, res, 0);
+                } else {
+                    ep->add_listen(chan.address);
+                    has_data_conn = true;
+                }
+            }
+
+            // 如果没有成功进行的数据连接，加入检测列表，下一帧释放
+            if (!has_data_conn) {
+                n.add_check_list(new_ep);
             }
         } while (false);
 

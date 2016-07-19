@@ -102,7 +102,7 @@ namespace atbus {
         if (!self_) {
             return EN_ATBUS_ERR_MALLOC;
         }
-        // 复制全局路由表配置
+        // 复制配置
         self_->set_flag(endpoint::flag_t::GLOBAL_ROUTER, conf_.flags.test(conf_flag_t::EN_CONF_GLOBAL_ROUTER));
 
         static_buffer_ = detail::buffer_block::malloc(conf_.msg_size + detail::buffer_block::head_size(conf_.msg_size) +

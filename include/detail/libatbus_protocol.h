@@ -131,22 +131,22 @@ namespace atbus {
         };
 
         struct node_data {
-            ATBUS_MACRO_BUSID_TYPE bus_id; // ID: 0
-            bool overwrite;                // ID: 1
-            bool has_global_tree;          // ID: 2
+            ATBUS_MACRO_BUSID_TYPE bus_id;  // ID: 0
+            bool overwrite;                 // ID: 1
+            bool flags;                     // ID: 2
             ATBUS_MACRO_BUSID_TYPE children_id_mask;
             std::vector<node_data> children;
 
-            node_data() : bus_id(0), overwrite(false), has_global_tree(false), children_id_mask(0) {}
+            node_data() : bus_id(0), overwrite(false), flags(0), children_id_mask(0) {}
 
-            MSGPACK_DEFINE(bus_id, overwrite, has_global_tree, children_id_mask, children);
+            MSGPACK_DEFINE(bus_id, overwrite, flags, children_id_mask, children);
 
             template <typename CharT, typename Traits>
             friend std::basic_ostream<CharT, Traits> &operator<<(std::basic_ostream<CharT, Traits> &os, const node_data &mbc) {
                 os << "{" << std::endl
                    << "        bus_id: " << mbc.bus_id << std::endl
                    << "        overwrite: " << mbc.overwrite << std::endl
-                   << "        has_global_tree: " << mbc.has_global_tree << std::endl
+                   << "        flags: " << mbc.flags << std::endl
                    << "        children_id_mask: " << mbc.children_id_mask << std::endl
                    << "        children: (" << mbc.children.size() << ")" << std::endl;
                 for (size_t i = 0; i < mbc.children.size(); ++i) {
@@ -197,12 +197,12 @@ namespace atbus {
             std::string hostname;               // ID: 2
             std::vector<channel_data> channels; // ID: 3
             uint32_t children_id_mask;          // ID: 4
-            bool has_global_tree;               // ID: 5
+            uint32_t flags;                     // ID: 5
 
 
-            reg_data() : bus_id(0), pid(0), children_id_mask(0), has_global_tree(false) {}
+            reg_data() : bus_id(0), pid(0), children_id_mask(0), flags(0){}
 
-            MSGPACK_DEFINE(bus_id, pid, hostname, channels, children_id_mask, has_global_tree);
+            MSGPACK_DEFINE(bus_id, pid, hostname, channels, children_id_mask, flags);
 
             template <typename CharT, typename Traits>
             friend std::basic_ostream<CharT, Traits> &operator<<(std::basic_ostream<CharT, Traits> &os, const reg_data &mbc) {
@@ -214,7 +214,7 @@ namespace atbus {
                     os << "      channels: " << mbc.channels[i] << std::endl;
                 }
                 os << "      children_id_mask: " << mbc.children_id_mask << std::endl
-                   << "      has_global_tree: " << mbc.has_global_tree << std::endl
+                   << "      flags: " << mbc.flags << std::endl
                    << "    }";
 
                 return os;

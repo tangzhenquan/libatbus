@@ -220,6 +220,10 @@ namespace atbus {
         return EN_ATBUS_ERR_SUCCESS;
     }
 
+    uint32_t endpoint::get_flags() const {
+        return static_cast<uint32_t>(flags_.to_ulong());
+    }
+
     endpoint::ptr_t endpoint::watch() const {
         if (flags_.test(flag_t::DESTRUCTING) || watcher_.expired()) {
             return endpoint::ptr_t();

@@ -112,6 +112,13 @@ namespace atbus {
         int set_flag(flag_t::type f, bool v);
 
         /**
+         * @brief 获取所有flag
+         * @return 整数表示的flags
+         * @see flat_t
+         */
+        uint32_t get_flags() const;
+
+        /**
          * @breif 获取自身的资源holder
          */
         ptr_t watch() const;
