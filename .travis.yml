@@ -20,7 +20,7 @@ matrix:
     - os: linux
       dist: trusty
       sudo: required
-      env: USE_CC=gcc-4.4 USE_CXX=g++-4.4
+      env: USE_CC=gcc-4.4 USE_CXX=g++-4.4 MSGPACK_VERSION=1.4.2
     - os: linux
       dist: trusty
       sudo: required
@@ -115,14 +115,6 @@ script:
   - REPO_DIR=$PWD;
   - mkdir -p $REPO_DIR/build && cd $REPO_DIR/build ;
   - USE_MSGPACK_ROOT=$MSGPACK_PREFIX ;
-  - if [ "$USE_CC" == "gcc-4.4" ]; then
-      mkdir msgpack-c;
-      cd msgpack-c;
-      git init;
-      git pull https://github.com/redboltz/msgpack-c.git fix_498;
-      USE_MSGPACK_ROOT=$PWD;
-      cd -;
-    fi
   - $CMAKE_PREFIX/bin/cmake .. -DCMAKE_C_COMPILER=$USE_CC -DCMAKE_CXX_COMPILER=$USE_CXX -DPROJECT_ENABLE_UNITTEST=ON -DPROJECT_ENABLE_SAMPLE=ON -DPROJECT_ENABLE_TOOLS=ON -DLIBUV_ROOT=$LIBUV_PREFIX -DMSGPACK_ROOT=$USE_MSGPACK_ROOT ;
   - make -j4
 
