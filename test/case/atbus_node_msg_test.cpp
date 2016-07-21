@@ -73,7 +73,7 @@ static int node_msg_test_recv_msg_test_record_fn(const atbus::node &n, const atb
         recv_msg_history.data.assign(reinterpret_cast<const char *>(buffer), len);
         CASE_MSG_INFO() << "[Log Debug] node=0x" << std::setfill('0') << std::hex << std::setw(8) << n.get_id() << ", ep=0x" << std::setw(8)
                         << (NULL == ep ? 0 : ep->get_id()) << ", c=" << conn << std::setfill(' ') << std::setw(w) << std::dec << "\t"
-                        << "recv message: " reinterpret_cast<const char *>(buffer) << std::endl;
+                        << "recv message: " << reinterpret_cast<const char *>(buffer) << std::endl;
     } else {
         recv_msg_history.data.clear();
         CASE_MSG_INFO() << "[Log Debug] node=0x" << std::setfill('0') << std::hex << std::setw(8) << n.get_id() << ", ep=0x" << std::setw(8)
