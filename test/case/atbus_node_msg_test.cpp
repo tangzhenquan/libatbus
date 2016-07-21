@@ -70,8 +70,14 @@ static int node_msg_test_recv_msg_test_record_fn(const atbus::node &n, const atb
 
     if (NULL != buffer && len > 0) {
         recv_msg_history.data.assign(reinterpret_cast<const char *>(buffer), len);
+        CASE_MSG_INFO() << "[Log Debug] node=0x" << std::setfill('0') << std::hex << std::setw(8) << n.get_id() << ", ep=0x" << std::setw(8)
+                        << (NULL == ep ? 0 : ep->get_id()) << ", c=" << conn << std::setfill(' ') << std::setw(w) << std::dec << "\t"
+                        << "recv message: " reinterpret_cast<const char *>(buffer) << std::endl;
     } else {
         recv_msg_history.data.clear();
+        CASE_MSG_INFO() << "[Log Debug] node=0x" << std::setfill('0') << std::hex << std::setw(8) << n.get_id() << ", ep=0x" << std::setw(8)
+                        << (NULL == ep ? 0 : ep->get_id()) << ", c=" << conn << std::setfill(' ') << std::setw(w) << std::dec << "\t"
+                        << "recv message: [NOTHING]" << std::endl;
     }
 
     return 0;
@@ -470,8 +476,8 @@ CASE_TEST(atbus_node_reg, transfer_and_connect) {
         int count = recv_msg_history.count;
         node_child_1->send_data(node_child_2->get_id(), 0, send_data.data(), send_data.size());
         for (int i = 0; i < 256; ++i) {
-            uv_run(conf.ev_loop, UV_RUN_ONCE);
-            CASE_THREAD_SLEEP_MS(16);
+            uv_run(conf.ev_loop, UV_RUN_NOWAIT);
+            CASE_THREAD_SLEEP_MS(8);
             if (count != recv_msg_history.count) {
                 break;
             }
@@ -581,7 +587,7 @@ CASE_TEST(atbus_node_reg, transfer_only) {
         CASE_EXPECT_EQ(send_data, recv_msg_history.data);
         for (int i = 0; i < 128; ++i) {
             uv_run(conf.ev_loop, UV_RUN_NOWAIT);
-            CASE_THREAD_SLEEP_MS(4);
+            CASE_THREAD_SLEEP_MS(8);
         }
 
         // 非直接子节点互相不建立直连
