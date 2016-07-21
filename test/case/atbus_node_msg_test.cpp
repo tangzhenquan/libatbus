@@ -68,6 +68,7 @@ static int node_msg_test_recv_msg_test_record_fn(const atbus::node &n, const atb
     recv_msg_history.status = h->ret;
     ++recv_msg_history.count;
 
+    std::streamsize w = std::cout.width();
     if (NULL != buffer && len > 0) {
         recv_msg_history.data.assign(reinterpret_cast<const char *>(buffer), len);
         CASE_MSG_INFO() << "[Log Debug] node=0x" << std::setfill('0') << std::hex << std::setw(8) << n.get_id() << ", ep=0x" << std::setw(8)
