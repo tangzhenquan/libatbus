@@ -147,8 +147,8 @@ CASE_TEST(atbus_node_reg, ping_pong) {
         node1->connect("ipv4://127.0.0.1:16388");
 
         for (int i = 0; i < 256; ++i) {
-            uv_run(conf.ev_loop, UV_RUN_ONCE);
-            CASE_THREAD_SLEEP_MS(16);
+            uv_run(conf.ev_loop, UV_RUN_NOWAIT);
+            CASE_THREAD_SLEEP_MS(8);
 
             atbus::endpoint *ep1 = node2->get_endpoint(node1->get_id());
             atbus::endpoint *ep2 = node1->get_endpoint(node2->get_id());
@@ -235,8 +235,8 @@ CASE_TEST(atbus_node_reg, custom_cmd) {
         node1->connect("ipv4://127.0.0.1:16388");
 
         for (int i = 0; i < 256; ++i) {
-            uv_run(conf.ev_loop, UV_RUN_ONCE);
-            CASE_THREAD_SLEEP_MS(16);
+            uv_run(conf.ev_loop, UV_RUN_NOWAIT);
+            CASE_THREAD_SLEEP_MS(8);
 
             atbus::endpoint *ep1 = node2->get_endpoint(node1->get_id());
             atbus::endpoint *ep2 = node1->get_endpoint(node2->get_id());
@@ -265,8 +265,8 @@ CASE_TEST(atbus_node_reg, custom_cmd) {
         CASE_EXPECT_EQ(0, node1->send_custom_cmd(node2->get_id(), custom_data, custom_len, 3));
 
         for (int i = 0; i < 256; ++i) {
-            uv_run(conf.ev_loop, UV_RUN_ONCE);
-            CASE_THREAD_SLEEP_MS(16);
+            uv_run(conf.ev_loop, UV_RUN_NOWAIT);
+            CASE_THREAD_SLEEP_MS(8);
             if (count != recv_msg_history.count) {
                 break;
             }
@@ -377,8 +377,8 @@ CASE_TEST(atbus_node_reg, parent_and_child) {
 
             node_parent->send_data(node_child->get_id(), 0, send_data.data(), send_data.size());
             for (int i = 0; i < 256; ++i) {
-                uv_run(conf.ev_loop, UV_RUN_ONCE);
-                CASE_THREAD_SLEEP_MS(16);
+                uv_run(conf.ev_loop, UV_RUN_NOWAIT);
+                CASE_THREAD_SLEEP_MS(8);
                 if (count != recv_msg_history.count) {
                     break;
                 }
@@ -395,8 +395,8 @@ CASE_TEST(atbus_node_reg, parent_and_child) {
             count = recv_msg_history.count;
             node_child->send_data(node_parent->get_id(), 0, send_data.data(), send_data.size());
             for (int i = 0; i < 256; ++i) {
-                uv_run(conf.ev_loop, UV_RUN_ONCE);
-                CASE_THREAD_SLEEP_MS(16);
+                uv_run(conf.ev_loop, UV_RUN_NOWAIT);
+                CASE_THREAD_SLEEP_MS(8);
                 if (count != recv_msg_history.count) {
                     break;
                 }
@@ -704,9 +704,7 @@ CASE_TEST(atbus_node_reg, transfer_failed) {
         CASE_EXPECT_EQ(EN_ATBUS_ERR_ATNODE_INVALID_ID, recv_msg_history.status);
     }
 
-    while (UV_EBUSY == uv_loop_close(&ev_loop)) {
-        uv_run(&ev_loop, UV_RUN_ONCE);
-    }
+    node_msg_test_setup_exit(&ev_loop);
 }
 
 // TODO 发送给已下线兄弟节点并失败的回复通知测试（网络失败）
