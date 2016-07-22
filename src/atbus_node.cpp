@@ -49,11 +49,11 @@ namespace atbus {
     }
 
     node::~node() {
-        ATBUS_FUNC_NODE_DEBUG(*this, NULL, NULL, NULL, "node destroyed");
-
         if (state_t::CREATED != state_) {
             reset();
         }
+
+        ATBUS_FUNC_NODE_DEBUG(*this, NULL, NULL, NULL, "node destroyed");
     }
 
     void node::default_conf(conf_t *conf) {
@@ -147,8 +147,7 @@ namespace atbus {
         {
             std::vector<auto_map_t::mapped_type> temp_vec;
             temp_vec.reserve(proc_connections_.size());
-            for (auto_map_t::iterator iter = proc_connections_.begin();
-                iter != proc_connections_.end(); ++iter) {
+            for (auto_map_t::iterator iter = proc_connections_.begin(); iter != proc_connections_.end(); ++iter) {
                 if (iter->second) {
                     temp_vec.push_back(iter->second);
                 }
@@ -339,7 +338,7 @@ namespace atbus {
         int loop_left = conf_.loop_times;
         size_t stat_dispatch = stat_.dispatch_times;
         while (iostream_channel_ && loop_left > 0 &&
-            EN_ATBUS_ERR_EV_RUN == channel::io_stream_run(get_iostream_channel(), adapter::RUN_NOWAIT)) {
+               EN_ATBUS_ERR_EV_RUN == channel::io_stream_run(get_iostream_channel(), adapter::RUN_NOWAIT)) {
             --loop_left;
         }
 
@@ -1060,7 +1059,7 @@ namespace atbus {
         return ret;
     }
 
-    int node::fatal_shutdown(const char *file_path, size_t line, const endpoint * ep, const connection * conn, int status, int errcode) {
+    int node::fatal_shutdown(const char *file_path, size_t line, const endpoint *ep, const connection *conn, int status, int errcode) {
         if (flags_.test(flag_t::EN_FT_SHUTDOWN)) {
             return 0;
         }

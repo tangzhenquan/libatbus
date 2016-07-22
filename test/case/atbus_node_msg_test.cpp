@@ -114,7 +114,7 @@ static void node_msg_test_setup_exit(uv_loop_t *ev) {
 }
 
 // 定时Ping Pong协议测试
-CASE_TEST(atbus_node_reg, ping_pong) {
+CASE_TEST(atbus_node_msg, ping_pong) {
     atbus::node::conf_t conf;
     atbus::node::default_conf(&conf);
     conf.children_mask = 16;
@@ -202,7 +202,7 @@ static int node_msg_test_recv_msg_test_custom_cmd_fn(const atbus::node &, const 
 }
 
 // 自定义命令协议测试
-CASE_TEST(atbus_node_reg, custom_cmd) {
+CASE_TEST(atbus_node_msg, custom_cmd) {
     atbus::node::conf_t conf;
     atbus::node::default_conf(&conf);
     conf.children_mask = 16;
@@ -279,7 +279,7 @@ CASE_TEST(atbus_node_reg, custom_cmd) {
 }
 
 // 发给自己
-CASE_TEST(atbus_node_reg, reset_and_send) {
+CASE_TEST(atbus_node_msg, reset_and_send) {
     atbus::node::conf_t conf;
     atbus::node::default_conf(&conf);
     conf.children_mask = 16;
@@ -317,7 +317,7 @@ CASE_TEST(atbus_node_reg, reset_and_send) {
 }
 
 // 父子节点消息转发测试
-CASE_TEST(atbus_node_reg, parent_and_child) {
+CASE_TEST(atbus_node_msg, parent_and_child) {
     atbus::node::conf_t conf;
     atbus::node::default_conf(&conf);
     conf.children_mask = 16;
@@ -410,7 +410,7 @@ CASE_TEST(atbus_node_reg, parent_and_child) {
 }
 
 // 兄弟节点通过父节点转发消息并建立直连测试（测试路由）
-CASE_TEST(atbus_node_reg, transfer_and_connect) {
+CASE_TEST(atbus_node_msg, transfer_and_connect) {
     atbus::node::conf_t conf;
     atbus::node::default_conf(&conf);
     conf.children_mask = 16;
@@ -499,7 +499,7 @@ CASE_TEST(atbus_node_reg, transfer_and_connect) {
 }
 
 // 兄弟节点通过多层父节点转发消息并不会建立直连测试
-CASE_TEST(atbus_node_reg, transfer_only) {
+CASE_TEST(atbus_node_msg, transfer_only) {
     atbus::node::conf_t conf;
     atbus::node::default_conf(&conf);
     conf.children_mask = 16;
@@ -600,7 +600,7 @@ CASE_TEST(atbus_node_reg, transfer_only) {
 }
 
 // 直连节点发送失败测试
-CASE_TEST(atbus_node_reg, send_failed) {
+CASE_TEST(atbus_node_msg, send_failed) {
     atbus::node::conf_t conf;
     atbus::node::default_conf(&conf);
     conf.children_mask = 16;
@@ -633,7 +633,7 @@ CASE_TEST(atbus_node_reg, send_failed) {
 
 // 发送给子节点转发失败的回复通知测试
 // 发送给父节点转发失败的回复通知测试
-CASE_TEST(atbus_node_reg, transfer_failed) {
+CASE_TEST(atbus_node_msg, transfer_failed) {
     atbus::node::conf_t conf;
     atbus::node::default_conf(&conf);
     conf.children_mask = 16;
