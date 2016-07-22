@@ -182,6 +182,7 @@ CASE_TEST(atbus_node_msg, ping_pong) {
             if (ep1->get_stat_last_pong() > 0 && ep2->get_stat_last_pong() > 0) {
                 break;
             }
+            CASE_THREAD_SLEEP_MS(4);
         }
     }
 
@@ -360,9 +361,11 @@ CASE_TEST(atbus_node_msg, parent_and_child) {
                 break;
             }
 
-            uv_run(conf.ev_loop, UV_RUN_ONCE);
-
-            ++proc_t;
+            uv_run(conf.ev_loop, UV_RUN_NOWAIT);
+            CASE_THREAD_SLEEP_MS(4);
+            if (0 == i % 10) {
+                ++proc_t;
+            }
         }
 
         node_child->set_on_recv_handle(node_msg_test_recv_msg_test_record_fn);
@@ -466,8 +469,11 @@ CASE_TEST(atbus_node_msg, transfer_and_connect) {
                 break;
             }
 
-            uv_run(conf.ev_loop, UV_RUN_ONCE);
-            ++proc_t;
+            uv_run(conf.ev_loop, UV_RUN_NOWAIT);
+            CASE_THREAD_SLEEP_MS(4);
+            if (0 == i % 10) {
+                ++proc_t;
+            }
         }
 
         // 转发消息
@@ -567,8 +573,11 @@ CASE_TEST(atbus_node_msg, transfer_only) {
                 break;
             }
 
-            uv_run(conf.ev_loop, UV_RUN_ONCE);
-            ++proc_t;
+            uv_run(conf.ev_loop, UV_RUN_NOWAIT);
+            CASE_THREAD_SLEEP_MS(4);
+            if (0 == i % 10) {
+                ++proc_t;
+            }
         }
 
         // 转发消息
@@ -680,9 +689,11 @@ CASE_TEST(atbus_node_msg, transfer_failed) {
                 break;
             }
 
-            uv_run(conf.ev_loop, UV_RUN_ONCE);
-
-            ++proc_t;
+            uv_run(conf.ev_loop, UV_RUN_NOWAIT);
+            CASE_THREAD_SLEEP_MS(4);
+            if (0 == i % 10) {
+                ++proc_t;
+            }
         }
 
         // 转发消息

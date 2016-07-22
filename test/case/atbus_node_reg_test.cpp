@@ -169,7 +169,8 @@ CASE_TEST(atbus_node_reg, reset_and_send) {
                 break;
             }
 
-            uv_run(conf.ev_loop, UV_RUN_ONCE);
+            uv_run(conf.ev_loop, UV_RUN_NOWAIT);
+            CASE_THREAD_SLEEP_MS(4);
         }
         CASE_EXPECT_EQ(check_ep_count + 2, recv_msg_history.add_endpoint_count);
 
@@ -188,8 +189,8 @@ CASE_TEST(atbus_node_reg, reset_and_send) {
         node1->send_data(node2->get_id(), 0, send_data.data(), send_data.size());
 
         for (int i = 0; i < 256; ++i) {
-            uv_run(conf.ev_loop, UV_RUN_ONCE);
-            CASE_THREAD_SLEEP_MS(16);
+            uv_run(conf.ev_loop, UV_RUN_NOWAIT);
+            CASE_THREAD_SLEEP_MS(8);
             if (count != recv_msg_history.count) {
                 break;
             }
@@ -205,7 +206,7 @@ CASE_TEST(atbus_node_reg, reset_and_send) {
 
         for (int i = 0; i < 256; ++i) {
             uv_run(conf.ev_loop, UV_RUN_NOWAIT);
-            CASE_THREAD_SLEEP_MS(16);
+            CASE_THREAD_SLEEP_MS(8);
 
             node1->poll();
             node2->poll();
@@ -271,7 +272,8 @@ CASE_TEST(atbus_node_reg, destruct) {
                 break;
             }
 
-            uv_run(conf.ev_loop, UV_RUN_ONCE);
+            uv_run(conf.ev_loop, UV_RUN_NOWAIT);
+            CASE_THREAD_SLEEP_MS(4);
         }
 
         for (int i = 0; i < 16; ++i) {
@@ -284,7 +286,7 @@ CASE_TEST(atbus_node_reg, destruct) {
 
         for (int i = 0; i < 256; ++i) {
             uv_run(conf.ev_loop, UV_RUN_NOWAIT);
-            CASE_THREAD_SLEEP_MS(16);
+            CASE_THREAD_SLEEP_MS(8);
 
             node2->poll();
             node2->proc(proc_t + 2 + i, 0);
@@ -353,7 +355,8 @@ CASE_TEST(atbus_node_reg, reg_success) {
                 break;
             }
 
-            uv_run(conf.ev_loop, UV_RUN_ONCE);
+            uv_run(conf.ev_loop, UV_RUN_NOWAIT);
+            CASE_THREAD_SLEEP_MS(4);
         }
         CASE_EXPECT_EQ(check_ep_count + 2, recv_msg_history.add_endpoint_count);
     }
