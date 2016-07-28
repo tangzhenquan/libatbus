@@ -77,6 +77,10 @@ namespace atbus {
     connection::~connection() {
         flags_.set(flag_t::DESTRUCTING, true);
 
+        if (NULL != owner_) {
+            ATBUS_FUNC_NODE_DEBUG(*owner_, get_binding(), this, NULL, "connection delocated");
+        }
+
         reset();
     }
 
@@ -90,9 +94,6 @@ namespace atbus {
         // 需要临时给自身加引用计数，否则后续移除的过程中可能导致数据被提前释放
         ptr_t tmp_holder = watcher_.lock();
 
-        if (NULL != owner_) {
-            ATBUS_FUNC_NODE_DEBUG(*owner_, get_binding(), this, NULL, "connection reset");
-        }
         disconnect();
 
         if (NULL != binding_) {
