@@ -58,6 +58,14 @@ static void node_reg_test_on_debug(const char *file_path, size_t line, const atb
 #endif
 }
 
+static int node_reg_test_on_error(const atbus::node &n, const atbus::endpoint *ep, const atbus::connection *conn, int status, int errcode) {
+    std::streamsize w = std::cout.width();
+    CASE_MSG_INFO() << "[Log Error] node=0x" << std::setfill('0') << std::hex << std::setw(8) << n.get_id() << ", ep=0x" << std::setw(8)
+                    << (NULL == ep ? 0 : ep->get_id()) << ", c=" << conn << std::setfill(' ') << std::setw(w) << std::dec
+                    << "=> status: " << status << ", errcode: " << errcode << std::endl;
+    return 0;
+}
+
 struct node_reg_test_recv_msg_record_t {
     const atbus::node *n;
     const atbus::endpoint *ep;
@@ -135,6 +143,8 @@ CASE_TEST(atbus_node_reg, reset_and_send) {
         atbus::node::ptr_t node2 = atbus::node::create();
         node1->on_debug = node_reg_test_on_debug;
         node2->on_debug = node_reg_test_on_debug;
+        node1->set_on_error_handle(node_reg_test_on_error);
+        node2->set_on_error_handle(node_reg_test_on_error);
 
         node1->init(0x12345678, &conf);
         node2->init(0x12356789, &conf);
@@ -248,6 +258,8 @@ CASE_TEST(atbus_node_reg, destruct) {
         atbus::node::ptr_t node2 = atbus::node::create();
         node1->on_debug = node_reg_test_on_debug;
         node2->on_debug = node_reg_test_on_debug;
+        node1->set_on_error_handle(node_reg_test_on_error);
+        node2->set_on_error_handle(node_reg_test_on_error);
 
         node1->init(0x12345678, &conf);
         node2->init(0x12356789, &conf);
@@ -321,6 +333,8 @@ CASE_TEST(atbus_node_reg, reg_success) {
         atbus::node::ptr_t node_child = atbus::node::create();
         node_parent->on_debug = node_reg_test_on_debug;
         node_child->on_debug = node_reg_test_on_debug;
+        node_parent->set_on_error_handle(node_reg_test_on_error);
+        node_child->set_on_error_handle(node_reg_test_on_error);
 
         node_parent->init(0x12345678, &conf);
 
@@ -401,6 +415,9 @@ CASE_TEST(atbus_node_reg, conflict) {
         node_parent->on_debug = node_reg_test_on_debug;
         node_child->on_debug = node_reg_test_on_debug;
         node_child_fail->on_debug = node_reg_test_on_debug;
+        node_parent->set_on_error_handle(node_reg_test_on_error);
+        node_child->set_on_error_handle(node_reg_test_on_error);
+        node_child_fail->set_on_error_handle(node_reg_test_on_error);
 
         node_parent->init(0x12345678, &conf);
 
@@ -470,6 +487,8 @@ CASE_TEST(atbus_node_reg, reconnect_father_failed) {
         atbus::node::ptr_t node_child = atbus::node::create();
         node_parent->on_debug = node_reg_test_on_debug;
         node_child->on_debug = node_reg_test_on_debug;
+        node_parent->set_on_error_handle(node_reg_test_on_error);
+        node_child->set_on_error_handle(node_reg_test_on_error);
 
         node_parent->init(0x12345678, &conf);
 

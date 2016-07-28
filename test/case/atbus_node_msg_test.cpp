@@ -47,6 +47,18 @@ static void node_msg_test_on_debug(const char *file_path, size_t line, const atb
     puts("");
 }
 
+static int node_msg_test_on_error(const atbus::node &n, const atbus::endpoint *ep, const atbus::connection *conn, int status, int errcode) {
+    if (0 == errcode || UV_EOF == errcode) {
+        return 0;
+    }
+
+    std::streamsize w = std::cout.width();
+    CASE_MSG_INFO() << "[Log Error] node=0x" << std::setfill('0') << std::hex << std::setw(8) << n.get_id() << ", ep=0x" << std::setw(8)
+                    << (NULL == ep ? 0 : ep->get_id()) << ", c=" << conn << std::setfill(' ') << std::setw(w) << std::dec
+                    << "=> status: " << status << ", errcode: " << errcode << std::endl;
+    return 0;
+}
+
 struct node_msg_test_recv_msg_record_t {
     const atbus::node *n;
     const atbus::endpoint *ep;
@@ -130,6 +142,8 @@ CASE_TEST(atbus_node_msg, ping_pong) {
         atbus::node::ptr_t node2 = atbus::node::create();
         node1->on_debug = node_msg_test_on_debug;
         node2->on_debug = node_msg_test_on_debug;
+        node1->set_on_error_handle(node_msg_test_on_error);
+        node2->set_on_error_handle(node_msg_test_on_error);
 
         node1->init(0x12345678, &conf);
         node2->init(0x12356789, &conf);
@@ -219,6 +233,8 @@ CASE_TEST(atbus_node_msg, custom_cmd) {
         atbus::node::ptr_t node2 = atbus::node::create();
         node1->on_debug = node_msg_test_on_debug;
         node2->on_debug = node_msg_test_on_debug;
+        node1->set_on_error_handle(node_msg_test_on_error);
+        node2->set_on_error_handle(node_msg_test_on_error);
 
         node1->init(0x12345678, &conf);
         node2->init(0x12356789, &conf);
@@ -294,6 +310,7 @@ CASE_TEST(atbus_node_msg, reset_and_send) {
     {
         atbus::node::ptr_t node1 = atbus::node::create();
         node1->on_debug = node_msg_test_on_debug;
+        node1->set_on_error_handle(node_msg_test_on_error);
 
         node1->init(0x12345678, &conf);
 
@@ -334,6 +351,8 @@ CASE_TEST(atbus_node_msg, parent_and_child) {
         atbus::node::ptr_t node_child = atbus::node::create();
         node_parent->on_debug = node_msg_test_on_debug;
         node_child->on_debug = node_msg_test_on_debug;
+        node_parent->set_on_error_handle(node_msg_test_on_error);
+        node_child->set_on_error_handle(node_msg_test_on_error);
 
         node_parent->init(0x12345678, &conf);
 
@@ -432,6 +451,9 @@ CASE_TEST(atbus_node_msg, transfer_and_connect) {
         node_parent->on_debug = node_msg_test_on_debug;
         node_child_1->on_debug = node_msg_test_on_debug;
         node_child_2->on_debug = node_msg_test_on_debug;
+        node_parent->set_on_error_handle(node_msg_test_on_error);
+        node_child_1->set_on_error_handle(node_msg_test_on_error);
+        node_child_2->set_on_error_handle(node_msg_test_on_error);
 
         node_parent->init(0x12345678, &conf);
 
@@ -522,6 +544,10 @@ CASE_TEST(atbus_node_msg, transfer_only) {
         node_parent_2->on_debug = node_msg_test_on_debug;
         node_child_1->on_debug = node_msg_test_on_debug;
         node_child_2->on_debug = node_msg_test_on_debug;
+        node_parent_1->set_on_error_handle(node_msg_test_on_error);
+        node_parent_2->set_on_error_handle(node_msg_test_on_error);
+        node_child_1->set_on_error_handle(node_msg_test_on_error);
+        node_child_2->set_on_error_handle(node_msg_test_on_error);
 
         node_parent_1->init(0x12345678, &conf);
         node_parent_2->init(0x12356789, &conf);
@@ -616,6 +642,7 @@ CASE_TEST(atbus_node_msg, send_failed) {
     {
         atbus::node::ptr_t node_parent = atbus::node::create();
         node_parent->on_debug = node_msg_test_on_debug;
+        node_parent->set_on_error_handle(node_msg_test_on_error);
         node_parent->init(0x12345678, &conf);
 
         CASE_EXPECT_EQ(EN_ATBUS_ERR_SUCCESS, node_parent->listen("ipv4://127.0.0.1:16387"));
@@ -652,6 +679,8 @@ CASE_TEST(atbus_node_msg, transfer_failed) {
         atbus::node::ptr_t node_child_1 = atbus::node::create();
         node_parent->on_debug = node_msg_test_on_debug;
         node_child_1->on_debug = node_msg_test_on_debug;
+        node_parent->set_on_error_handle(node_msg_test_on_error);
+        node_child_1->set_on_error_handle(node_msg_test_on_error);
 
         node_parent->init(0x12345678, &conf);
 

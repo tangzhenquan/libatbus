@@ -356,7 +356,6 @@ namespace atbus {
 
             // 网络错误
             if (nread < 0) {
-                channel->error_code = static_cast<int>(nread);
                 io_stream_channel_callback(io_stream_callback_evt_t::EN_FN_RECVED, channel, conn_raw_ptr, static_cast<int>(nread),
                                            EN_ATBUS_ERR_READ_FAILED, NULL, 0);
 
