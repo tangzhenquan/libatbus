@@ -275,6 +275,7 @@ namespace atbus {
          * @return 直连的端点，不存在则返回NULL
          */
         endpoint *get_endpoint(bus_id_t tid);
+        const endpoint *get_endpoint(bus_id_t tid) const;
 
         /**
          * @brief 添加目标端点

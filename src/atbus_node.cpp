@@ -667,6 +667,8 @@ namespace atbus {
         return NULL;
     }
 
+    const endpoint *node::get_endpoint(bus_id_t tid) const { return const_cast<node *>(this)->get_endpoint(tid); }
+
     int node::add_endpoint(endpoint::ptr_t ep) {
         if (!ep) {
             return EN_ATBUS_ERR_PARAMS;
@@ -783,7 +785,7 @@ namespace atbus {
             return false;
         }
 
-        endpoint *ep = get_endpoint(tid);
+        const endpoint *ep = get_endpoint(tid);
         if (NULL == ep) {
             return false;
         }
