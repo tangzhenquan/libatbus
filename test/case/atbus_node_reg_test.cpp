@@ -59,6 +59,10 @@ static void node_reg_test_on_debug(const char *file_path, size_t line, const atb
 }
 
 static int node_reg_test_on_error(const atbus::node &n, const atbus::endpoint *ep, const atbus::connection *conn, int status, int errcode) {
+    if (0 == errcode || UV_EOF == errcode) {
+        return 0;
+    }
+
     std::streamsize w = std::cout.width();
     CASE_MSG_INFO() << "[Log Error] node=0x" << std::setfill('0') << std::hex << std::setw(8) << n.get_id() << ", ep=0x" << std::setw(8)
                     << (NULL == ep ? 0 : ep->get_id()) << ", c=" << conn << std::setfill(' ') << std::setw(w) << std::dec
