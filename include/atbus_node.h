@@ -41,20 +41,14 @@ namespace atbus {
         typedef ATBUS_MACRO_BUSID_TYPE bus_id_t;
         struct conf_flag_t {
             enum type {
-                EN_CONF_GLOBAL_ROUTER,      /** 全局路由表 **/
+                EN_CONF_GLOBAL_ROUTER, /** 全局路由表 **/
                 EN_CONF_MAX
             };
         };
 
         /** 并没有非常复杂的状态切换，所以没有引入状态机 **/
         struct state_t {
-            enum type {
-                CREATED = 0,
-                INITED,
-                LOST_PARENT,
-                CONNECTING_PARENT,
-                RUNNING
-            };
+            enum type { CREATED = 0, INITED, LOST_PARENT, CONNECTING_PARENT, RUNNING };
         };
 
         struct flag_t {
@@ -296,6 +290,13 @@ namespace atbus {
          */
         int remove_endpoint(bus_id_t tid);
 
+        /**
+         * @brief 是否可以发送数据到对端(可以向对端发送数据)
+         * @param tid 目标端点ID
+         * @return 有则返回true
+         */
+        bool is_endpoint_available(bus_id_t tid) const;
+
     public:
         channel::io_stream_channel *get_iostream_channel();
 
@@ -523,7 +524,8 @@ namespace atbus {
 
 
 #define ATBUS_FUNC_NODE_ERROR(n, ep, conn, status, errorcode) (n).on_error(__FILE__, __LINE__, (ep), (conn), (status), (errorcode))
-#define ATBUS_FUNC_NODE_FATAL_SHUTDOWN(n, ep, conn, status, errorcode) (n).fatal_shutdown(__FILE__, __LINE__, (ep), (conn), (status), (errorcode))
+#define ATBUS_FUNC_NODE_FATAL_SHUTDOWN(n, ep, conn, status, errorcode) \
+    (n).fatal_shutdown(__FILE__, __LINE__, (ep), (conn), (status), (errorcode))
 
 #ifdef _MSC_VER
 #define ATBUS_FUNC_NODE_DEBUG(n, ep, conn, m, fmt, ...)                             \

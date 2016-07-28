@@ -220,9 +220,7 @@ namespace atbus {
         return EN_ATBUS_ERR_SUCCESS;
     }
 
-    uint32_t endpoint::get_flags() const {
-        return static_cast<uint32_t>(flags_.to_ulong());
-    }
+    uint32_t endpoint::get_flags() const { return static_cast<uint32_t>(flags_.to_ulong()); }
 
     endpoint::ptr_t endpoint::watch() const {
         if (flags_.test(flag_t::DESTRUCTING) || watcher_.expired()) {
@@ -277,7 +275,7 @@ namespace atbus {
             }
         }
 
-        // 按性能邮件及排序mem>shm>fd
+        // 按性能优先级排序mem>shm>fd
         if (false == ep->flags_.test(flag_t::CONNECTION_SORTED)) {
             ep->data_conn_.sort(sort_connection_cmp_fn);
             ep->flags_.set(flag_t::CONNECTION_SORTED, true);

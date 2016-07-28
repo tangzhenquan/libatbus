@@ -560,22 +560,19 @@ CASE_TEST(atbus_node_msg, transfer_only) {
             node_child_1->proc(proc_t, 0);
             node_child_2->proc(proc_t, 0);
 
-
-            atbus::endpoint *ep1 = node_child_1->get_endpoint(node_parent_1->get_id());
-            atbus::endpoint *ep2 = node_parent_1->get_endpoint(node_child_1->get_id());
-            atbus::endpoint *ep3 = node_child_2->get_endpoint(node_parent_2->get_id());
-            atbus::endpoint *ep4 = node_parent_2->get_endpoint(node_child_2->get_id());
-            atbus::endpoint *ep5 = node_parent_1->get_endpoint(node_parent_2->get_id());
-
-            if (NULL != ep1 && NULL != ep2 && NULL != ep3 && NULL != ep4 && NULL != ep5 && NULL != ep1->get_data_connection(ep2) &&
-                NULL != ep2->get_data_connection(ep1) && NULL != ep3->get_data_connection(ep4) && NULL != ep4->get_data_connection(ep3) &&
-                NULL != ep5->get_data_connection(ep3)) {
+            // is_endpoint_available
+            if (node_child_1->is_endpoint_available(node_parent_1->get_id()) &&
+                node_parent_1->is_endpoint_available(node_child_1->get_id()) &&
+                node_child_2->is_endpoint_available(node_parent_2->get_id()) &&
+                node_parent_2->is_endpoint_available(node_child_2->get_id()) &&
+                node_parent_1->is_endpoint_available(node_parent_2->get_id()) &&
+                node_parent_2->is_endpoint_available(node_parent_1->get_id())) {
                 break;
             }
 
             uv_run(conf.ev_loop, UV_RUN_NOWAIT);
             CASE_THREAD_SLEEP_MS(4);
-            if (0 == i % 10) {
+            if (0 == i % 32) {
                 ++proc_t;
             }
         }

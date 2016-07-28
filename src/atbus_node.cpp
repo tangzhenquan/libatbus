@@ -774,6 +774,23 @@ namespace atbus {
         return EN_ATBUS_ERR_ATNODE_INVALID_ID;
     }
 
+    bool node::is_endpoint_available(bus_id_t tid) const {
+        if (!flags_.test(flag_t::EN_FT_ACTIVED)) {
+            return false;
+        }
+
+        if (!self_) {
+            return false;
+        }
+
+        endpoint *ep = get_endpoint(tid);
+        if (NULL == ep) {
+            return false;
+        }
+
+        return NULL != self_->get_data_connection(ep);
+    }
+
     adapter::loop_t *node::get_evloop() {
         assert(state_t::CREATED != state_);
         if (NULL != ev_loop_) {
