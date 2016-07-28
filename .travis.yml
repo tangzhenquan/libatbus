@@ -79,7 +79,7 @@ before_install:
 
 install:
     - if [ "$TRAVIS_OS_NAME" == "linux" ] ; then sudo apt-get install -qq -y cmake; fi
-    - if [ "$TRAVIS_OS_NAME" == "osx" ] ; then brew upgrade cmake; fi
+    - if [ "$TRAVIS_OS_NAME" == "osx" ] ; then brew upgrade cmake; brew install --HEAD libuv; fi
 #   - if [ "$TRAVIS_OS_NAME" == "linux" ] && [ "$USE_CC" == "gcc-4.9" ] ; then sudo apt-get install -qq gcc-4.9-multilib g++-4.9-multilib; fi
 #   - if [ "$TRAVIS_OS_NAME" == "linux" ] && [ "$USE_CC" == "clang-3.7" ] ; then sudo apt-get install --allow-unauthenticated -qq clang-3.7; fi
 
@@ -94,15 +94,17 @@ before_script:
         rm -rf msgpack-$MSGPACK_VERSION msgpack-$MSGPACK_VERSION.tar.gz ;
     fi
   - if [ ! -e "$LIBUV_PREFIX/include/uv.h" ] || [ ! -e "$LIBUV_PREFIX/lib/libuv.so" ] ; then
-        mkdir -p "$LIBUV_PREFIX";
-        wget -c "http://dist.libuv.org/dist/v$LIBUV_VERSION/libuv-v$LIBUV_VERSION.tar.gz" -O libuv-v$LIBUV_VERSION.tar.gz;
-        tar -xvf libuv-v$LIBUV_VERSION.tar.gz;
-        cd libuv-v$LIBUV_VERSION ;
-        ./autogen.sh;
-        ./configure --prefix=$LIBUV_PREFIX --with-pic=yes --enable-shared=yes --enable-static=no;
-        make -j4 install;
-        cd -;
-        rm -rf libuv-v$LIBUV_VERSION libuv-v$LIBUV_VERSION ;
+        if [ "$TRAVIS_OS_NAME" == "linux" ] ; then
+          mkdir -p "$LIBUV_PREFIX";
+          wget -c "http://dist.libuv.org/dist/v$LIBUV_VERSION/libuv-v$LIBUV_VERSION.tar.gz" -O libuv-v$LIBUV_VERSION.tar.gz;
+          tar -xvf libuv-v$LIBUV_VERSION.tar.gz;
+          cd libuv-v$LIBUV_VERSION ;
+          ./autogen.sh;
+          ./configure --prefix=$LIBUV_PREFIX --with-pic=yes --enable-shared=yes --enable-static=no;
+          make -j4 install;
+          cd -;
+          rm -rf libuv-v$LIBUV_VERSION libuv-v$LIBUV_VERSION ;
+        fi
     fi
   - cd "$REPO_DIR";
 
@@ -110,8 +112,13 @@ script:
   - REPO_DIR=$PWD;
   - mkdir -p $REPO_DIR/build && cd $REPO_DIR/build ;
   - USE_MSGPACK_ROOT=$MSGPACK_PREFIX ;
-  - cmake .. -DCMAKE_C_COMPILER=$USE_CC -DCMAKE_CXX_COMPILER=$USE_CXX -DPROJECT_ENABLE_UNITTEST=ON -DPROJECT_ENABLE_SAMPLE=ON -DPROJECT_ENABLE_TOOLS=ON -DLIBUV_ROOT=$LIBUV_PREFIX -DMSGPACK_ROOT=$USE_MSGPACK_ROOT ;
-  - make -j4
+  - if [ "$TRAVIS_OS_NAME" == "linux" ] ; then
+      cmake .. -DCMAKE_C_COMPILER=$USE_CC -DCMAKE_CXX_COMPILER=$USE_CXX -DPROJECT_ENABLE_UNITTEST=ON -DPROJECT_ENABLE_SAMPLE=ON -DPROJECT_ENABLE_TOOLS=ON -DLIBUV_ROOT=$LIBUV_PREFIX -DMSGPACK_ROOT=$USE_MSGPACK_ROOT ;
+    else
+      cmake .. -DCMAKE_C_COMPILER=$USE_CC -DCMAKE_CXX_COMPILER=$USE_CXX -DPROJECT_ENABLE_UNITTEST=ON -DPROJECT_ENABLE_SAMPLE=ON -DPROJECT_ENABLE_TOOLS=ON -DMSGPACK_ROOT=$USE_MSGPACK_ROOT ;
+    fi
+  # - cmake .. -DCMAKE_C_COMPILER=$USE_CC -DCMAKE_CXX_COMPILER=$USE_CXX -DPROJECT_ENABLE_UNITTEST=ON -DPROJECT_ENABLE_SAMPLE=ON -DPROJECT_ENABLE_TOOLS=ON -DLIBUV_ROOT=$LIBUV_PREFIX -DMSGPACK_ROOT=$USE_MSGPACK_ROOT ;
+  - make -j4 ;
 
 after_success:
   - test/atbus_unit_test
