@@ -603,6 +603,7 @@ CASE_TEST(atbus_node_msg, transfer_only) {
 
         // 转发消息
         std::string send_data;
+        recv_msg_history.data.clear();
         send_data.assign("transfer through parent only\n", sizeof("transfer through parent only\n") - 1);
 
         int count = recv_msg_history.count;

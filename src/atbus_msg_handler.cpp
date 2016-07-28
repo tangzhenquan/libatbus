@@ -407,6 +407,7 @@ namespace atbus {
         if (NULL != conn && conn->check_flag(connection::flag_t::REG_FD)) {
             int ret = send_reg(ATBUS_CMD_NODE_REG_RSP, n, *conn, rsp_code, m.head.sequence);
             if (rsp_code < 0) {
+                ATBUS_FUNC_NODE_ERROR(n, ep, conn, ret, errcode);
                 conn->disconnect();
             }
 

@@ -141,6 +141,7 @@ namespace atbus {
             return EN_ATBUS_ERR_SUCCESS;
         }
         flags_.set(flag_t::EN_FT_RESETTING, true);
+        ATBUS_FUNC_NODE_DEBUG(*this, NULL, NULL, NULL, "node reset");
 
         // first save all connection, and then reset it
         typedef detail::auto_select_map<std::string, connection::ptr_t>::type auto_map_t;
