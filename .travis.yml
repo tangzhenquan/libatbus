@@ -5,6 +5,8 @@ env:
     - LANG="zh_CN.UTF-8"
     - MSGPACK_PREFIX=$HOME/prebuilt/msgpack-2.0.0 ;
     - MSGPACK_VERSION=2.0.0 ;
+    - LIBUV_PREFIX=$HOME/prebuilt/libuv-1.9.1 ;
+    - LIBUV_VERSION=1.9.1
 matrix:
   include:
     - os: osx
