@@ -72,10 +72,10 @@ static int node_msg_test_recv_msg_test_record_fn(const atbus::node &n, const atb
     if (NULL != buffer && len > 0) {
         recv_msg_history.data.assign(reinterpret_cast<const char *>(buffer), len);
         CASE_MSG_INFO() << "[Log Debug] node=0x" << std::setfill('0') << std::hex << std::setw(8) << n.get_id() << ", ep=0x" << std::setw(8)
-            << (NULL == ep ? 0 : ep->get_id()) << ", c=" << conn << std::setfill(' ') << std::setw(w) << std::dec << "\t"
-            << "recv message: ";
+                        << (NULL == ep ? 0 : ep->get_id()) << ", c=" << conn << std::setfill(' ') << std::setw(w) << std::dec << "\t"
+                        << "recv message: ";
         std::cout.write(reinterpret_cast<const char *>(buffer), len);
-        std::cout<< std::endl;
+        std::cout << std::endl;
     } else {
         recv_msg_history.data.clear();
         CASE_MSG_INFO() << "[Log Debug] node=0x" << std::setfill('0') << std::hex << std::setw(8) << n.get_id() << ", ep=0x" << std::setw(8)
@@ -461,16 +461,8 @@ CASE_TEST(atbus_node_msg, transfer_and_connect) {
             node_child_1->proc(proc_t, 0);
             node_child_2->proc(proc_t, 0);
 
-
-            atbus::endpoint *ep1 = node_child_1->get_endpoint(node_parent->get_id());
-            atbus::endpoint *ep2 = node_parent->get_endpoint(node_child_1->get_id());
-            atbus::endpoint *ep3 = node_parent->get_endpoint(node_child_2->get_id());
-
-            if (node_parent->is_endpoint_available(node_child_1->get_id()) &&
-                node_parent->is_endpoint_available(node_child_2->get_id()) &&
-                node_child_2->is_endpoint_available(node_parent->get_id()) &&
-                node_child_1->is_endpoint_available(node_parent->get_id())
-                ) {
+            if (node_parent->is_endpoint_available(node_child_1->get_id()) && node_parent->is_endpoint_available(node_child_2->get_id()) &&
+                node_child_2->is_endpoint_available(node_parent->get_id()) && node_child_1->is_endpoint_available(node_parent->get_id())) {
                 break;
             }
 
