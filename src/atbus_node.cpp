@@ -785,7 +785,7 @@ namespace atbus {
             return false;
         }
 
-        const endpoint *ep = get_endpoint(tid);
+        endpoint *ep = const_cast<endpoint *>(get_endpoint(tid));
         if (NULL == ep) {
             return false;
         }
