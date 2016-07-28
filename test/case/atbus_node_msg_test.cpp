@@ -72,8 +72,10 @@ static int node_msg_test_recv_msg_test_record_fn(const atbus::node &n, const atb
     if (NULL != buffer && len > 0) {
         recv_msg_history.data.assign(reinterpret_cast<const char *>(buffer), len);
         CASE_MSG_INFO() << "[Log Debug] node=0x" << std::setfill('0') << std::hex << std::setw(8) << n.get_id() << ", ep=0x" << std::setw(8)
-                        << (NULL == ep ? 0 : ep->get_id()) << ", c=" << conn << std::setfill(' ') << std::setw(w) << std::dec << "\t"
-                        << "recv message: " << reinterpret_cast<const char *>(buffer) << std::endl;
+            << (NULL == ep ? 0 : ep->get_id()) << ", c=" << conn << std::setfill(' ') << std::setw(w) << std::dec << "\t"
+            << "recv message: ";
+        std::cout.write(reinterpret_cast<const char *>(buffer), len);
+        std::cout<< std::endl;
     } else {
         recv_msg_history.data.clear();
         CASE_MSG_INFO() << "[Log Debug] node=0x" << std::setfill('0') << std::hex << std::setw(8) << n.get_id() << ", ep=0x" << std::setw(8)
@@ -310,7 +312,7 @@ CASE_TEST(atbus_node_msg, reset_and_send) {
         node1->set_on_recv_handle(node_msg_test_recv_msg_test_record_fn);
         node1->send_data(node1->get_id(), 0, send_data.data(), send_data.size());
 
-        CASE_EXPECT_EQ(count + 1, recv_msg_history.count)
+        CASE_EXPECT_EQ(count + 1, recv_msg_history.count);
         CASE_EXPECT_EQ(send_data, recv_msg_history.data);
     }
 
@@ -451,7 +453,7 @@ CASE_TEST(atbus_node_msg, transfer_and_connect) {
         node_child_2->set_on_recv_handle(node_msg_test_recv_msg_test_record_fn);
 
         // wait for register finished
-        for (int i = 0; i < 256; ++i) {
+        for (int i = 0; i < 512; ++i) {
             node_parent->poll();
             node_child_1->poll();
             node_child_2->poll();
@@ -464,14 +466,17 @@ CASE_TEST(atbus_node_msg, transfer_and_connect) {
             atbus::endpoint *ep2 = node_parent->get_endpoint(node_child_1->get_id());
             atbus::endpoint *ep3 = node_parent->get_endpoint(node_child_2->get_id());
 
-            if (NULL != ep1 && NULL != ep2 && NULL != ep3 && NULL != ep1->get_data_connection(ep2) &&
-                NULL != ep2->get_data_connection(ep3)) {
+            if (node_parent->is_endpoint_available(node_child_1->get_id()) &&
+                node_parent->is_endpoint_available(node_child_2->get_id()) &&
+                node_child_2->is_endpoint_available(node_parent->get_id()) &&
+                node_child_1->is_endpoint_available(node_parent->get_id())
+                ) {
                 break;
             }
 
             uv_run(conf.ev_loop, UV_RUN_NOWAIT);
             CASE_THREAD_SLEEP_MS(4);
-            if (0 == i % 10) {
+            if (0 == i % 32) {
                 ++proc_t;
             }
         }
@@ -481,11 +486,12 @@ CASE_TEST(atbus_node_msg, transfer_and_connect) {
         send_data.assign("transfer through parent\n", sizeof("transfer through parent\n") - 1);
 
         int count = recv_msg_history.count;
+        recv_msg_history.data.clear();
         node_child_1->send_data(node_child_2->get_id(), 0, send_data.data(), send_data.size());
         for (int i = 0; i < 256; ++i) {
             uv_run(conf.ev_loop, UV_RUN_NOWAIT);
             CASE_THREAD_SLEEP_MS(8);
-            if (count != recv_msg_history.count) {
+            if (count != recv_msg_history.count && !recv_msg_history.data.empty()) {
                 break;
             }
         }
@@ -672,7 +678,7 @@ CASE_TEST(atbus_node_msg, transfer_failed) {
         node_child_1->set_on_send_data_failed_handle(node_msg_test_send_data_failed_fn);
 
         // wait for register finished
-        for (int i = 0; i < 256; ++i) {
+        for (int i = 0; i < 512; ++i) {
             node_parent->poll();
             node_child_1->poll();
             node_parent->proc(proc_t, 0);
@@ -688,7 +694,7 @@ CASE_TEST(atbus_node_msg, transfer_failed) {
 
             uv_run(conf.ev_loop, UV_RUN_NOWAIT);
             CASE_THREAD_SLEEP_MS(4);
-            if (0 == i % 10) {
+            if (0 == i % 32) {
                 ++proc_t;
             }
         }
