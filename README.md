@@ -11,7 +11,7 @@ libatbus
 
 Gitter
 ------
-[![Gitter](https://badges.gitter.im/owt5008137/libatbus.svg)](https://gitter.im/owt5008137/libatbus?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
+[![Gitter](https://badges.gitter.im/atframework/common.svg)](https://gitter.im/atframework/common?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
 
 依赖
 ------
