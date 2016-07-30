@@ -1,10 +1,11 @@
-﻿#include <cstdio>
-#include <assert.h>
+﻿#include <assert.h>
 #include <cstddef>
+#include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <ctime>
 #include <stdint.h>
+
 
 #include "common/string_oprs.h"
 
@@ -164,6 +165,7 @@ namespace atbus {
             flags_.set(flag_t::ACCESS_SHARE_ADDR, true);
             flags_.set(flag_t::ACCESS_SHARE_HOST, true);
             state_ = state_t::CONNECTED;
+            ATBUS_FUNC_NODE_DEBUG(*owner_, get_binding(), this, NULL, "channel connected(listen)");
 
             return res;
         } else if (0 == UTIL_STRFUNC_STRNCASE_CMP("shm", address_.scheme.c_str(), 3)) {
@@ -190,6 +192,7 @@ namespace atbus {
             flags_.set(flag_t::REG_PROC, true);
             flags_.set(flag_t::ACCESS_SHARE_HOST, true);
             state_ = state_t::CONNECTED;
+            ATBUS_FUNC_NODE_DEBUG(*owner_, get_binding(), this, NULL, "channel connected(listen)");
 
             return res;
         } else {
@@ -249,8 +252,10 @@ namespace atbus {
             flags_.set(flag_t::REG_PROC, true);
             if (NULL == binding_) {
                 state_ = state_t::HANDSHAKING;
+                ATBUS_FUNC_NODE_DEBUG(*owner_, binding_, this, NULL, "channel handshaking(connect)");
             } else {
                 state_ = state_t::CONNECTED;
+                ATBUS_FUNC_NODE_DEBUG(*owner_, binding_, this, NULL, "channel connected(connect)");
             }
 
             return res;
@@ -279,8 +284,10 @@ namespace atbus {
             flags_.set(flag_t::REG_PROC, true);
             if (NULL == binding_) {
                 state_ = state_t::HANDSHAKING;
+                ATBUS_FUNC_NODE_DEBUG(*owner_, binding_, this, NULL, "channel handshaking(connect)");
             } else {
                 state_ = state_t::CONNECTED;
+                ATBUS_FUNC_NODE_DEBUG(*owner_, binding_, this, NULL, "channel connected(connect)");
             }
 
             return res;
@@ -348,19 +355,19 @@ namespace atbus {
     }
 
     int connection::push(const void *buffer, size_t s) {
-        ++ stat_.push_start_times;
+        ++stat_.push_start_times;
         stat_.push_start_size += s;
 
         if (state_t::CONNECTED != state_ && state_t::HANDSHAKING != state_) {
-            ++ stat_.push_failed_times;
-            stat_.push_failed_size += s; 
+            ++stat_.push_failed_times;
+            stat_.push_failed_size += s;
 
             return EN_ATBUS_ERR_NOT_INITED;
         }
 
         if (NULL == conn_data_.push_fn) {
-            ++ stat_.push_failed_times;
-            stat_.push_failed_size += s; 
+            ++stat_.push_failed_times;
+            stat_.push_failed_size += s;
 
             return EN_ATBUS_ERR_ACCESS_DENY;
         }
@@ -399,10 +406,14 @@ namespace atbus {
         if (status < 0) {
             ATBUS_FUNC_NODE_ERROR(*async_data->owner_node, async_data->conn->binding_, async_data->conn.get(), status, channel->error_code);
             async_data->conn->state_ = state_t::DISCONNECTED;
+            ATBUS_FUNC_NODE_DEBUG(*async_data->conn->owner_, async_data->conn->binding_, async_data->conn.get(), NULL,
+                                  "channel disconnected(listen callback)");
 
         } else {
             async_data->conn->flags_.set(flag_t::REG_FD, true);
             async_data->conn->state_ = state_t::CONNECTED;
+            ATBUS_FUNC_NODE_DEBUG(*async_data->conn->owner_, async_data->conn->binding_, async_data->conn.get(), NULL,
+                                  "channel connected(listen callback)");
 
             async_data->conn->conn_data_.shared.ios_fd.channel = channel;
             async_data->conn->conn_data_.shared.ios_fd.conn = connection;
@@ -430,8 +441,12 @@ namespace atbus {
             async_data->conn->flags_.set(flag_t::REG_FD, true);
             if (NULL == async_data->conn->binding_) {
                 async_data->conn->state_ = state_t::HANDSHAKING;
+                ATBUS_FUNC_NODE_DEBUG(*async_data->conn->owner_, async_data->conn->binding_, async_data->conn.get(), NULL,
+                                      "channel handshaking(connect callback)");
             } else {
                 async_data->conn->state_ = state_t::CONNECTED;
+                ATBUS_FUNC_NODE_DEBUG(*async_data->conn->owner_, async_data->conn->binding_, async_data->conn.get(), NULL,
+                                      "channel connected(connect callback)");
             }
 
             async_data->conn->conn_data_.shared.ios_fd.channel = channel;
@@ -441,8 +456,6 @@ namespace atbus {
             async_data->conn->conn_data_.push_fn = ios_push_fn;
             connection->data = async_data->conn.get();
 
-
-            ATBUS_FUNC_NODE_DEBUG(*async_data->owner_node, NULL, async_data->conn.get(), NULL, "connection connected");
             async_data->owner_node->on_new_connection(async_data->conn.get());
         }
 
@@ -468,8 +481,8 @@ namespace atbus {
         }
 
         // statistic
-        ++ conn->stat_.pull_times;
-        conn->stat_.pull_size += s; 
+        ++conn->stat_.pull_times;
+        conn->stat_.pull_size += s;
 
         // unpack
         msgpack::unpacked result;
@@ -511,8 +524,7 @@ namespace atbus {
     }
 
     void connection::iostream_on_connected(channel::io_stream_channel *channel, channel::io_stream_connection *conn_ios, int status,
-                                           void *buffer, size_t s) {
-    }
+                                           void *buffer, size_t s) {}
 
     void connection::iostream_on_disconnected(channel::io_stream_channel *channel, channel::io_stream_connection *conn_ios, int status,
                                               void *buffer, size_t s) {
@@ -528,25 +540,27 @@ namespace atbus {
     }
 
     void connection::iostream_on_written(channel::io_stream_channel *channel, channel::io_stream_connection *conn_ios, int status,
-                                           void *buffer, size_t s) {
+                                         void *buffer, size_t s) {
         node *n = reinterpret_cast<node *>(channel->data);
         assert(NULL != n);
         connection *conn = reinterpret_cast<connection *>(conn_ios->data);
 
-        if(EN_ATBUS_ERR_SUCCESS != status) {
+        if (EN_ATBUS_ERR_SUCCESS != status) {
             if (NULL != conn) {
-                ++ conn->stat_.push_failed_times;
+                ++conn->stat_.push_failed_times;
                 conn->stat_.push_failed_size += s;
 
-                ATBUS_FUNC_NODE_DEBUG(*n, conn->get_binding(), conn, NULL, "write data to %p failed, err=%d, status=%d", conn_ios, channel->error_code, status);
+                ATBUS_FUNC_NODE_DEBUG(*n, conn->get_binding(), conn, NULL, "write data to %p failed, err=%d, status=%d", conn_ios,
+                                      channel->error_code, status);
             } else {
-                ATBUS_FUNC_NODE_DEBUG(*n, NULL, conn, NULL, "write data to %p failed, err=%d, status=%d", conn_ios, channel->error_code, status);
+                ATBUS_FUNC_NODE_DEBUG(*n, NULL, conn, NULL, "write data to %p failed, err=%d, status=%d", conn_ios, channel->error_code,
+                                      status);
             }
 
             ATBUS_FUNC_NODE_ERROR(*n, NULL, conn, status, channel->error_code);
         } else {
-            if (NULL != conn) { 
-                ++ conn->stat_.push_success_times;
+            if (NULL != conn) {
+                ++conn->stat_.push_success_times;
                 conn->stat_.push_success_size += s;
 
                 ATBUS_FUNC_NODE_DEBUG(*n, conn->get_binding(), conn, NULL, "write data to %p success", conn_ios);
@@ -579,7 +593,7 @@ namespace atbus {
                 break;
             } else {
                 // statistic
-                ++ conn.stat_.pull_times;
+                ++conn.stat_.pull_times;
                 conn.stat_.pull_size += recv_len;
 
                 // unpack
@@ -602,10 +616,10 @@ namespace atbus {
     int connection::shm_push_fn(connection &conn, const void *buffer, size_t s) {
         int ret = channel::shm_send(conn.conn_data_.shared.shm.channel, buffer, s);
         if (ret >= 0) {
-            ++ conn.stat_.push_success_times;
+            ++conn.stat_.push_success_times;
             conn.stat_.push_success_size += s;
         } else {
-            ++ conn.stat_.push_failed_times;
+            ++conn.stat_.push_failed_times;
             conn.stat_.push_failed_size += s;
         }
 
@@ -635,7 +649,7 @@ namespace atbus {
                 break;
             } else {
                 // statistic
-                ++ conn.stat_.pull_times;
+                ++conn.stat_.pull_times;
                 conn.stat_.pull_size += recv_len;
 
                 // unpack
@@ -658,10 +672,10 @@ namespace atbus {
     int connection::mem_push_fn(connection &conn, const void *buffer, size_t s) {
         int ret = channel::mem_send(conn.conn_data_.shared.mem.channel, buffer, s);
         if (ret >= 0) {
-            ++ conn.stat_.push_success_times;
+            ++conn.stat_.push_success_times;
             conn.stat_.push_success_size += s;
         } else {
-            ++ conn.stat_.push_failed_times;
+            ++conn.stat_.push_failed_times;
             conn.stat_.push_failed_size += s;
         }
         return ret;
@@ -678,7 +692,7 @@ namespace atbus {
     int connection::ios_push_fn(connection &conn, const void *buffer, size_t s) {
         int ret = channel::io_stream_send(conn.conn_data_.shared.ios_fd.conn, buffer, s);
         if (ret < 0) {
-            ++ conn.stat_.push_failed_times;
+            ++conn.stat_.push_failed_times;
             conn.stat_.push_failed_size += s;
         }
         return ret;

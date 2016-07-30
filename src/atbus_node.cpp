@@ -322,6 +322,7 @@ namespace atbus {
                 if (*iter) {
                     if (false == (*iter)->is_available()) {
                         (*iter)->reset();
+                        ATBUS_FUNC_NODE_DEBUG(*this, (*iter).get(), NULL, NULL, "endpoint handshake timeout and reset");
                         remove_endpoint((*iter)->get_id());
                     }
                 }
