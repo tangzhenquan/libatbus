@@ -24,7 +24,7 @@ source_group_by_dir(PROJECT_TEST_SRC_LIST)
 set(EXECUTABLE_OUTPUT_PATH "${PROJECT_BINARY_DIR}/test")
 
 if (MINGW)
-    list(APPEND EXTENTION_LINK_LIB stdc++)
+    list(APPEND EXTENTION_LINK_LIB stdc++) 
 endif()
 
 add_executable(atbus_unit_test ${PROJECT_TEST_SRC_LIST})

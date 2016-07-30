@@ -113,6 +113,10 @@ namespace atbus {
     }
 
     int node::start() {
+        if (state_t::CREATED == state_) {
+            return EN_ATBUS_ERR_NOT_INITED;
+        }
+
         // 初始化时间
         event_timer_.sec = time(NULL);
 
@@ -225,6 +229,10 @@ namespace atbus {
         if (flags_.test(flag_t::EN_FT_SHUTDOWN)) {
             reset();
             return 1;
+        }
+
+        if (state_t::CREATED == state_) {
+            return EN_ATBUS_ERR_NOT_INITED;
         }
 
         int ret = 0;
