@@ -800,7 +800,7 @@ namespace atbus {
             return false;
         }
 
-        return NULL != self_->get_data_connection(ep);
+        return NULL != self_->get_data_connection(ep, false);
     }
 
     adapter::loop_t *node::get_evloop() {
@@ -1110,6 +1110,7 @@ namespace atbus {
         // 允许跳过未连接或握手完成的endpoint
         connection *ctl_conn = self_->get_ctrl_connection(&ep);
         if (NULL == ctl_conn) {
+            add_endpoint_fault(ep);
             return EN_ATBUS_ERR_SUCCESS;
         }
 
@@ -1119,6 +1120,11 @@ namespace atbus {
         if (res < 0) {
             add_endpoint_fault(ep);
             return res;
+        }
+
+        // no data channel is also a error
+        if (NULL == self_->get_data_connection(&ep, false)) {
+            add_endpoint_fault(ep);
         }
 
         ep.set_stat_ping(ping_seq);

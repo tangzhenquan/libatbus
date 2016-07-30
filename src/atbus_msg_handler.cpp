@@ -371,6 +371,8 @@ namespace atbus {
                 const protocol::channel_data &chan = m.body.reg->channels[i];
 
                 if (has_ios_listen && n.get_id() > ep->get_id()) {
+                    // wait peer to connect n, do not check and close endpoint
+                    has_data_conn = true;
                     if (0 != UTIL_STRFUNC_STRNCASE_CMP("mem:", chan.address.c_str(), 4) &&
                         0 != UTIL_STRFUNC_STRNCASE_CMP("shm:", chan.address.c_str(), 4)) {
                         continue;
@@ -384,10 +386,12 @@ namespace atbus {
                 }
 
                 // if n is not a temporary node, connect to other nodes
-                if (0 != n.get_id()) {
+                if (0 != n.get_id() && 0 != ep->get_id()) {
                     res = n.connect(chan.address.c_str(), ep);
                 } else {
                     res = 0;
+                    // temporary node also should not check and close endpoint
+                    has_data_conn = true;
                 }
                 if (res < 0) {
                     ATBUS_FUNC_NODE_ERROR(n, ep, conn, res, 0);

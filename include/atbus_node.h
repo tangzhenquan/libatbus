@@ -292,7 +292,8 @@ namespace atbus {
         int remove_endpoint(bus_id_t tid);
 
         /**
-         * @brief 是否可以发送数据到对端(可以向对端发送数据)
+         * @brief 是否有到对端的数据通道(可以向对端发送数据)
+         * @note 如果只有控制通道没有数据通道返回false
          * @param tid 目标端点ID
          * @return 有则返回true
          */

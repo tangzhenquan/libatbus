@@ -259,6 +259,10 @@ namespace atbus {
     }
 
     connection *endpoint::get_data_connection(endpoint *ep) const {
+        return get_data_connection(ep, true);
+    }
+
+    connection *endpoint::get_data_connection(endpoint *ep, bool reuse_ctrl) const {
         if (NULL == ep) {
             return NULL;
         }
@@ -299,7 +303,11 @@ namespace atbus {
             }
         }
 
-        return get_ctrl_connection(ep);
+        if (reuse_ctrl) {
+            return get_ctrl_connection(ep);
+        } else {
+            return NULL;
+        }
     }
 
     endpoint::stat_t::stat_t() : fault_count(0), unfinished_ping(0), ping_delay(0), last_pong_time(0) {}
