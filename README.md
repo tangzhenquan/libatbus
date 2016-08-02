@@ -21,9 +21,10 @@ Gitter
 > + Clang: 3.0 及以上 （建议 clang 3.4及以上）
 > + VC: 10 及以上 （建议VC 12及以上）
 
-+ [cmake](https://cmake.org/download/) 2.8.9 以上(建议 3.4 以上)
++ [cmake](https://cmake.org/download/) 3.1.0 以上(建议 3.4 以上)
 + [msgpack](https://github.com/msgpack/msgpack-c)（用于协议打解包,仅使用头文件）
 + [libuv](http://libuv.org/)（用于网络通道）
++ [atframe_utils](https://github.com/atframework/atframe_utils)（基础公共代码）
 
 
 Why not c?
@@ -85,7 +86,7 @@ Benchmark
 ------
 Linux下 GCC编译安装脚本(支持离线编译安装):
 
-1. [GCC 5.X.X](https://github.com/owent-utils/bash-shell/tree/master/GCC%20Installer/gcc-5)
+1. [GCC](https://github.com/owent-utils/bash-shell/tree/master/GCC%20Installer)
 2. [LLVM & Clang](https://github.com/owent-utils/bash-shell/tree/master/LLVM%26Clang%20Installer)
 
 LICENSE
