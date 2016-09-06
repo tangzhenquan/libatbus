@@ -548,6 +548,7 @@ namespace msgpack {
                     }
 
                     default: { // invalid cmd
+                        o.pack_nil();
                         break;
                     }
                     }
@@ -567,7 +568,7 @@ namespace msgpack {
                     v.head.msgpack_object(&o.via.map.ptr[0].val, o.zone);
 
                     // pack body using head.cmd
-                    o.via.map.ptr[1].key = msgpack::object(1);
+                    o.via.map.ptr[1].key = msgpack::object(2);
                     switch (v.head.cmd) {
 
                     case ATBUS_CMD_DATA_TRANSFORM_REQ:
@@ -628,6 +629,7 @@ namespace msgpack {
                     }
 
                     default: { // invalid cmd
+                        o.via.map.ptr[1].val = msgpack::object();
                         break;
                     }
                     }
