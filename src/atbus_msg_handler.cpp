@@ -164,7 +164,7 @@ namespace atbus {
         if (m.body.forward->to == n.get_id()) {
             ATBUS_FUNC_NODE_DEBUG(n, (NULL == conn ? NULL : conn->get_binding()), conn, &m, "node recv data length = %lld",
                                   static_cast<unsigned long long>(m.body.forward->content.size));
-            n.on_recv_data(conn->get_binding(), conn, &m.head, m.body.forward->content.ptr, m.body.forward->content.size);
+            n.on_recv_data(conn->get_binding(), conn, m, m.body.forward->content.ptr, m.body.forward->content.size);
 
             if (m.body.forward->check_flag(atbus::protocol::forward_data::FLAG_REQUIRE_RSP)) {
                 return send_transfer_rsp(n, m, EN_ATBUS_ERR_SUCCESS);

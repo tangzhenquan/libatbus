@@ -483,7 +483,7 @@ namespace atbus {
                 m.body.forward->set_flag(atbus::protocol::forward_data::FLAG_REQUIRE_RSP);
             }
 
-            on_recv_data(get_self_endpoint(), NULL, &m.head, buffer, s);
+            on_recv_data(get_self_endpoint(), NULL, m, buffer, s);
 
             // fake response
             if (require_rsp) {
@@ -962,13 +962,13 @@ namespace atbus {
         }
     }
 
-    void node::on_recv_data(const endpoint *ep, connection *conn, const protocol::msg_head *head, const void *buffer, size_t s) const {
+    void node::on_recv_data(const endpoint *ep, connection *conn, const protocol::msg& m, const void *buffer, size_t s) const {
         if (NULL == ep && NULL != conn) {
             ep = conn->get_binding();
         }
 
         if (event_msg_.on_recv_msg) {
-            event_msg_.on_recv_msg(std::cref(*this), ep, conn, head, buffer, s);
+            event_msg_.on_recv_msg(std::cref(*this), ep, conn, std::cref(m), buffer, s);
         }
     }
 
