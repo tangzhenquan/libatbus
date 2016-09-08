@@ -115,7 +115,7 @@ namespace atbus {
 
             char shm_file_name[64] = {0};
             // Use Global\\ prefix requires the SeCreateGlobalPrivilege privilege, so we do not use it
-            UTIL_STRFUNC_SNPRINTF(shm_file_name, sizeof(shm_file_name), "libatbus_win_shm_%ld.bus", shm_key);
+            UTIL_STRFUNC_SNPRINTF(shm_file_name, sizeof(shm_file_name), "Global\\libatbus_win_shm_%ld.bus", shm_key);
 
             // 首先尝试直接打开
             shm_record.handle = OpenFileMapping(FILE_MAP_ALL_ACCESS,         // read/write access

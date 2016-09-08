@@ -1550,7 +1550,7 @@ namespace atbus {
                 ::atbus::detail::buffer_block *preview_bb = NULL;
                 while (!connection->write_buffers.empty() && available_bytes > 0) {
                     ::atbus::detail::buffer_block *bb = connection->write_buffers.front();
-                    if (bb->raw_size() > available_bytes) {
+                    if (NULL == bb || bb->raw_size() > available_bytes) {
                         break;
                     }
 
