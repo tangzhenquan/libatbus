@@ -73,7 +73,7 @@ namespace atbus {
             return EN_ATBUS_ERR_BAD_DATA;
         }
 
-        ATBUS_FUNC_NODE_DEBUG(n, NULL == conn ? conn->get_binding() : NULL, conn, m, "node recv msg(cmd=%s, type=%d, sequence=%u, ret=%d)",
+        ATBUS_FUNC_NODE_DEBUG(n, NULL == conn ? NULL : conn->get_binding(), conn, m, "node recv msg(cmd=%s, type=%d, sequence=%u, ret=%d)",
                               detail::get_cmd_name(m->head.cmd), m->head.type, m->head.sequence, m->head.ret);
 
         if (m->head.cmd >= ATBUS_CMD_MAX || m->head.cmd <= 0) {
@@ -317,7 +317,8 @@ namespace atbus {
             std::bitset<endpoint::flag_t::MAX> reg_flags(m.body.reg->flags);
 
             if (n.is_child_node(m.body.reg->bus_id)) {
-                if (reg_flags.test(endpoint::flag_t::GLOBAL_ROUTER) && false == n.get_self_endpoint()->get_flag(endpoint::flag_t::GLOBAL_ROUTER)) {
+                if (reg_flags.test(endpoint::flag_t::GLOBAL_ROUTER) &&
+                    false == n.get_self_endpoint()->get_flag(endpoint::flag_t::GLOBAL_ROUTER)) {
                     rsp_code = EN_ATBUS_ERR_ACCESS_DENY;
 
                     ATBUS_FUNC_NODE_DEBUG(n, ep, conn, &m, "self has no global tree, children reg access deny");
@@ -358,9 +359,8 @@ namespace atbus {
             // 如果双方都有IOS通道，则ID小的连接ID大的
             bool has_ios_listen = false;
             for (std::list<std::string>::const_iterator iter = n.get_listen_list().begin();
-                !has_ios_listen && iter != n.get_listen_list().end(); ++iter) {
-                if (0 != UTIL_STRFUNC_STRNCASE_CMP("mem:", iter->c_str(), 4) &&
-                    0 != UTIL_STRFUNC_STRNCASE_CMP("shm:", iter->c_str(), 4)) {
+                 !has_ios_listen && iter != n.get_listen_list().end(); ++iter) {
+                if (0 != UTIL_STRFUNC_STRNCASE_CMP("mem:", iter->c_str(), 4) && 0 != UTIL_STRFUNC_STRNCASE_CMP("shm:", iter->c_str(), 4)) {
                     has_ios_listen = true;
                 }
             }
@@ -380,8 +380,7 @@ namespace atbus {
                 }
 
                 // unix sock only available in the same host
-                if (0 == UTIL_STRFUNC_STRNCASE_CMP("unix:", chan.address.c_str(), 5) &&
-                    ep->get_hostname() != n.get_hostname()) {
+                if (0 == UTIL_STRFUNC_STRNCASE_CMP("unix:", chan.address.c_str(), 5) && ep->get_hostname() != n.get_hostname()) {
                     continue;
                 }
 

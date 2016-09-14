@@ -10,10 +10,6 @@
 #include <stdint.h>
 #include <vector>
 
-#if defined(__cplusplus) && __cplusplus >= 201103L
-#include <type_traits>
-#endif
-
 namespace atbus {
     namespace detail {
         namespace fn {
@@ -98,10 +94,6 @@ namespace atbus {
             void *pointer_;
         };
 
-#if defined(__cplusplus) && __cplusplus >= 201103L
-        static_assert(std::is_pod<buffer_block>::value, "buffer_block must be pod");
-#endif
-
         /**
          * @brief buffer block manager, not thread safe
          */
@@ -181,6 +173,7 @@ namespace atbus {
 
             inline bool is_static_mode() const { return NULL != static_buffer_.buffer_; }
             inline bool is_dynamic_mode() const { return NULL == static_buffer_.buffer_; }
+
         private:
             buffer_block *static_front();
 

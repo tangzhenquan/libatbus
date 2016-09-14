@@ -117,7 +117,10 @@ namespace atbus {
 
             void *ret = ::malloc(ms);
             if (NULL != ret) {
-                create(ret, ms, s);
+                if (NULL == create(ret, ms, s)) {
+                    ::free(ret);
+                    return NULL;
+                }
             }
 
             return reinterpret_cast<buffer_block *>(ret);
@@ -613,7 +616,8 @@ namespace atbus {
                     pointer = fn::buffer_next(last_block->pointer_, last_block->size_);
                     last_block->size_ += s;
 
-                    assert(fn::buffer_next(static_buffer_.buffer_, static_buffer_.size_) >= fn::buffer_next(last_block, buffer_block::full_size(last_block->size_)));
+                    assert(fn::buffer_next(static_buffer_.buffer_, static_buffer_.size_) >=
+                           fn::buffer_next(last_block, buffer_block::full_size(last_block->size_)));
 
                     assign_tail(fn::buffer_next(last_block, buffer_block::full_size(last_block->size_)));
                 } else { // NN new_tail ... head NNNNNN old_tail ....
@@ -633,9 +637,9 @@ namespace atbus {
                     assign_tail(next_free);
 
                     // memory copy
-                    {   
+                    {
                         size_t tail_index = index_tail();
-                        buffer_block * relocated_block = reinterpret_cast<buffer_block *>(static_buffer_.buffer_);
+                        buffer_block *relocated_block = reinterpret_cast<buffer_block *>(static_buffer_.buffer_);
 
                         pointer = fn::buffer_next(relocated_block->data(), last_block->raw_size());
 
@@ -658,8 +662,7 @@ namespace atbus {
                 last_block->size_ += s;
 
                 assert(fn::buffer_next(last_block, buffer_block::full_size(last_block->size_)) < head);
-                assert(fn::buffer_next(last_block, buffer_block::full_size(last_block->size_)) ==
-                    fn::buffer_next(tail, fs));
+                assert(fn::buffer_next(last_block, buffer_block::full_size(last_block->size_)) == fn::buffer_next(tail, fs));
                 assign_tail(fn::buffer_next(last_block, buffer_block::full_size(last_block->size_)));
             }
 
@@ -715,7 +718,7 @@ namespace atbus {
                         return EN_ATBUS_ERR_MALLOC;
                     }
                     assert(next_free == fn::buffer_next(static_buffer_.buffer_, static_buffer_.size_));
-                    
+
                     head = reinterpret_cast<buffer_block *>(buffer_start);
                 }
 
@@ -863,7 +866,7 @@ namespace atbus {
                 return 0;
             }
 
-            buffer_block* block = dynamic_back();
+            buffer_block *block = dynamic_back();
             if (NULL == block) {
                 return EN_ATBUS_ERR_NO_DATA;
             }
@@ -892,7 +895,7 @@ namespace atbus {
                 return 0;
             }
 
-            buffer_block* block = dynamic_front();
+            buffer_block *block = dynamic_front();
             if (NULL == block) {
                 return EN_ATBUS_ERR_NO_DATA;
             }
