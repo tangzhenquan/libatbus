@@ -13,7 +13,7 @@ set(ATBUS_MACRO_DATA_ALIGN_TYPE "uint64_t" CACHE STRING "memory align type(used 
 set(ATBUS_MACRO_DATA_SMALL_SIZE 3072 CACHE STRING "small message buffer for io_stream channel(used to reduce memory copy when there are many small messages)")
 
 set(ATBUS_MACRO_HUGETLB_SIZE 4194304 CACHE STRING "huge page size in shared memory channel(unused now)")
-set(ATBUS_MACRO_MSG_LIMIT 65536 CACHE STRING "message size limie")
+set(ATBUS_MACRO_MSG_LIMIT 65536 CACHE STRING "message size limit")
 set(ATBUS_MACRO_CONNECTION_CONFIRM_TIMEOUT 30 CACHE STRING "connection confirm timeout")
 set(ATBUS_MACRO_CONNECTION_BACKLOG 128 CACHE STRING "tcp backlog")
 
