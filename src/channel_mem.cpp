@@ -197,6 +197,9 @@ namespace atbus {
          */
         static void mem_default_conf(mem_channel *channel) {
             assert(channel);
+            if (NULL == channel) {
+                return;
+            }
 
             channel->conf.conf_send_timeout_ms = 4;
             channel->conf.write_retry_times = 4; // 默认写序列错误重试4次

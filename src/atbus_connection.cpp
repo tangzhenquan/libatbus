@@ -24,19 +24,28 @@ namespace atbus {
 
             connection_async_data(node *o) : owner_node(o) {
                 assert(owner_node);
-                owner_node->ref_object(reinterpret_cast<void *>(this));
+                if (NULL != owner_node) {
+                    owner_node->ref_object(reinterpret_cast<void *>(this));
+                }
             }
 
             ~connection_async_data() { owner_node->unref_object(reinterpret_cast<void *>(this)); }
 
             connection_async_data(const connection_async_data &other) : owner_node(other.owner_node), conn(other.conn) {
                 assert(owner_node);
-                owner_node->ref_object(reinterpret_cast<void *>(this));
+
+                if (NULL != owner_node) {
+                    owner_node->ref_object(reinterpret_cast<void *>(this));
+                }
             }
 
             connection_async_data &operator=(const connection_async_data &other) {
                 assert(owner_node);
                 assert(other.owner_node);
+
+                if (NULL == owner_node || NULL == other.owner_node) {
+                    return *this;
+                }
 
                 if (owner_node != other.owner_node) {
                     owner_node->unref_object(reinterpret_cast<void *>(this));
@@ -466,7 +475,16 @@ namespace atbus {
                                          void *buffer, size_t s) {
 
         assert(channel && channel->data);
+        if (NULL == channel || NULL == channel->data) {
+            return;
+        }
+
         node *_this = reinterpret_cast<node *>(channel->data);
+        
+        assert(_this);
+        if (NULL == _this) {
+            return;
+        }
         connection *conn = reinterpret_cast<connection *>(conn_ios->data);
 
         if (status < 0 || NULL == buffer || s <= 0) {
@@ -490,7 +508,10 @@ namespace atbus {
         if (false == unpack(&result, *conn, m, buffer, s)) {
             return;
         }
-        _this->on_recv(conn, &m, status, channel->error_code);
+
+        if (NULL != _this) {
+            _this->on_recv(conn, &m, status, channel->error_code);
+        }
     }
 
     void connection::iostream_on_accepted(channel::io_stream_channel *channel, channel::io_stream_connection *conn_ios, int status,
@@ -543,6 +564,9 @@ namespace atbus {
                                          void *buffer, size_t s) {
         node *n = reinterpret_cast<node *>(channel->data);
         assert(NULL != n);
+        if (NULL == n) {
+            return;
+        }
         connection *conn = reinterpret_cast<connection *>(conn_ios->data);
 
         if (EN_ATBUS_ERR_SUCCESS != status) {
