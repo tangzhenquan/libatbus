@@ -17,7 +17,7 @@
 #include <set>
 #include <stdint.h>
 
-#ifdef _MSC_VER
+#if defined(_WIN32) || defined(__WIN32__) || defined(WIN32)
 #include <WinSock2.h>
 #endif
 
