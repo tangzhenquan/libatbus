@@ -108,7 +108,7 @@ namespace atbus {
 #ifdef _MSC_VER
             USES_CONVERSION;
 #endif
-
+            memset(&shm_record, 0, sizeof(shm_record));
             SYSTEM_INFO si;
             ::GetSystemInfo(&si);
             // size_t page_size = static_cast<std::size_t>(si.dwPageSize);
