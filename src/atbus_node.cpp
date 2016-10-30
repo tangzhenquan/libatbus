@@ -657,7 +657,7 @@ namespace atbus {
         }
 
         // 直连兄弟节点
-        if (is_brother_node(tid)) {
+        if (0 == get_id() || is_brother_node(tid)) {
             endpoint *res = find_child(node_brother_, tid);
             if (NULL != res && res->get_id() == tid) {
                 return res;
@@ -689,7 +689,7 @@ namespace atbus {
         }
 
         // 父节点单独判定，由于防止测试兄弟节点
-        if (ep->get_children_mask() > self_->get_children_mask() && ep->is_child_node(get_id())) {
+        if (0 != get_id() && ep->get_children_mask() > self_->get_children_mask() && ep->is_child_node(get_id())) {
             if (!node_father_.node_) {
                 node_father_.node_ = ep;
                 add_ping_timer(ep);
@@ -712,7 +712,7 @@ namespace atbus {
         }
 
         // 兄弟节点(父节点会被判为可能是兄弟节点)
-        if (is_brother_node(ep->get_id())) {
+        if (0 == get_id() || is_brother_node(ep->get_id())) {
             // event will be triggered in insert_child()
             if (insert_child(node_brother_, ep)) {
                 add_ping_timer(ep);
@@ -763,7 +763,7 @@ namespace atbus {
         }
 
         // 兄弟节点(父节点会被判为可能是兄弟节点)
-        if (is_brother_node(tid)) {
+        if (0 == get_id() || is_brother_node(tid)) {
             // event will be triggered in remove_child()
             if (remove_child(node_brother_, tid)) {
                 return EN_ATBUS_ERR_SUCCESS;
@@ -817,9 +817,18 @@ namespace atbus {
         return ev_loop_;
     }
 
-    bool node::is_child_node(bus_id_t id) const { return self_->is_child_node(id); }
+    bool node::is_child_node(bus_id_t id) const {
+        if (0 == get_id()) {
+            return false;
+        } 
+        return self_->is_child_node(id); 
+    }
 
     bool node::is_brother_node(bus_id_t id) const {
+        if (0 == get_id()) {
+            return true;
+        }
+
         if (node_father_.node_) {
             return self_->is_brother_node(id, node_father_.node_->get_children_mask());
         } else {
@@ -828,6 +837,10 @@ namespace atbus {
     }
 
     bool node::is_parent_node(bus_id_t id) const {
+        if (0 == get_id()) {
+            return false;
+        }
+        
         if (node_father_.node_) {
             return self_->is_parent_node(id, node_father_.node_->get_id(), node_father_.node_->get_children_mask());
         }
