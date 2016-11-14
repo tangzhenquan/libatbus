@@ -298,8 +298,8 @@ namespace atbus {
             // 老端点新增连接不需要创建新连接
             ep = n.get_endpoint(m.body.reg->bus_id);
             if (NULL != ep) {
-                // 检测机器名和进程号必须一致
-                if (ep->get_pid() != m.body.reg->pid || ep->get_hostname() != m.body.reg->hostname) {
+                // 检测机器名和进程号必须一致,自己是临时节点则不需要检查
+                if (0 != n.get_id() && (ep->get_pid() != m.body.reg->pid || ep->get_hostname() != m.body.reg->hostname)) {
                     res = EN_ATBUS_ERR_ATNODE_ID_CONFLICT;
                     ATBUS_FUNC_NODE_ERROR(n, ep, conn, res, 0);
                 } else if (false == ep->add_connection(conn, conn->check_flag(connection::flag_t::ACCESS_SHARE_HOST))) {
