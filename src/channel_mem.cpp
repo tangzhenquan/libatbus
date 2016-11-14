@@ -242,7 +242,7 @@ namespace atbus {
                 if (data_len) (*data_len) = channel->area_end_offset - channel->area_channel_offset + (char *)channel - data_;
             }
 
-            return (mem_node_head *)buf;
+            return (mem_node_head *)(void *)buf;
         }
 
         /**
@@ -263,7 +263,7 @@ namespace atbus {
             if (data_len)
                 (*data_len) = channel->area_end_offset - channel->area_channel_offset + (char *)channel - buf - mem_block::block_head_size;
 
-            return (mem_block_head *)buf;
+            return (mem_block_head *)(void *)buf;
         }
 
         /**
@@ -374,10 +374,11 @@ namespace atbus {
             head->channel.area_end_offset = head->channel.area_data_offset + head->channel.node_count * head->channel.node_size;
 
             // 配置初始化
-            if (NULL != conf)
-                memcpy(&head->channel.conf, &conf, sizeof(conf));
-            else
+            if (NULL != conf) {
+                memcpy(&head->channel.conf, conf, sizeof(*conf));
+            } else {
                 mem_default_conf(&head->channel);
+            }
 
             // 输出
             if (channel) *channel = &head->channel;
