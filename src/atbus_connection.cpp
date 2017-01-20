@@ -159,6 +159,7 @@ namespace atbus {
             }
 
             if (res < 0) {
+                ATBUS_FUNC_NODE_ERROR(*owner_, get_binding(), this, res, 0);
                 return res;
             }
 
@@ -187,6 +188,7 @@ namespace atbus {
             }
 
             if (res < 0) {
+                ATBUS_FUNC_NODE_ERROR(*owner_, get_binding(), this, res, 0);
                 return res;
             }
 
@@ -207,6 +209,7 @@ namespace atbus {
         } else {
             detail::connection_async_data *async_data = new detail::connection_async_data(owner_);
             if (NULL == async_data) {
+                ATBUS_FUNC_NODE_ERROR(*owner_, get_binding(), this, EN_ATBUS_ERR_MALLOC, 0);
                 return EN_ATBUS_ERR_MALLOC;
             }
             connection::ptr_t self = watcher_.lock();
@@ -215,6 +218,7 @@ namespace atbus {
             state_ = state_t::CONNECTING;
             int res = channel::io_stream_listen(owner_->get_iostream_channel(), address_, iostream_on_listen_cb, async_data, 0);
             if (res < 0) {
+                ATBUS_FUNC_NODE_ERROR(*owner_, get_binding(), this, res, owner_->get_iostream_channel()->error_code);
                 delete async_data;
                 return res;
             }
@@ -247,6 +251,7 @@ namespace atbus {
             }
 
             if (res < 0) {
+                ATBUS_FUNC_NODE_ERROR(*owner_, get_binding(), this, res, 0);
                 return res;
             }
 
@@ -278,6 +283,7 @@ namespace atbus {
             }
 
             if (res < 0) {
+                ATBUS_FUNC_NODE_ERROR(*owner_, get_binding(), this, res, 0);
                 return res;
             }
 
@@ -310,6 +316,7 @@ namespace atbus {
 
             detail::connection_async_data *async_data = new detail::connection_async_data(owner_);
             if (NULL == async_data) {
+                ATBUS_FUNC_NODE_ERROR(*owner_, get_binding(), this, EN_ATBUS_ERR_MALLOC, 0);
                 return EN_ATBUS_ERR_MALLOC;
             }
             connection::ptr_t self = watcher_.lock();
@@ -318,6 +325,7 @@ namespace atbus {
             state_ = state_t::CONNECTING;
             int res = channel::io_stream_connect(owner_->get_iostream_channel(), address_, iostream_on_connected_cb, async_data, 0);
             if (res < 0) {
+                ATBUS_FUNC_NODE_ERROR(*owner_, get_binding(), this, res, owner_->get_iostream_channel()->error_code);
                 delete async_data;
                 return res;
             }
@@ -480,7 +488,7 @@ namespace atbus {
         }
 
         node *_this = reinterpret_cast<node *>(channel->data);
-        
+
         assert(_this);
         if (NULL == _this) {
             return;
