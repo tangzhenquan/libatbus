@@ -263,7 +263,8 @@ namespace atbus {
             conn_data_.shared.mem.channel = mem_chann;
             conn_data_.shared.mem.buffer = reinterpret_cast<void *>(ad);
             conn_data_.shared.mem.len = conf.recv_buffer_size;
-            flags_.set(flag_t::REG_PROC, true);
+            // 仅在listen时要设置proc,否则同机器的同名通道离线会导致proc中断
+            // flags_.set(flag_t::REG_PROC, true);
             if (NULL == binding_) {
                 state_ = state_t::HANDSHAKING;
                 ATBUS_FUNC_NODE_DEBUG(*owner_, binding_, this, NULL, "channel handshaking(connect)");
@@ -296,7 +297,8 @@ namespace atbus {
             conn_data_.shared.shm.shm_key = shm_key;
             conn_data_.shared.shm.len = conf.recv_buffer_size;
 
-            flags_.set(flag_t::REG_PROC, true);
+            // 仅在listen时要设置proc,否则同机器的同名通道离线会导致proc中断
+            // flags_.set(flag_t::REG_PROC, true);
             if (NULL == binding_) {
                 state_ = state_t::HANDSHAKING;
                 ATBUS_FUNC_NODE_DEBUG(*owner_, binding_, this, NULL, "channel handshaking(connect)");

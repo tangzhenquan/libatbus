@@ -820,8 +820,8 @@ namespace atbus {
     bool node::is_child_node(bus_id_t id) const {
         if (0 == get_id()) {
             return false;
-        } 
-        return self_->is_child_node(id); 
+        }
+        return self_->is_child_node(id);
     }
 
     bool node::is_brother_node(bus_id_t id) const {
@@ -840,7 +840,7 @@ namespace atbus {
         if (0 == get_id()) {
             return false;
         }
-        
+
         if (node_father_.node_) {
             return self_->is_parent_node(id, node_father_.node_->get_id(), node_father_.node_->get_children_mask());
         }
@@ -868,6 +868,9 @@ namespace atbus {
         }
 
         // @see man gethostname
+        // 255 or less in posix standard
+        // 64 in linux(defined as HOST_NAME_MAX)
+        // 256 or less in windows(https://msdn.microsoft.com/en-us/library/windows/desktop/ms738527(v=vs.85).aspx)
         char buffer[256] = {0};
         if (0 == gethostname(buffer, sizeof(buffer))) {
             hn = buffer;
@@ -975,7 +978,7 @@ namespace atbus {
         }
     }
 
-    void node::on_recv_data(const endpoint *ep, connection *conn, const protocol::msg& m, const void *buffer, size_t s) const {
+    void node::on_recv_data(const endpoint *ep, connection *conn, const protocol::msg &m, const void *buffer, size_t s) const {
         if (NULL == ep && NULL != conn) {
             ep = conn->get_binding();
         }
