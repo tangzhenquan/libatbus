@@ -203,9 +203,11 @@ namespace atbus {
         iostream_channel_.reset(); // 这里结束后就不会再触发回调了
         iostream_conf_.reset();
 
-        if (NULL != ev_loop_) {
-            ev_loop_ = NULL;
-        }
+        // 不用重置ev_loop_，其他地方还可以用
+        // 只能通过init函数重新初始化来修改它
+        // if (NULL != ev_loop_) {
+        //     ev_loop_ = NULL;
+        // }
 
         if (NULL != static_buffer_) {
             detail::buffer_block::free(static_buffer_);
@@ -226,13 +228,14 @@ namespace atbus {
             event_timer_.usec = usec;
         }
 
+        if (state_t::CREATED == state_) {
+            return EN_ATBUS_ERR_NOT_INITED;
+        }
+
+        // stop action happened between previous proc and this one
         if (flags_.test(flag_t::EN_FT_SHUTDOWN)) {
             reset();
             return 1;
-        }
-
-        if (state_t::CREATED == state_) {
-            return EN_ATBUS_ERR_NOT_INITED;
         }
 
         int ret = 0;
@@ -340,6 +343,12 @@ namespace atbus {
             event_timer_.pending_check_list_.clear();
         }
 
+        // stop action happened in any callback
+        if (flags_.test(flag_t::EN_FT_SHUTDOWN)) {
+            reset();
+            return ret + 1;
+        }
+
         return ret;
     }
 
@@ -356,6 +365,10 @@ namespace atbus {
     }
 
     int node::listen(const char *addr_str) {
+        if (state_t::CREATED == state_) {
+            return EN_ATBUS_ERR_NOT_INITED;
+        }
+
         connection::ptr_t conn = connection::create(this);
         if (!conn) {
             return EN_ATBUS_ERR_MALLOC;
@@ -380,6 +393,10 @@ namespace atbus {
     }
 
     int node::connect(const char *addr_str) {
+        if (state_t::CREATED == state_) {
+            return EN_ATBUS_ERR_NOT_INITED;
+        }
+
         connection::ptr_t conn = connection::create(this);
         if (!conn) {
             return EN_ATBUS_ERR_MALLOC;
@@ -403,6 +420,10 @@ namespace atbus {
     }
 
     int node::connect(const char *addr_str, endpoint *ep) {
+        if (state_t::CREATED == state_) {
+            return EN_ATBUS_ERR_NOT_INITED;
+        }
+
         if (NULL == ep) {
             return EN_ATBUS_ERR_PARAMS;
         }
@@ -463,6 +484,10 @@ namespace atbus {
     }
 
     int node::send_data(bus_id_t tid, int type, const void *buffer, size_t s, bool require_rsp) {
+        if (state_t::CREATED == state_) {
+            return EN_ATBUS_ERR_NOT_INITED;
+        }
+
         if (s >= conf_.msg_size) {
             return EN_ATBUS_ERR_BUFF_LIMIT;
         }
@@ -520,6 +545,10 @@ namespace atbus {
     }
 
     int node::send_custom_cmd(bus_id_t tid, const void *arr_buf[], size_t arr_size[], size_t arr_count) {
+        if (state_t::CREATED == state_) {
+            return EN_ATBUS_ERR_NOT_INITED;
+        }
+
         size_t sum_len = sizeof(atbus::protocol::custom_command_data);
         for (size_t i = 0; i < arr_count; ++i) {
             sum_len += arr_size[i];
@@ -557,6 +586,10 @@ namespace atbus {
     }
 
     int node::send_msg(bus_id_t tid, atbus::protocol::msg &m, endpoint::get_connection_fn_t fn, endpoint **ep_out, connection **conn_out) {
+        if (state_t::CREATED == state_) {
+            return EN_ATBUS_ERR_NOT_INITED;
+        }
+
         if (tid == get_id()) {
             // head 里永远是发起方bus_id
             m.head.src_bus_id = get_id();
@@ -898,6 +931,10 @@ namespace atbus {
     }
 
     bool node::add_proc_connection(connection::ptr_t conn) {
+        if (state_t::CREATED == state_) {
+            return false;
+        }
+
         if (!conn || conn->get_address().address.empty() ||
             proc_connections_.end() != proc_connections_.find(conn->get_address().address)) {
             return false;
@@ -918,6 +955,10 @@ namespace atbus {
     }
 
     bool node::add_connection_timer(connection::ptr_t conn) {
+        if (state_t::CREATED == state_) {
+            return false;
+        }
+
         if (!conn) {
             return false;
         }
@@ -1094,11 +1135,12 @@ namespace atbus {
     }
 
     int node::shutdown(int reason) {
-        int ret = on_shutdown(reason);
-        if (0 == ret) {
-            flags_.set(flag_t::EN_FT_SHUTDOWN, true);
+        if (flags_.test(flag_t::EN_FT_SHUTDOWN)) {
+            return 0;
         }
-        return ret;
+    
+        flags_.set(flag_t::EN_FT_SHUTDOWN, true);
+        return on_shutdown(reason);
     }
 
     int node::fatal_shutdown(const char *file_path, size_t line, const endpoint *ep, const connection *conn, int status, int errcode) {
