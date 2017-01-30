@@ -1252,7 +1252,7 @@ namespace atbus {
             m.body.forward->content.size = bin_data.size() - sizeof(int) - msg_head_len;
             memcpy(&m.body.forward->flags, &bin_data[msg_head_len], sizeof(int));
 
-            on_recv(NULL, &m, 0, 0);
+            on_recv_data(get_self_endpoint(), NULL, m, m.body.forward->content.ptr, m.body.forward->content.size);
             ++ ret;
 
             // fake response
