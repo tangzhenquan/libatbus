@@ -369,7 +369,7 @@ static int node_msg_test_recv_and_send_msg_fn(const atbus::node &n, const atbus:
     sended_data.assign(reinterpret_cast<const char*>(buffer), len);
     sended_data += sended_data;
 
-    ::atbus::node* np = const_cast<::atbus::node* >(&n);
+    atbus::node* np = const_cast<atbus::node* >(&n);
     np->set_on_recv_handle(node_msg_test_recv_msg_test_record_fn);
     np->set_on_send_data_failed_handle(node_msg_test_recv_and_send_msg_on_failed_fn);
                      
