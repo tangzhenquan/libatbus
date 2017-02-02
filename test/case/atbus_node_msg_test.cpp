@@ -369,10 +369,11 @@ static int node_msg_test_recv_and_send_msg_fn(const atbus::node &n, const atbus:
     sended_data.assign(reinterpret_cast<const char*>(buffer), len);
     sended_data += sended_data;
 
-    const_cast<::atbus::node&>(n).set_on_recv_handle(node_msg_test_recv_msg_test_record_fn);
-    const_cast<::atbus::node&>(n).set_on_send_data_failed_handle(node_msg_test_recv_and_send_msg_on_failed_fn);
+    ::atbus::node* np = const_cast<::atbus::node* >(&n);
+    np->set_on_recv_handle(node_msg_test_recv_msg_test_record_fn);
+    np->set_on_send_data_failed_handle(node_msg_test_recv_and_send_msg_on_failed_fn);
                      
-    const_cast<::atbus::node&>(n).send_data(n.get_id(), 0, sended_data.c_str(), sended_data.size(), true);
+    np->send_data(n.get_id(), 0, sended_data.c_str(), sended_data.size(), true);
     return 0;
 }
 
