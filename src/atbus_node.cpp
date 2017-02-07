@@ -898,7 +898,11 @@ namespace atbus {
     }
 
     adapter::loop_t *node::get_evloop() {
-        assert(state_t::CREATED != state_);
+        // if just created, do not alloc new event loop
+        if(state_t::CREATED == state_) {
+            return ev_loop_;
+        }
+
         if (NULL != ev_loop_) {
             return ev_loop_;
         }
