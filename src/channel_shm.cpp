@@ -62,12 +62,14 @@ namespace atbus {
             HANDLE handle;
             LPCTSTR buffer;
             size_t size;
+            size_t reference_count;
         } shm_mapped_record_type;
 #else
         typedef struct {
             int shm_id;
             void *buffer;
             size_t size;
+            size_t reference_count;
         } shm_mapped_record_type;
 #endif
 
@@ -76,6 +78,13 @@ namespace atbus {
         static int shm_close_buffer(key_t shm_key) {
             std::map<key_t, shm_mapped_record_type>::iterator iter = shm_mapped_records.find(shm_key);
             if (shm_mapped_records.end() == iter) return EN_ATBUS_ERR_SHM_NOT_FOUND;
+
+            if (iter->second.reference_count > 1) {
+                -- iter->second.reference_count;
+                return EN_ATBUS_ERR_SUCCESS;
+            } else {
+                iter->second.reference_count = 0;
+            }
 
             shm_mapped_record_type record = iter->second;
             shm_mapped_records.erase(iter);
@@ -91,7 +100,7 @@ namespace atbus {
             return EN_ATBUS_ERR_SUCCESS;
         }
 
-        static int shm_get_buffer(key_t shm_key, size_t len, void **data, size_t *real_size, bool create) {
+        static int shm_open_buffer(key_t shm_key, size_t len, void **data, size_t *real_size, bool create) {
             shm_mapped_record_type shm_record;
 
             // 已经映射则直接返回
@@ -100,6 +109,7 @@ namespace atbus {
                 if (shm_mapped_records.end() != iter) {
                     if (data) *data = (void *)iter->second.buffer;
                     if (real_size) *real_size = iter->second.size;
+                    ++ iter->second.reference_count;
                     return EN_ATBUS_ERR_SUCCESS;
                 }
             }
@@ -136,6 +146,7 @@ namespace atbus {
                 if (real_size) *real_size = len;
 
                 shm_record.size = len;
+                shm_record.reference_count = 1;
                 shm_mapped_records[shm_key] = shm_record;
                 return EN_ATBUS_ERR_SUCCESS;
             }
@@ -160,6 +171,7 @@ namespace atbus {
             if (NULL == shm_record.buffer) return EN_ATBUS_ERR_SHM_GET_FAILED;
 
             shm_record.size = len;
+            shm_record.reference_count = 1;
             shm_mapped_records[shm_key] = shm_record;
 
             if (data) *data = (void *)shm_record.buffer;
@@ -205,6 +217,7 @@ namespace atbus {
 
             // 获取地址
             shm_record.buffer = shmat(shm_record.shm_id, NULL, 0);
+            shm_record.reference_count = 1;
             shm_mapped_records[shm_key] = shm_record;
 
             if (data) *data = shm_record.buffer;
@@ -224,7 +237,7 @@ namespace atbus {
 
             size_t real_size;
             void *buffer;
-            int ret = shm_get_buffer(shm_key, len, &buffer, &real_size, false);
+            int ret = shm_open_buffer(shm_key, len, &buffer, &real_size, false);
             if (ret < 0) return ret;
 
             ret = mem_attach(buffer, real_size, &channel_s.mem, conf_s.mem);
@@ -245,7 +258,7 @@ namespace atbus {
 
             size_t real_size;
             void *buffer;
-            int ret = shm_get_buffer(shm_key, len, &buffer, &real_size, true);
+            int ret = shm_open_buffer(shm_key, len, &buffer, &real_size, true);
             if (ret < 0) return ret;
 
             ret = mem_init(buffer, real_size, &channel_s.mem, conf_s.mem);

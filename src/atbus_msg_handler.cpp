@@ -379,8 +379,23 @@ namespace atbus {
                     }
                 }
 
-                // unix sock only available in the same host
-                if (0 == UTIL_STRFUNC_STRNCASE_CMP("unix:", chan.address.c_str(), 5) && ep->get_hostname() != n.get_hostname()) {
+                bool check_hostname = false;
+                bool check_pid = false;
+
+                // unix sock and shm only available in the same host
+                if (0 == UTIL_STRFUNC_STRNCASE_CMP("unix:", chan.address.c_str(), 5) || 0 == UTIL_STRFUNC_STRNCASE_CMP("shm:", chan.address.c_str(), 4)) {
+                    check_hostname = true;
+                } else if (0 == UTIL_STRFUNC_STRNCASE_CMP("mem:", chan.address.c_str(), 4)) {
+                    check_pid = true;
+                }
+
+                // check hostname
+                if ((check_hostname || check_pid) && ep->get_hostname() != n.get_hostname()) {
+                    continue;
+                }
+
+                // check pid
+                if (check_pid && ep->get_pid() != n.get_pid()) {
                     continue;
                 }
 
