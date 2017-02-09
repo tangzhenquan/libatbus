@@ -79,6 +79,7 @@ namespace atbus {
             std::map<key_t, shm_mapped_record_type>::iterator iter = shm_mapped_records.find(shm_key);
             if (shm_mapped_records.end() == iter) return EN_ATBUS_ERR_SHM_NOT_FOUND;
 
+            assert(iter->second.reference_count > 0);
             if (iter->second.reference_count > 1) {
                 -- iter->second.reference_count;
                 return EN_ATBUS_ERR_SUCCESS;
