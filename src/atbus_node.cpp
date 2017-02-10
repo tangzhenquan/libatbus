@@ -34,8 +34,7 @@
 #include "detail/libatbus_protocol.h"
 
 namespace atbus {
-    node::flag_guard_t::flag_guard_t(const node* o, flag_t::type f): owner(const_cast<node*>(o)), 
-        flag(f), holder(false) {
+    node::flag_guard_t::flag_guard_t(const node *o, flag_t::type f) : owner(const_cast<node *>(o)), flag(f), holder(false) {
         if (owner && !owner->flags_.test(flag)) {
             holder = true;
             owner->flags_.set(flag, true);
@@ -43,7 +42,7 @@ namespace atbus {
     }
 
     node::flag_guard_t::~flag_guard_t() {
-        if((*this) && owner) {
+        if ((*this) && owner) {
             owner->flags_.set(flag, false);
         }
     }
@@ -166,7 +165,8 @@ namespace atbus {
 
         // dispatch all self msgs
         {
-            while(dispatch_all_self_msgs() > 0);
+            while (dispatch_all_self_msgs() > 0)
+                ;
         }
 
         // first save all connection, and then reset it
@@ -617,18 +617,20 @@ namespace atbus {
         }
 
         if (tid == get_id()) {
-            if(!((ATBUS_CMD_DATA_TRANSFORM_REQ == m.head.cmd && m.body.forward) || (ATBUS_CMD_CUSTOM_CMD_REQ == m.head.cmd && m.body.custom))) {
+            if (!((ATBUS_CMD_DATA_TRANSFORM_REQ == m.head.cmd && m.body.forward) ||
+                  (ATBUS_CMD_CUSTOM_CMD_REQ == m.head.cmd && m.body.custom))) {
                 ATBUS_FUNC_NODE_ERROR(*this, get_self_endpoint(), NULL, EN_ATBUS_ERR_ATNODE_INVALID_ID, 0);
             }
 
-            assert((ATBUS_CMD_DATA_TRANSFORM_REQ == m.head.cmd && m.body.forward) || (ATBUS_CMD_CUSTOM_CMD_REQ == m.head.cmd && m.body.custom));
+            assert((ATBUS_CMD_DATA_TRANSFORM_REQ == m.head.cmd && m.body.forward) ||
+                   (ATBUS_CMD_CUSTOM_CMD_REQ == m.head.cmd && m.body.custom));
             typedef std::vector<unsigned char> bin_data_block_t;
 
-            const size_t msg_head_len = sizeof(::atbus::protocol::msg_head); 
+            const size_t msg_head_len = sizeof(::atbus::protocol::msg_head);
             // self data msg
             if (ATBUS_CMD_DATA_TRANSFORM_REQ == m.head.cmd && m.body.forward) {
                 self_data_msgs_.push_back(bin_data_block_t());
-                bin_data_block_t& bin_data = self_data_msgs_.back();
+                bin_data_block_t &bin_data = self_data_msgs_.back();
                 bin_data.resize(sizeof(int) + msg_head_len + m.body.forward->content.size);
                 memcpy(&bin_data[0], &m.head, msg_head_len);
                 memcpy(&bin_data[msg_head_len], &m.body.forward->flags, sizeof(int));
@@ -638,17 +640,17 @@ namespace atbus {
             // self command msg
             if (ATBUS_CMD_CUSTOM_CMD_REQ == m.head.cmd && m.body.custom) {
                 self_cmd_msgs_.push_back(std::vector<bin_data_block_t>());
-                std::vector<bin_data_block_t>& cmds = self_cmd_msgs_.back();
+                std::vector<bin_data_block_t> &cmds = self_cmd_msgs_.back();
                 cmds.reserve(1 + m.body.custom->commands.size());
                 cmds.push_back(bin_data_block_t());
-                bin_data_block_t& head_data = cmds.back();
+                bin_data_block_t &head_data = cmds.back();
                 head_data.resize(msg_head_len);
                 memcpy(&head_data[0], &m.head, msg_head_len);
 
-                for (size_t i = 0; i < m.body.custom->commands.size(); ++ i) {
-                    const ::atbus::protocol::bin_data_block& src_cmd_param = m.body.custom->commands[i];
+                for (size_t i = 0; i < m.body.custom->commands.size(); ++i) {
+                    const ::atbus::protocol::bin_data_block &src_cmd_param = m.body.custom->commands[i];
                     cmds.push_back(bin_data_block_t());
-                    bin_data_block_t& bin_data = cmds.back();
+                    bin_data_block_t &bin_data = cmds.back();
                     bin_data.resize(src_cmd_param.size);
                     memcpy(&bin_data[0], src_cmd_param.ptr, src_cmd_param.size);
                 }
@@ -899,7 +901,7 @@ namespace atbus {
 
     adapter::loop_t *node::get_evloop() {
         // if just created, do not alloc new event loop
-        if(state_t::CREATED == state_) {
+        if (state_t::CREATED == state_) {
             return ev_loop_;
         }
 
@@ -1213,7 +1215,7 @@ namespace atbus {
         if (flags_.test(flag_t::EN_FT_SHUTDOWN)) {
             return 0;
         }
-    
+
         flags_.set(flag_t::EN_FT_SHUTDOWN, true);
         return on_shutdown(reason);
     }
@@ -1244,10 +1246,10 @@ namespace atbus {
         const size_t msg_head_len = sizeof(::atbus::protocol::msg_head);
 
         typedef std::vector<unsigned char> bin_data_block_t;
-        while (loop_left -- > 0 && !self_data_msgs_.empty()) {
-            bin_data_block_t& bin_data = self_data_msgs_.front();
+        while (loop_left-- > 0 && !self_data_msgs_.empty()) {
+            bin_data_block_t &bin_data = self_data_msgs_.front();
             atbus::protocol::msg m;
-            // copy head 
+            // copy head
             memcpy(&m.head, &bin_data[0], msg_head_len);
 
             // fake body
@@ -1260,7 +1262,7 @@ namespace atbus {
             memcpy(&m.body.forward->flags, &bin_data[msg_head_len], sizeof(int));
 
             on_recv_data(get_self_endpoint(), NULL, m, m.body.forward->content.ptr, m.body.forward->content.size);
-            ++ ret;
+            ++ret;
 
             // fake response
             if (NULL != m.body.forward && m.body.forward->check_flag(atbus::protocol::forward_data::FLAG_REQUIRE_RSP)) {
@@ -1275,8 +1277,8 @@ namespace atbus {
             self_data_msgs_.pop_front();
         }
 
-        while (loop_left -- > 0 && !self_cmd_msgs_.empty()) {
-            std::vector<bin_data_block_t>& bin_datas = self_cmd_msgs_.front();
+        while (loop_left-- > 0 && !self_cmd_msgs_.empty()) {
+            std::vector<bin_data_block_t> &bin_datas = self_cmd_msgs_.front();
             atbus::protocol::msg m;
             // fake body
             protocol::custom_command_data data;
@@ -1288,18 +1290,18 @@ namespace atbus {
                     assert(!bin_datas.empty() && msg_head_len == bin_datas[0].size());
                     break;
                 }
-                // copy head 
+                // copy head
                 memcpy(&m.head, &bin_datas[0][0], msg_head_len);
                 m.body.custom->commands.resize(bin_datas.size() - 1);
-                for(size_t i = 1; i < bin_datas.size(); ++ i) {
+                for (size_t i = 1; i < bin_datas.size(); ++i) {
                     m.body.custom->commands[i - 1].ptr = &bin_datas[i][0];
                     m.body.custom->commands[i - 1].size = bin_datas[i].size();
                 }
 
                 on_recv(NULL, &m, 0, 0);
-                ++ ret;
+                ++ret;
 
-            } while(false);
+            } while (false);
 
             // remove reference
             m.body.custom = NULL;

@@ -81,7 +81,7 @@ namespace atbus {
 
             assert(iter->second.reference_count > 0);
             if (iter->second.reference_count > 1) {
-                -- iter->second.reference_count;
+                --iter->second.reference_count;
                 return EN_ATBUS_ERR_SUCCESS;
             } else {
                 iter->second.reference_count = 0;
@@ -110,7 +110,7 @@ namespace atbus {
                 if (shm_mapped_records.end() != iter) {
                     if (data) *data = (void *)iter->second.buffer;
                     if (real_size) *real_size = iter->second.size;
-                    ++ iter->second.reference_count;
+                    ++iter->second.reference_count;
                     return EN_ATBUS_ERR_SUCCESS;
                 }
             }

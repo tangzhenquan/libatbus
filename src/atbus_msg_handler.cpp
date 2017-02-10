@@ -383,7 +383,8 @@ namespace atbus {
                 bool check_pid = false;
 
                 // unix sock and shm only available in the same host
-                if (0 == UTIL_STRFUNC_STRNCASE_CMP("unix:", chan.address.c_str(), 5) || 0 == UTIL_STRFUNC_STRNCASE_CMP("shm:", chan.address.c_str(), 4)) {
+                if (0 == UTIL_STRFUNC_STRNCASE_CMP("unix:", chan.address.c_str(), 5) ||
+                    0 == UTIL_STRFUNC_STRNCASE_CMP("shm:", chan.address.c_str(), 4)) {
                     check_hostname = true;
                 } else if (0 == UTIL_STRFUNC_STRNCASE_CMP("mem:", chan.address.c_str(), 4)) {
                     check_pid = true;

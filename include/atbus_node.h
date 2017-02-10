@@ -13,11 +13,11 @@
 #include <bitset>
 #include <cstddef>
 #include <ctime>
+#include <list>
 #include <map>
 #include <set>
 #include <stdint.h>
 #include <vector>
-#include <list>
 
 #if defined(_WIN32) || defined(__WIN32__) || defined(WIN32)
 #include <WinSock2.h>
@@ -90,7 +90,7 @@ namespace atbus {
         typedef std::map<bus_id_t, endpoint::ptr_t> endpoint_collection_t;
 
         struct evt_msg_t {
-            typedef std::function<int(const node &, const endpoint *, const connection *, const protocol::msg&, const void *, size_t)>
+            typedef std::function<int(const node &, const endpoint *, const connection *, const protocol::msg &, const void *, size_t)>
                 on_recv_msg_fn_t;
             typedef std::function<int(const node &, const endpoint *, const connection *, const protocol::msg *m)> on_send_data_failed_fn_t;
             typedef std::function<int(const node &, const endpoint *, const connection *, int, int)> on_error_fn_t;
@@ -117,15 +117,13 @@ namespace atbus {
         };
 
         struct flag_guard_t {
-            node* owner;
+            node *owner;
             flag_t::type flag;
             bool holder;
-            flag_guard_t(const node* o, flag_t::type f);
+            flag_guard_t(const node *o, flag_t::type f);
             ~flag_guard_t();
 
-            inline operator bool () {
-                return holder;
-            }
+            inline operator bool() { return holder; }
         };
 
         // ================== 用这个来取代C++继承，减少层次结构 ==================
@@ -365,7 +363,7 @@ namespace atbus {
 
         void on_recv(connection *conn, protocol::msg *m, int status, int errcode);
 
-        void on_recv_data(const endpoint *ep, connection *conn, const protocol::msg& m, const void *buffer, size_t s) const;
+        void on_recv_data(const endpoint *ep, connection *conn, const protocol::msg &m, const void *buffer, size_t s) const;
 
         void on_send_data_failed(const endpoint *, const connection *, const protocol::msg *m);
 
