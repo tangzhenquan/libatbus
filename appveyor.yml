@@ -152,17 +152,17 @@ install:
 
                 if ( "$Env:CMAKE_GEN" -ieq "MinGW32" ) {
 
-                    echo "$Env:MSYS2_PREFIX/mingw32_shell -lc cd '$Env:PKG_SRC_ROOT/libuv-v$Env:LIBUV_VERSION' && ./autogen.sh ; ./configure --prefix=$Env:LIBUV_ROOT --with-pic=yes --enable-shared=no --enable-static=yes ; make install"
+                    echo "$Env:MSYS2_PREFIX/msys2_shell -mingw32 -lc cd '$Env:PKG_SRC_ROOT/libuv-v$Env:LIBUV_VERSION' && ./autogen.sh ; ./configure --prefix=$Env:LIBUV_ROOT --with-pic=yes --enable-shared=no --enable-static=yes ; make install"
 
-                    & "$Env:MSYS2_PREFIX/mingw32_shell" -lc "cd '$Env:PKG_SRC_ROOT/libuv-v$Env:LIBUV_VERSION' && ./autogen.sh > '$Env:MSYS2_LOG_FILE' 2>&1; ./configure --prefix=$Env:LIBUV_ROOT --with-pic=yes --enable-shared=no --enable-static=yes >> '$Env:MSYS2_LOG_FILE' 2>&1; make install >> '$Env:MSYS2_LOG_FILE' 2>&1" | Out-Host
+                    & "$Env:MSYS2_PREFIX/msys2_shell" -mingw32 -lc "cd '$Env:PKG_SRC_ROOT/libuv-v$Env:LIBUV_VERSION' && ./autogen.sh > '$Env:MSYS2_LOG_FILE' 2>&1; ./configure --prefix=$Env:LIBUV_ROOT --with-pic=yes --enable-shared=no --enable-static=yes >> '$Env:MSYS2_LOG_FILE' 2>&1; make install >> '$Env:MSYS2_LOG_FILE' 2>&1" | Out-Host
 
                     Get-Content "$Env:MSYS2_LOG_FILE"
 
                 } else {
 
-                    echo "$Env:MSYS2_PREFIX/mingw64_shell -lc cd '$Env:PKG_SRC_ROOT/libuv-v$Env:LIBUV_VERSION' && ./autogen.sh ; ./configure --prefix=$Env:LIBUV_ROOT --with-pic=yes --enable-shared=no --enable-static=yes ; make install"
+                    echo "$Env:MSYS2_PREFIX/msys2_shell -mingw64 -lc cd '$Env:PKG_SRC_ROOT/libuv-v$Env:LIBUV_VERSION' && ./autogen.sh ; ./configure --prefix=$Env:LIBUV_ROOT --with-pic=yes --enable-shared=no --enable-static=yes ; make install"
 
-                    & "$Env:MSYS2_PREFIX/mingw64_shell" -lc "cd '$Env:PKG_SRC_ROOT/libuv-v$Env:LIBUV_VERSION' && ./autogen.sh  > '$Env:MSYS2_LOG_FILE' 2>&1; ./configure --prefix=$Env:LIBUV_ROOT --with-pic=yes --enable-shared=no --enable-static=yes >> '$Env:MSYS2_LOG_FILE' 2>&1; make install >> '$Env:MSYS2_LOG_FILE' 2>&1" | Out-Host
+                    & "$Env:MSYS2_PREFIX/msys2_shell" -mingw64 -lc "cd '$Env:PKG_SRC_ROOT/libuv-v$Env:LIBUV_VERSION' && ./autogen.sh  > '$Env:MSYS2_LOG_FILE' 2>&1; ./configure --prefix=$Env:LIBUV_ROOT --with-pic=yes --enable-shared=no --enable-static=yes >> '$Env:MSYS2_LOG_FILE' 2>&1; make install >> '$Env:MSYS2_LOG_FILE' 2>&1" | Out-Host
 
                     Get-Content "$Env:MSYS2_LOG_FILE"
                 }
@@ -218,17 +218,17 @@ build_script:
 
             if ( "$Env:CMAKE_GEN" -ieq "MinGW32" ) {
 
-                echo "$Env:MSYS2_PREFIX/mingw32_shell -lc cd '$Env:APPVEYOR_BUILD_FOLDER/build'; mkdir build cmake .. -G 'MSYS Makefiles' -DLIBUV_ROOT='$Env:LIBUV_ROOT' -DPROJECT_ENABLE_UNITTEST=ON -DPROJECT_ENABLE_SAMPLE=ON -DPROJECT_ENABLE_TOOLS=ON ; make -j4"
+                echo "$Env:MSYS2_PREFIX/msys2_shell -mingw32 -lc cd '$Env:APPVEYOR_BUILD_FOLDER/build'; mkdir build cmake .. -G 'MSYS Makefiles' -DLIBUV_ROOT='$Env:LIBUV_ROOT' -DPROJECT_ENABLE_UNITTEST=ON -DPROJECT_ENABLE_SAMPLE=ON -DPROJECT_ENABLE_TOOLS=ON ; make -j4"
 
-                & "$Env:MSYS2_PREFIX/mingw32_shell" -lc "cd '$Env:APPVEYOR_BUILD_FOLDER/build'; cmake .. -G 'MSYS Makefiles' -DLIBUV_ROOT='$Env:LIBUV_ROOT' -DPROJECT_ENABLE_UNITTEST=ON -DPROJECT_ENABLE_SAMPLE=ON -DPROJECT_ENABLE_TOOLS=ON > '$Env:MSYS2_LOG_FILE' 2>&1; make -j4 >> '$Env:MSYS2_LOG_FILE' 2>&1" | Out-Host
+                & "$Env:MSYS2_PREFIX/msys2_shell" -mingw32 -lc "cd '$Env:APPVEYOR_BUILD_FOLDER/build'; cmake .. -G 'MSYS Makefiles' -DLIBUV_ROOT='$Env:LIBUV_ROOT' -DPROJECT_ENABLE_UNITTEST=ON -DPROJECT_ENABLE_SAMPLE=ON -DPROJECT_ENABLE_TOOLS=ON > '$Env:MSYS2_LOG_FILE' 2>&1; make -j4 >> '$Env:MSYS2_LOG_FILE' 2>&1" | Out-Host
 
                 Get-Content "$Env:MSYS2_LOG_FILE"
 
             } else {
 
-                echo "$Env:MSYS2_PREFIX/mingw64_shell -lc cd '$Env:APPVEYOR_BUILD_FOLDER/build'; cmake .. -G 'MSYS Makefiles' -DLIBUV_ROOT='$Env:LIBUV_ROOT' -DPROJECT_ENABLE_UNITTEST=ON -DPROJECT_ENABLE_SAMPLE=ON -DPROJECT_ENABLE_TOOLS=ON ; make -j4"
+                echo "$Env:MSYS2_PREFIX/msys2_shell -mingw64 -lc cd '$Env:APPVEYOR_BUILD_FOLDER/build'; cmake .. -G 'MSYS Makefiles' -DLIBUV_ROOT='$Env:LIBUV_ROOT' -DPROJECT_ENABLE_UNITTEST=ON -DPROJECT_ENABLE_SAMPLE=ON -DPROJECT_ENABLE_TOOLS=ON ; make -j4"
 
-                & "$Env:MSYS2_PREFIX/mingw64_shell" -lc "cd '$Env:APPVEYOR_BUILD_FOLDER/build'; cmake ..  -G 'MSYS Makefiles' -DLIBUV_ROOT='$Env:LIBUV_ROOT' -DPROJECT_ENABLE_UNITTEST=ON -DPROJECT_ENABLE_SAMPLE=ON -DPROJECT_ENABLE_TOOLS=ON  > '$Env:MSYS2_LOG_FILE' 2>&1; make -j4 >> '$Env:MSYS2_LOG_FILE' 2>&1" | Out-Host
+                & "$Env:MSYS2_PREFIX/msys2_shell" -mingw64 -lc "cd '$Env:APPVEYOR_BUILD_FOLDER/build'; cmake ..  -G 'MSYS Makefiles' -DLIBUV_ROOT='$Env:LIBUV_ROOT' -DPROJECT_ENABLE_UNITTEST=ON -DPROJECT_ENABLE_SAMPLE=ON -DPROJECT_ENABLE_TOOLS=ON  > '$Env:MSYS2_LOG_FILE' 2>&1; make -j4 >> '$Env:MSYS2_LOG_FILE' 2>&1" | Out-Host
 
                 Get-Content "$Env:MSYS2_LOG_FILE"
 
@@ -264,17 +264,17 @@ test_script:
             <#
             if ( "$Env:CMAKE_GEN" -ieq "MinGW32" ) {
 
-                echo "$Env:MSYS2_PREFIX/mingw32_shell -lc cd '$Env:APPVEYOR_BUILD_FOLDER/build'; ./test/atbus_unit_test.exe"
+                echo "$Env:MSYS2_PREFIX/msys2_shell -mingw32 -lc cd '$Env:APPVEYOR_BUILD_FOLDER/build'; ./test/atbus_unit_test.exe"
 
-                & "$Env:MSYS2_PREFIX/mingw32_shell" -lc "cd '$Env:APPVEYOR_BUILD_FOLDER/build'; ./test/atbus_unit_test.exe > '$Env:MSYS2_LOG_FILE' 2>&1" | Out-Host
+                & "$Env:MSYS2_PREFIX/msys2_shell" -mingw32 -lc "cd '$Env:APPVEYOR_BUILD_FOLDER/build'; ./test/atbus_unit_test.exe > '$Env:MSYS2_LOG_FILE' 2>&1" | Out-Host
 
                 Get-Content "$Env:MSYS2_LOG_FILE"
 
             } else {
 
-                echo "$Env:MSYS2_PREFIX/mingw64_shell -lc cd '$Env:APPVEYOR_BUILD_FOLDER/build'; ./test/atbus_unit_test.exe"
+                echo "$Env:MSYS2_PREFIX/msys2_shell -mingw64 -lc cd '$Env:APPVEYOR_BUILD_FOLDER/build'; ./test/atbus_unit_test.exe"
 
-                & "$Env:MSYS2_PREFIX/mingw64_shell" -lc "cd '$Env:APPVEYOR_BUILD_FOLDER/build'; ./test/atbus_unit_test.exe > '$Env:MSYS2_LOG_FILE' 2>&1" | Out-Host
+                & "$Env:MSYS2_PREFIX/msys2_shell" -mingw64 -lc "cd '$Env:APPVEYOR_BUILD_FOLDER/build'; ./test/atbus_unit_test.exe > '$Env:MSYS2_LOG_FILE' 2>&1" | Out-Host
 
                 Get-Content "$Env:MSYS2_LOG_FILE"
 
