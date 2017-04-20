@@ -11,6 +11,15 @@
 #include <numeric>
 #include <thread>
 
+#ifndef _MSC_VER
+
+#include <sys/types.h>
+#include <unistd.h>
+
+#else
+#pragma comment(lib, "Ws2_32.lib")
+#endif
+
 #include "config/compiler_features.h"
 #include "detail/libatbus_channel_export.h"
 #include <detail/libatbus_error.h>
@@ -21,6 +30,15 @@
 #endif
 
 #if defined(UTIL_CONFIG_COMPILER_CXX_LAMBDAS) && UTIL_CONFIG_COMPILER_CXX_LAMBDAS
+
+
+static int test_get_pid() {
+#ifdef _MSC_VER
+    return _getpid();
+#else
+    return getpid();
+#endif
+}
 
 int main(int argc, char *argv[]) {
     if (argc < 2) {
@@ -50,21 +68,23 @@ int main(int argc, char *argv[]) {
     size_t sum_send_times = 0;
     size_t sum_send_full = 0;
     size_t sum_send_err = 0;
-    size_t sum_seq = ((size_t)rand() << (sizeof(size_t) * 4));
+    char sum_seq = (char)rand() + 1;
+    int pid = test_get_pid();
 
+    if (!sum_seq) {
+        ++sum_seq;
+    }
     // 创建写线程
     std::thread *write_threads = new std::thread([&] {
-        size_t *buf_pool = new size_t[max_n];
+        char *buf_pool = new char[max_n * sizeof(size_t)];
         int sleep_msec = 8;
 
         while (true) {
             size_t n = rand() % max_n; // 最大 4K-8K的包
             if (0 == n) n = 1;         // 保证一定有数据包，保证收发次数一致
 
-            for (size_t i = 0; i < n; ++i) {
-                buf_pool[i] = sum_seq;
-            }
-
+            *((int *)buf_pool) = pid;
+            memset(buf_pool + sizeof(int), (int)sum_seq, n * sizeof(size_t) - sizeof(int));
             int res = shm_send(channel, buf_pool, n * sizeof(size_t));
 
             if (res) {
@@ -86,7 +106,11 @@ int main(int argc, char *argv[]) {
             } else {
                 ++sum_send_times;
                 sum_send_len += n * sizeof(size_t);
+
                 ++sum_seq;
+                if (!sum_seq) {
+                    ++sum_seq;
+                }
 
                 if (sleep_msec > 8) sleep_msec /= 2;
             }
@@ -123,6 +147,8 @@ int main(int argc, char *argv[]) {
 
     write_threads->join();
     delete write_threads;
+
+    return 0;
 }
 
 #else

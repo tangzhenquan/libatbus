@@ -455,6 +455,7 @@ namespace atbus {
 
                 for (size_t i = mem_next_index(channel, write_cur, 1); i != new_write_cur; i = mem_next_index(channel, i, 1)) {
                     mem_node_head *this_node_head = mem_get_node_head(channel, i, NULL, NULL);
+                    assert((char *)this_node_head < (char *)channel + channel->area_data_offset);
 
                     // 写数据node出现冲突
                     if (this_node_head->operation_seq) {
