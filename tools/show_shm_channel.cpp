@@ -24,7 +24,12 @@ int main(int argc, char *argv[]) {
 
     using namespace atbus::channel;
     shm_channel *channel = NULL;
-    key_t shm_key = (key_t)strtol(argv[1], NULL, 10);
+    key_t shm_key;
+    if ('0' == *argv[1] && *(argv[1] + 1) && ('x' == *(argv[1] + 1) || 'X' == *(argv[1] + 1))) {
+        shm_key = (key_t)strtol(argv[1] + 2, NULL, 16);
+    } else {
+        shm_key = (key_t)strtol(argv[1], NULL, 10);
+    }
     long need_node_info = 0;
     size_t need_node_data = 0;
 
