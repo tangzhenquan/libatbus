@@ -39,6 +39,10 @@
 #define ATBUS_MACRO_DATA_ALIGN_TYPE size_t
 #endif
 
+#ifndef ATBUS_MACRO_DATA_MAX_PROTECT_SIZE
+#define ATBUS_MACRO_DATA_MAX_PROTECT_SIZE (16 * 1024)
+#endif
+
 #define MEM_CHANNEL_NAME "ATBUSMEM"
 
 namespace atbus {
@@ -210,6 +214,11 @@ namespace atbus {
                     (channel->conf.protect_memory_size + mem_block::node_data_size - 1) / mem_block::node_data_size;
             } else if (!channel->conf.protect_node_count) {
                 channel->conf.protect_node_count = channel->node_count >> 7;
+
+                // protect at most 16KB
+                if (channel->conf.protect_node_count > ATBUS_MACRO_DATA_MAX_PROTECT_SIZE / mem_block::node_data_size) {
+                    channel->conf.protect_node_count = ATBUS_MACRO_DATA_MAX_PROTECT_SIZE / mem_block::node_data_size;
+                }
             }
 
             if (channel->conf.protect_node_count > channel->node_count) channel->conf.protect_node_count = channel->node_count;
@@ -725,9 +734,15 @@ namespace atbus {
                     mem_node_head *node_head = mem_get_node_head(channel, i, &data_ptr, NULL);
                     bool start_node = check_flag(node_head->flag, MF_START_NODE);
 
-                    out << "Node index: " << std::setw(10) << i << " => seq=" << node_head->operation_seq
-                        << ", is start node=" << (start_node ? "Yes" : " No")
-                        << ", is written=" << (check_flag(node_head->flag, MF_WRITEN) ? "Yes" : " No") << ", data(Hex): ";
+                    if (start_node) {
+                        mem_block_head *block_head = mem_get_block_head(channel, i, NULL, NULL);
+                        out << "Node index: " << std::setw(10) << i << " => seq=" << node_head->operation_seq << ", is start node=Yes"
+                            << ", Data Length=" << block_head->buffer_size << ", Hash=" << block_head->fast_check
+                            << ", is written=" << (check_flag(node_head->flag, MF_WRITEN) ? "Yes" : " No") << ", data(Hex): ";
+                    } else {
+                        out << "Node index: " << std::setw(10) << i << " => seq=" << node_head->operation_seq << ", is start node=No"
+                            << ", is written=" << (check_flag(node_head->flag, MF_WRITEN) ? "Yes" : " No") << ", data(Hex): ";
+                    }
 
                     size_t data_len = channel->node_size;
                     if (start_node) {
