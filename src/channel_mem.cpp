@@ -459,7 +459,7 @@ namespace atbus {
                 block_head->buffer_size = 0;
 
                 mem_node_head *first_node_head = mem_get_node_head(channel, write_cur, NULL, NULL);
-                first_node_head->flag = set_flag(first_node_head->flag, MF_START_NODE);
+                first_node_head->flag = set_flag(0, MF_START_NODE);
                 first_node_head->operation_seq = opr_seq;
 
                 for (size_t i = mem_next_index(channel, write_cur, 1); i != new_write_cur; i = mem_next_index(channel, i, 1)) {
@@ -472,7 +472,7 @@ namespace atbus {
                     //     return EN_ATBUS_ERR_NODE_BAD_BLOCK_WSEQ_ID;
                     // }
 
-                    this_node_head->flag = set_flag(this_node_head->flag, MF_WRITEN);
+                    this_node_head->flag = set_flag(0, MF_WRITEN);
                     this_node_head->operation_seq = opr_seq;
                 }
             }
@@ -546,12 +546,20 @@ namespace atbus {
                     break;
                 }
 
-                const mem_node_head *node_head = mem_get_node_head(channel, read_begin_cur, NULL, NULL);
+                mem_node_head *node_head = mem_get_node_head(channel, read_begin_cur, NULL, NULL);
                 // 容错处理 -- 不是起始节点
                 if (!check_flag(node_head->flag, MF_START_NODE)) {
                     read_begin_cur = mem_next_index(channel, read_begin_cur, 1);
+                    node_head->flag = 0;
+
                     ++channel->node_bad_count;
                     continue;
+                }
+
+                // 容错处理 -- 如果前面已经发现错误，这里就不能再消耗 MF_START_NODE了
+                // 防止后面把block弹出却没有读出数据并返回错误码
+                if (ret) {
+                    break;
                 }
 
                 // 容错处理 -- 未写入完成
@@ -570,6 +578,8 @@ namespace atbus {
                     // 写入超时
                     if (channel->first_failed_writing_time && cd > channel->conf.conf_send_timeout_ms) {
                         read_begin_cur = mem_next_index(channel, read_begin_cur, 1);
+                        node_head->flag = 0;
+
                         ++channel->block_bad_count;
                         ++channel->node_bad_count;
                         ++channel->block_timeout_count;
@@ -590,7 +600,10 @@ namespace atbus {
                 if (!block_head->buffer_size ||
                     block_head->buffer_size >= channel->area_end_offset - channel->area_data_offset - channel->conf.protect_memory_size) {
                     ret = ret ? ret : EN_ATBUS_ERR_NODE_BAD_BLOCK_BUFF_SIZE;
+
                     read_begin_cur = mem_next_index(channel, read_begin_cur, 1);
+                    node_head->flag = 0;
+
                     ++channel->node_bad_count;
                     ++channel->block_bad_count;
                     continue;
@@ -629,6 +642,8 @@ namespace atbus {
                     if (mem_calc_node_num(channel, block_head->buffer_size) != nodes_num) {
                         ret = ret ? ret : EN_ATBUS_ERR_NODE_BAD_BLOCK_NODE_NUM;
                         read_begin_cur = mem_next_index(channel, read_begin_cur, 1);
+                        // 上面的循环已经重置过flag了
+
                         ++channel->node_bad_count;
                         ++channel->block_bad_count;
                         continue;
@@ -669,17 +684,6 @@ namespace atbus {
                 }
 
             } while (false);
-
-            // 如果有出错节点，重置出错节点的head
-            if (ori_read_cur != read_begin_cur) {
-                mem_node_head *node_head = mem_get_node_head(channel, 0, NULL, NULL);
-
-                for (size_t i = ori_read_cur; i != read_begin_cur; i = (i + 1) % channel->node_count) {
-                    node_head[i].flag = 0;
-                    // 如果前面触发了超时保护，则会有一批节点的operation_seq未被清空。为保证行为一致，所以这里也不再清空 operation_seq 了
-                    // node_head[i].operation_seq = 0;
-                }
-            }
 
             // 设置游标
             if (ori_read_cur != read_end_cur) {
