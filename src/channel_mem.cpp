@@ -546,7 +546,7 @@ namespace atbus {
                     break;
                 }
 
-                mem_node_head *node_head = mem_get_node_head(channel, read_begin_cur, NULL, NULL);
+                const mem_node_head *node_head = mem_get_node_head(channel, read_begin_cur, NULL, NULL);
                 // 容错处理 -- 不是起始节点
                 if (!check_flag(node_head->flag, MF_START_NODE)) {
                     read_begin_cur = mem_next_index(channel, read_begin_cur, 1);
@@ -751,23 +751,17 @@ namespace atbus {
                         mem_block_head *block_head = mem_get_block_head(channel, i, NULL, NULL);
                         out << "Node index: " << std::setw(10) << i << " => seq=" << node_head->operation_seq << ", is start node=Yes"
                             << ", Data Length=" << block_head->buffer_size << ", Hash=" << block_head->fast_check
-                            << ", is written=" << (check_flag(node_head->flag, MF_WRITEN) ? "Yes" : " No") << ", data(Hex): ";
+                            << ", is written=" << (check_flag(node_head->flag, MF_WRITEN) ? "Yes" : "No") << ", data(Hex): ";
                     } else {
                         out << "Node index: " << std::setw(10) << i << " => seq=" << node_head->operation_seq << ", is start node=No"
-                            << ", is written=" << (check_flag(node_head->flag, MF_WRITEN) ? "Yes" : " No") << ", data(Hex): ";
-                    }
-
-                    size_t data_len = channel->node_size;
-                    if (start_node) {
-                        data_len -= sizeof(mem_block::block_head_size);
-                        mem_get_block_head(channel, i, &data_ptr, NULL);
+                            << ", is written=" << (check_flag(node_head->flag, MF_WRITEN) ? "Yes" : "No") << ", data(Hex): ";
                     }
 
                     unsigned char *data_c = (unsigned char *)data_ptr;
                     char data_buf[4] = {0};
-                    for (size_t j = 0; data_c && j < data_len && j < need_node_data; ++j) {
+                    for (size_t j = 0; data_c && j < mem_block::node_data_size && j < need_node_data; ++j) {
                         UTIL_STRFUNC_SNPRINTF(data_buf, sizeof(data_buf), "%02x", data_c[j]);
-                        out << data_buf;
+                        out << (const char *)data_buf;
                     }
                     out << std::endl;
                 }
