@@ -68,6 +68,7 @@ int main(int argc, char *argv[]) {
         char *buf_pool = new char[max_n * sizeof(size_t)];
         char *buf_check = new char[max_n * sizeof(size_t)];
 
+        bool is_last_tick_faild = false;
         while (true) {
             size_t n = 0; // 最大 4K-8K的包
             int res = shm_recv(channel, buf_pool, sizeof(size_t) * max_n, &n);
@@ -78,6 +79,11 @@ int main(int argc, char *argv[]) {
                     fprintf(stderr, "shm_recv error, ret code: %d. start: %d, end: %d\n", res, (int)last_action.first,
                             (int)last_action.second);
                     ++sum_recv_err;
+
+                    if (!is_last_tick_faild) {
+                        shm_show_channel(channel, std::cout, true, 24);
+                    }
+                    is_last_tick_faild = true;
                 } else {
                     std::this_thread::sleep_for(std::chrono::milliseconds(128));
                 }
@@ -99,12 +105,19 @@ int main(int argc, char *argv[]) {
 
                 memset(buf_check + sizeof(int), (int)*val_check, n - sizeof(int));
                 int cmp_res = memcmp(buf_pool + sizeof(int), buf_check + sizeof(int), n - sizeof(int));
-                if (0 != cmp_res) {
+                if (0 == cmp_res) {
+                    is_last_tick_faild = false;
+                } else {
                     std::cerr << "pid: " << pid << " expected data is " << (int)(*val_check) << ", but real is "
                               << (int)(*(buf_pool + sizeof(int))) << std::endl;
                     *val_check = *(buf_pool + sizeof(int));
 
                     ++sum_data_err;
+
+                    if (!is_last_tick_faild) {
+                        shm_show_channel(channel, std::cout, true, 24);
+                    }
+                    is_last_tick_faild = true;
                 }
             }
         }

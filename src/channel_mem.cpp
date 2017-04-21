@@ -406,11 +406,6 @@ namespace atbus {
         }
 
         static int mem_send_real(mem_channel *channel, const void *buf, size_t len) {
-            // 用于调试的节点编号信息
-            detail::last_action_channel_begin_node_index = std::numeric_limits<size_t>::max();
-            detail::last_action_channel_end_node_index = std::numeric_limits<size_t>::max();
-            detail::last_action_channel_ptr = channel;
-
             if (NULL == channel) return EN_ATBUS_ERR_PARAMS;
 
             if (0 == len) return EN_ATBUS_ERR_SUCCESS;
@@ -530,11 +525,6 @@ namespace atbus {
         }
 
         int mem_recv(mem_channel *channel, void *buf, size_t len, size_t *recv_size) {
-            // 用于调试的节点编号信息
-            detail::last_action_channel_begin_node_index = std::numeric_limits<size_t>::max();
-            detail::last_action_channel_end_node_index = std::numeric_limits<size_t>::max();
-            detail::last_action_channel_ptr = channel;
-
             if (NULL == channel) return EN_ATBUS_ERR_PARAMS;
 
             int ret = EN_ATBUS_ERR_SUCCESS;
