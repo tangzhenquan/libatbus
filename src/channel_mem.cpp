@@ -49,12 +49,8 @@ namespace atbus {
     namespace channel {
 
         namespace detail {
-            THREAD_TLS size_t last_action_channel_end_node_index = 0;
-            THREAD_TLS size_t last_action_channel_begin_node_index = 0;
-
             template <bool is_hash64>
             struct hash_factor;
-
 
             template <>
             struct hash_factor<false> {
@@ -149,6 +145,16 @@ namespace atbus {
             MF_WRITEN = 0x00000001,
             MF_START_NODE = 0x00000002,
         } MEM_FLAG;
+
+        namespace detail {
+            /**
+             * @brief 调试辅助信息
+             * @note 不再使用tls记录调试信息，以防跨线程dump拿不到数据
+             */
+            static size_t last_action_channel_end_node_index = 0;
+            static size_t last_action_channel_begin_node_index = 0;
+            static mem_channel *last_action_channel_ptr = NULL;
+        }
 
         /**
          * @brief 内存通道常量
@@ -299,16 +305,13 @@ namespace atbus {
         //    return (index + channel->node_count - offset) % channel->node_count;
         //}
 
-        static uint32_t mem_fetch_operation_seq(mem_channel *channel) {
-            uint32_t ret = channel->atomic_operation_seq.load();
-            // std::atomic_thread_fence(std::memory_order_seq_cst);
-            bool f = false;
-            while (!f) {
-                // CAS
-                f = channel->atomic_operation_seq.compare_exchange_weak(ret, (ret + 1) ? (ret + 1) : ret + 2);
+        static inline uint32_t mem_fetch_operation_seq(mem_channel *channel) {
+            uint32_t ret = ++channel->atomic_operation_seq;
+            while (0 == ret) {
+                ret = ++channel->atomic_operation_seq;
             }
 
-            return (ret + 1) ? (ret + 1) : ret + 2;
+            return ret;
         }
 
         /**
@@ -328,7 +331,7 @@ namespace atbus {
          * @param len 数据长度
          * @note Hash 快速校验
          */
-        static data_align_type mem_fast_check(const void *src, size_t len) {
+        static inline data_align_type mem_fast_check(const void *src, size_t len) {
             return static_cast<data_align_type>(detail::hash_factor<sizeof(data_align_type) >= sizeof(uint64_t)>::hash(0, src, len));
         }
 
@@ -406,6 +409,7 @@ namespace atbus {
             // 用于调试的节点编号信息
             detail::last_action_channel_begin_node_index = std::numeric_limits<size_t>::max();
             detail::last_action_channel_end_node_index = std::numeric_limits<size_t>::max();
+            detail::last_action_channel_ptr = channel;
 
             if (NULL == channel) return EN_ATBUS_ERR_PARAMS;
 
@@ -447,6 +451,7 @@ namespace atbus {
             }
             detail::last_action_channel_begin_node_index = write_cur;
             detail::last_action_channel_end_node_index = new_write_cur;
+            detail::last_action_channel_ptr = channel;
 
             // 数据缓冲区操作 - 初始化
             void *buffer_start = NULL;
@@ -467,9 +472,10 @@ namespace atbus {
                     assert((char *)this_node_head < (char *)channel + channel->area_data_offset);
 
                     // 写数据node出现冲突
-                    if (this_node_head->operation_seq) {
-                        return EN_ATBUS_ERR_NODE_BAD_BLOCK_WSEQ_ID;
-                    }
+                    // 写超时会导致this_node_head还是之前版本的数据，并不会被清空。所以不再恢复 operation_seq
+                    // if (this_node_head->operation_seq) {
+                    //     return EN_ATBUS_ERR_NODE_BAD_BLOCK_WSEQ_ID;
+                    // }
 
                     this_node_head->flag = set_flag(this_node_head->flag, MF_WRITEN);
                     this_node_head->operation_seq = opr_seq;
@@ -527,6 +533,7 @@ namespace atbus {
             // 用于调试的节点编号信息
             detail::last_action_channel_begin_node_index = std::numeric_limits<size_t>::max();
             detail::last_action_channel_end_node_index = std::numeric_limits<size_t>::max();
+            detail::last_action_channel_ptr = channel;
 
             if (NULL == channel) return EN_ATBUS_ERR_PARAMS;
 
@@ -536,7 +543,7 @@ namespace atbus {
             size_t buffer_len = 0;
             mem_block_head *block_head = NULL;
             size_t read_begin_cur = channel->atomic_read_cur.load();
-            size_t ori_read_cur = read_begin_cur;
+            const size_t ori_read_cur = read_begin_cur;
             size_t read_end_cur;
             size_t write_cur = channel->atomic_write_cur.load();
             // std::atomic_thread_fence(std::memory_order_seq_cst);
@@ -559,7 +566,7 @@ namespace atbus {
 
                 // 容错处理 -- 未写入完成
                 if (!check_flag(node_head->flag, MF_WRITEN)) {
-                    uint64_t cnow = (uint64_t)clock() * (CLOCKS_PER_SEC / 1000); // 转换到毫秒
+                    uint64_t cnow = (uint64_t)(clock() / (CLOCKS_PER_SEC / 1000)); // 转换到毫秒
 
                     // 初次读取
                     if (!channel->first_failed_writing_time) {
@@ -571,7 +578,7 @@ namespace atbus {
                     uint64_t cd = cnow > channel->first_failed_writing_time ? cnow - channel->first_failed_writing_time
                                                                             : channel->first_failed_writing_time - cnow;
                     // 写入超时
-                    if (channel->first_failed_writing_time && cd > channel->block_timeout_count) {
+                    if (channel->first_failed_writing_time && cd > channel->conf.conf_send_timeout_ms) {
                         read_begin_cur = mem_next_index(channel, read_begin_cur, 1);
                         ++channel->block_bad_count;
                         ++channel->node_bad_count;
@@ -595,6 +602,7 @@ namespace atbus {
                     ret = ret ? ret : EN_ATBUS_ERR_NODE_BAD_BLOCK_BUFF_SIZE;
                     read_begin_cur = mem_next_index(channel, read_begin_cur, 1);
                     ++channel->node_bad_count;
+                    ++channel->block_bad_count;
                     continue;
                 }
 
@@ -615,7 +623,13 @@ namespace atbus {
                         break;
                     }
 
-                    this_node_head->operation_seq = 0;
+                    // 如果出现异常了两个连续写入块有相同的operation_seq，会在这里被会切割开
+                    if (read_end_cur != read_begin_cur && check_flag(this_node_head->flag, MF_START_NODE)) {
+                        break;
+                    }
+
+                    // 如果前面触发了超时保护，则会有一批节点的operation_seq未被清空。为保证行为一致，所以这里也不再清空 operation_seq 了
+                    // this_node_head->operation_seq = 0;
                     this_node_head->flag = 0;
                 }
 
@@ -636,7 +650,6 @@ namespace atbus {
 
 
             do {
-
                 // 出错退出, 移动读游标到最后读取位置
                 if (ret) {
                     break;
@@ -673,17 +686,21 @@ namespace atbus {
 
                 for (size_t i = ori_read_cur; i != read_begin_cur; i = (i + 1) % channel->node_count) {
                     node_head[i].flag = 0;
-                    node_head[i].operation_seq = 0;
+                    // 如果前面触发了超时保护，则会有一批节点的operation_seq未被清空。为保证行为一致，所以这里也不再清空 operation_seq 了
+                    // node_head[i].operation_seq = 0;
                 }
             }
 
             // 设置游标
-            channel->atomic_read_cur.store(read_end_cur);
-            // std::atomic_thread_fence(std::memory_order_seq_cst);
+            if (ori_read_cur != read_end_cur) {
+                channel->atomic_read_cur.store(read_end_cur);
+                // std::atomic_thread_fence(std::memory_order_seq_cst);
+            }
 
             // 用于调试的节点编号信息
             detail::last_action_channel_begin_node_index = ori_read_cur;
             detail::last_action_channel_end_node_index = read_end_cur;
+            detail::last_action_channel_ptr = channel;
             return ret;
         }
 
@@ -700,35 +717,41 @@ namespace atbus {
             size_t write_cur = channel->atomic_write_cur.load();
             size_t available_node = (read_cur + channel->node_count - write_cur - 1) % channel->node_count;
 
-            out << "summary:" << std::endl
-                << "channel node size: " << channel->node_size << std::endl
-                << "channel node count: " << channel->node_count << std::endl
-                << "channel using memory size: " << (channel->area_end_offset - channel->area_channel_offset) << std::endl
-                << "channel available node number: " << available_node << std::endl
+            out << "Summary:" << std::endl
+                << "\tchannel node size: " << channel->node_size << std::endl
+                << "\tchannel node count: " << channel->node_count << std::endl
+                << "\tchannel using memory size: " << (channel->area_end_offset - channel->area_channel_offset) << std::endl
+                << "\tchannel available node number: " << available_node << std::endl
                 << std::endl;
 
-            out << "configure:" << std::endl
-                << "send timeout(ms): " << channel->conf.conf_send_timeout_ms << std::endl
-                << "protect memory size(Bytes): " << channel->conf.protect_memory_size << std::endl
-                << "protect node number: " << channel->conf.protect_node_count << std::endl
-                << "write retry times: " << channel->conf.write_retry_times << std::endl
+            out << "Configure:" << std::endl
+                << "\tsend timeout(ms): " << channel->conf.conf_send_timeout_ms << std::endl
+                << "\tprotect memory size(Bytes): " << channel->conf.protect_memory_size << std::endl
+                << "\tprotect node number: " << channel->conf.protect_node_count << std::endl
+                << "\twrite retry times: " << channel->conf.write_retry_times << std::endl
                 << std::endl;
 
-            out << "read&write:" << std::endl
-                << "first waiting time: " << channel->first_failed_writing_time << std::endl
-                << "read index: " << read_cur << std::endl
-                << "write index: " << write_cur << std::endl
-                << "operation sequence: " << channel->atomic_operation_seq << std::endl
+            out << "IO:" << std::endl
+                << "\tfirst waiting time: " << channel->first_failed_writing_time << std::endl
+                << "\tread index: " << read_cur << std::endl
+                << "\twrite index: " << write_cur << std::endl
+                << "\toperation sequence: " << channel->atomic_operation_seq << std::endl
                 << std::endl;
 
-            out << "stat:" << std::endl
-                << "bad block count: " << channel->block_bad_count << std::endl
-                << "bad node count: " << channel->node_bad_count << std::endl
-                << "timeout block count: " << channel->block_timeout_count << std::endl
+            out << "Statistics:" << std::endl
+                << "\tbad block count: " << channel->block_bad_count << std::endl
+                << "\tbad node count: " << channel->node_bad_count << std::endl
+                << "\ttimeout block count: " << channel->block_timeout_count << std::endl
+                << std::endl;
+
+            out << "Debug:" << std::endl
+                << "\tlast action - channel: " << detail::last_action_channel_ptr << std::endl
+                << "\tlast action - begin node index: " << detail::last_action_channel_begin_node_index << std::endl
+                << "\tlast action - end node index: " << detail::last_action_channel_end_node_index << std::endl
                 << std::endl;
 
             if (need_node_status) {
-                out << std::endl << "node head list:" << std::endl;
+                out << std::endl << "Node head list:" << std::endl;
                 for (size_t i = 0; i < channel->node_count; ++i) {
                     void *data_ptr = 0;
                     mem_node_head *node_head = mem_get_node_head(channel, i, &data_ptr, NULL);
@@ -758,14 +781,14 @@ namespace atbus {
                     }
                     out << std::endl;
                 }
-            }
 
-            out << "read&write:" << std::endl
-                << "first waiting time: " << channel->first_failed_writing_time << std::endl
-                << "read index: " << channel->atomic_read_cur << std::endl
-                << "write index: " << channel->atomic_write_cur << std::endl
-                << "operation sequence: " << channel->atomic_operation_seq << std::endl
-                << std::endl;
+                out << "IO (after dump nodes):" << std::endl
+                    << "\tfirst waiting time: " << channel->first_failed_writing_time << std::endl
+                    << "\tread index: " << channel->atomic_read_cur << std::endl
+                    << "\twrite index: " << channel->atomic_write_cur << std::endl
+                    << "\toperation sequence: " << channel->atomic_operation_seq << std::endl
+                    << std::endl;
+            }
         }
     }
 }

@@ -16,6 +16,8 @@
 
 
 #include "common/string_oprs.h"
+#include "lock/lock_holder.h"
+#include "lock/spin_lock.h"
 
 #include "detail/libatbus_error.h"
 
@@ -74,8 +76,11 @@ namespace atbus {
 #endif
 
         static std::map<key_t, shm_mapped_record_type> shm_mapped_records;
+        static ::util::lock::spin_lock shm_mapped_records_lock;
 
         static int shm_close_buffer(key_t shm_key) {
+            ::util::lock::lock_holder< ::util::lock::spin_lock> lock_guard(shm_mapped_records_lock);
+
             std::map<key_t, shm_mapped_record_type>::iterator iter = shm_mapped_records.find(shm_key);
             if (shm_mapped_records.end() == iter) return EN_ATBUS_ERR_SHM_NOT_FOUND;
 
@@ -102,6 +107,8 @@ namespace atbus {
         }
 
         static int shm_open_buffer(key_t shm_key, size_t len, void **data, size_t *real_size, bool create) {
+            ::util::lock::lock_holder< ::util::lock::spin_lock> lock_guard(shm_mapped_records_lock);
+
             shm_mapped_record_type shm_record;
 
             // 已经映射则直接返回

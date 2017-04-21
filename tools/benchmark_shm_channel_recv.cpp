@@ -92,14 +92,19 @@ int main(int argc, char *argv[]) {
                     *val_check = *(buf_pool + sizeof(int));
                 } else {
                     ++(*val_check);
+                    if (0 == *val_check) {
+                        ++(*val_check);
+                    }
                 }
 
-                memset(buf_check + sizeof(int), *val_check, n - sizeof(int));
+                memset(buf_check + sizeof(int), (int)*val_check, n - sizeof(int));
                 int cmp_res = memcmp(buf_pool + sizeof(int), buf_check + sizeof(int), n - sizeof(int));
                 if (0 != cmp_res) {
                     std::cerr << "pid: " << pid << " expected data is " << (int)(*val_check) << ", but real is "
                               << (int)(*(buf_pool + sizeof(int))) << std::endl;
                     *val_check = *(buf_pool + sizeof(int));
+
+                    ++sum_data_err;
                 }
             }
         }

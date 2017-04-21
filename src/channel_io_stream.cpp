@@ -599,7 +599,7 @@ namespace atbus {
             if (NULL == handle || NULL == handle->data) {
                 return;
             }
-            
+
             io_stream_connect_async_data *async_data = reinterpret_cast<io_stream_connect_async_data *>(handle->data);
             assert(async_data);
             assert(reinterpret_cast<uv_handle_t *>(async_data->stream.get()) == handle);
@@ -1702,22 +1702,22 @@ namespace atbus {
                 return;
             }
 
-            out << "summary:" << std::endl << "connection number: " << channel->conn_pool.size() << std::endl << std::endl;
+            out << "Summary:" << std::endl << "\tconnection number: " << channel->conn_pool.size() << std::endl << std::endl;
 
-            out << "configure:" << std::endl
-                << "is_noblock: " << channel->conf.is_noblock << std::endl
-                << "is_nodelay: " << channel->conf.is_nodelay << std::endl
-                << "backlog: " << channel->conf.backlog << std::endl
-                << "keepalive: " << channel->conf.keepalive << std::endl
-                << "recv_buffer_limit_size(Bytes): " << channel->conf.recv_buffer_limit_size << std::endl
-                << "recv_buffer_max_size(Bytes): " << channel->conf.recv_buffer_max_size << std::endl
-                << "recv_buffer_static_max_number: " << channel->conf.recv_buffer_static << std::endl
-                << "send_buffer_limit_size(Bytes): " << channel->conf.send_buffer_limit_size << std::endl
-                << "send_buffer_max_size(Bytes): " << channel->conf.send_buffer_max_size << std::endl
-                << "send_buffer_static_max_number: " << channel->conf.send_buffer_static << std::endl
+            out << "Configure:" << std::endl
+                << "\tis_noblock: " << channel->conf.is_noblock << std::endl
+                << "\tis_nodelay: " << channel->conf.is_nodelay << std::endl
+                << "\tbacklog: " << channel->conf.backlog << std::endl
+                << "\tkeepalive: " << channel->conf.keepalive << std::endl
+                << "\trecv_buffer_limit_size(Bytes): " << channel->conf.recv_buffer_limit_size << std::endl
+                << "\trecv_buffer_max_size(Bytes): " << channel->conf.recv_buffer_max_size << std::endl
+                << "\trecv_buffer_static_max_number: " << channel->conf.recv_buffer_static << std::endl
+                << "\tsend_buffer_limit_size(Bytes): " << channel->conf.send_buffer_limit_size << std::endl
+                << "\tsend_buffer_max_size(Bytes): " << channel->conf.send_buffer_max_size << std::endl
+                << "\tsend_buffer_static_max_number: " << channel->conf.send_buffer_static << std::endl
                 << std::endl;
 
-            out << "all connections:" << std::endl;
+            out << "All connections:" << std::endl;
             for (io_stream_channel::conn_pool_t::iterator iter = channel->conn_pool.begin(); iter != channel->conn_pool.end(); ++iter) {
                 out << "\t" << iter->second->addr.address << ":(status = " << iter->second->status << ")" << std::endl;
 
