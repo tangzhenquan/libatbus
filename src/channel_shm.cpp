@@ -4,6 +4,23 @@
  *        附带c++的部分是为了避免命名空间污染并且c++的跨平台适配更加简单
  */
 
+#ifdef WIN32
+#include <Windows.h>
+
+#ifdef _MSC_VER
+#include <atlconv.h>
+#endif
+
+#ifdef UNICODE
+#define ATBUS_VC_TEXT(x) A2W(x)
+#else
+#define ATBUS_VC_TEXT(x) x
+#endif
+
+#else
+#include <unistd.h>
+#endif
+
 #include "lock/atomic_int_type.h"
 #include <assert.h>
 #include <cstddef>
@@ -22,23 +39,6 @@
 #include "detail/libatbus_error.h"
 
 #include "detail/libatbus_channel_export.h"
-
-#ifdef WIN32
-#include <Windows.h>
-
-#ifdef _MSC_VER
-#include <atlconv.h>
-#endif
-
-#ifdef UNICODE
-#define ATBUS_VC_TEXT(x) A2W(x)
-#else
-#define ATBUS_VC_TEXT(x) x
-#endif
-
-#else
-#include <unistd.h>
-#endif
 
 #ifdef ATBUS_CHANNEL_SHM
 

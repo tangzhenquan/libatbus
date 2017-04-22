@@ -30,19 +30,6 @@
 #include "lock/atomic_int_type.h"
 #include "std/thread.h"
 
-
-#ifndef ATBUS_MACRO_DATA_NODE_SIZE
-#define ATBUS_MACRO_DATA_NODE_SIZE 128
-#endif
-
-#ifndef ATBUS_MACRO_DATA_ALIGN_TYPE
-#define ATBUS_MACRO_DATA_ALIGN_TYPE size_t
-#endif
-
-#ifndef ATBUS_MACRO_DATA_MAX_PROTECT_SIZE
-#define ATBUS_MACRO_DATA_MAX_PROTECT_SIZE (16 * 1024)
-#endif
-
 #define MEM_CHANNEL_NAME "ATBUSMEM"
 
 namespace atbus {
