@@ -23,6 +23,7 @@
 
 #include "algorithm/murmur_hash.h"
 #include "common/string_oprs.h"
+#include "config/compile_optimize.h"
 
 
 #include "detail/libatbus_config.h"
@@ -572,6 +573,8 @@ namespace atbus {
             size_t write_cur = channel->atomic_write_cur.load();
             // std::atomic_thread_fence(std::memory_order_seq_cst);
 
+            uint32_t timeout_operation_seq = 0;
+
             while (true) {
                 read_end_cur = read_begin_cur;
 
@@ -581,26 +584,53 @@ namespace atbus {
                 }
 
                 volatile mem_node_head *node_head = mem_get_node_head(channel, read_begin_cur, NULL, NULL);
-                // 容错处理 -- 不是起始节点
-                if (!check_flag(node_head->flag, MF_START_NODE)) {
-                    read_begin_cur = mem_next_index(channel, read_begin_cur, 1);
-                    node_head->flag = 0;
 
-                    ++channel->read_bad_node_count;
-                    continue;
-                }
-
-                // 容错处理 -- 如果前面已经发现错误，这里就不能再消耗 MF_START_NODE了
-                // 防止后面把block弹出却没有读出数据并返回错误码
-                if (ret) {
-                    break;
-                }
-
+                /**
+                 * 这个时候，可能写出端处于移动了atomic_write_cur，但是还没有写出 MF_START_NODE 的情况。所以情况列举如下:
+                 *   MF_START_NODE | MF_WRITEN: 数据块已写完
+                 *   MF_WRITEN: 节点容错
+                 *   MF_START_NODE: 是起始节点但是数据未写完（也可能是发送端在写出过程中崩溃）
+                 *   0: 移动游标后尚未设置MF_START_NODE，这个出现概率非常低，但是也会出现。（也可能是发送端在写出过程中崩溃）
+                 *
+                 * 由于MF_START_NODE和0都是无法判定是没写完还是写出端崩溃的，所以都要走超时检测逻辑。
+                 * 但是如果被判定超时并且写出端只写出了部分节点的的 MF_WRITEN 这时候剩下的节点的flag都会是0。
+                 *   如果这些都通过超时机制判定，则最多可能等待 消息长度*超时判定时长/节点长度，默认设置是最少2秒钟。
+                 *   所以这里需要特别处理下，当进入超时流程后，所有非 MF_START_NODE 并且operation_seq相等的节点也应该视为错误。
+                 *   注意上面这个流程只能在超时流程中进行，因为其他错误流程可能第一个数据块错误，但是紧接着的第二个数据块处于正在写出的状态而没有设置
+                 *   MF_START_NODE和operation_seq。我们的operation_seq取值范围是uint32，所以max(uint32)*节点长度（默认是500GB）以内的通道里operation_seq不会重复
+                 *   我们的数据通道不可能使用这么大的内存，所以加上operation_seq后能尽可能地消除空数据快的超时影响
+                 */
                 // 容错处理 -- 未写入完成
-                if (!check_flag(node_head->flag, MF_WRITEN)) {
+                if (likely(check_flag(node_head->flag, MF_WRITEN))) {
+                    // 容错处理 -- 不是起始节点
+                    if (unlikely(!check_flag(node_head->flag, MF_START_NODE))) {
+                        read_begin_cur = mem_next_index(channel, read_begin_cur, 1);
+                        node_head->flag = 0;
+
+                        ++channel->read_bad_node_count;
+                        continue;
+                    }
+
+                    // 容错处理 -- 如果前面已经发现错误，这里就不能再消耗 MF_START_NODE了
+                    // 防止后面把block弹出却没有读出数据并返回错误码
+                    if (unlikely(ret)) {
+                        break;
+                    }
+
+                } else {
                     uint64_t cnow = (uint64_t)(clock() / (CLOCKS_PER_SEC / 1000)); // 转换到毫秒
 
-                    // 初次读取
+                    // 上面提到的快速跳过流程
+                    if (unlikely(timeout_operation_seq && timeout_operation_seq == node_head->operation_seq &&
+                                 !check_flag(node_head->flag, MF_START_NODE))) {
+                        read_begin_cur = mem_next_index(channel, read_begin_cur, 1);
+                        node_head->flag = 0;
+
+                        ++channel->read_bad_node_count;
+                        continue;
+                    }
+
+                    // 初次读取超时
                     if (!channel->first_failed_writing_time) {
                         channel->first_failed_writing_time = cnow;
                         ret = ret ? ret : EN_ATBUS_ERR_NO_DATA;
@@ -611,6 +641,8 @@ namespace atbus {
                                                                             : channel->first_failed_writing_time - cnow;
                     // 写入超时
                     if (channel->first_failed_writing_time && cd > channel->conf.conf_send_timeout_ms) {
+                        timeout_operation_seq = node_head->operation_seq;
+
                         read_begin_cur = mem_next_index(channel, read_begin_cur, 1);
                         node_head->flag = 0;
 
