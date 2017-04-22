@@ -15,18 +15,20 @@ environment:
         LIBUV_VERSION: 1.11.0
         MSYS2_PREFIX: C:/tools/msys64
         MSYS2_LOG_FILE: C:/Users/appveyor/pkg_src/output.log
+        MSBUILD: msbuild
+        #MSBUILD: C:/Program Files (x86)/MSBuild/14.0/bin/msbuild.exe
     matrix:
-        - image: Visual Studio 2017
+        - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
           platform: x64
           LIBUV_PKG: http://dist.libuv.org/dist/v1.11.0/libuv-x64-v1.11.0.build6.exe
           LIBUV_ROOT: C:/Users/appveyor/prebuilt/x64/1.11.0
           CMAKE_GEN: Visual Studio 15 2017 Win64
-        - image: Visual Studio 2015
+        - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
           platform: x64
           LIBUV_PKG: http://dist.libuv.org/dist/v1.11.0/libuv-x64-v1.11.0.build6.exe
           LIBUV_ROOT: C:/Users/appveyor/prebuilt/x64/1.11.0
           CMAKE_GEN: Visual Studio 14 2015 Win64
-        - image: Visual Studio 2013
+        - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2013
           platform: x64
           LIBUV_PKG: http://dist.libuv.org/dist/v1.11.0/libuv-x64-v1.11.0.build6.exe
           LIBUV_ROOT: C:/Users/appveyor/prebuilt/x64/1.11.0
@@ -245,9 +247,9 @@ build_script:
 
             & cmake ..  -G "$Env:CMAKE_GEN" -DLIBUV_ROOT="$Env:LIBUV_ROOT" -DPROJECT_ENABLE_UNITTEST=ON -DPROJECT_ENABLE_SAMPLE=ON -DPROJECT_ENABLE_TOOLS=ON
 
-            echo "'C:\Program Files (x86)\MSBuild\14.0\bin\msbuild.exe' 'libatbus.sln' /verbosity:minimal /p:Configuration=$Env:CONFIGURATION /p:Platform=$Env:PLATFORM"
+            echo "'$Env:MSBUILD' 'libatbus.sln' /verbosity:minimal /p:Configuration=$Env:CONFIGURATION /p:Platform=$Env:PLATFORM"
 
-            & "C:\Program Files (x86)\MSBuild\14.0\bin\msbuild.exe" "libatbus.sln" /verbosity:minimal /p:Configuration=$Env:CONFIGURATION /p:Platform=$Env:PLATFORM
+            & "$Env:MSBUILD" "libatbus.sln" /verbosity:minimal /p:Configuration=$Env:CONFIGURATION /p:Platform=$Env:PLATFORM
         }
 #
 # Run unit test

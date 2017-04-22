@@ -802,12 +802,12 @@ namespace atbus {
                             << ", is written=" << (check_flag(node_head->flag, MF_WRITEN) ? "Yes" : "No") << ", data(Hex): ";
                     }
 
-                    unsigned char *data_c = (unsigned char *)data_ptr;
-                    out << std::hex;
-                    for (size_t j = 0; data_c && j < mem_block::node_data_size && j < need_node_data; ++j) {
-                        out << data_c[j];
+                    if (need_node_data < mem_block::node_data_size) {
+                        util::string::dumphex(data_ptr, need_node_data, out);
+                    } else {
+                        util::string::dumphex(data_ptr, mem_block::node_data_size, out);
                     }
-                    out << std::dec << std::endl;
+                    out << std::endl;
                 }
 
                 out << "IO (after dump nodes):" << std::endl

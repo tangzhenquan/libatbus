@@ -14,6 +14,7 @@
 #include <detail/libatbus_channel_export.h>
 #include <detail/libatbus_error.h>
 
+#include "common/string_oprs.h"
 
 #if defined(UTIL_CONFIG_COMPILER_CXX_LAMBDAS) && UTIL_CONFIG_COMPILER_CXX_LAMBDAS
 
@@ -108,8 +109,11 @@ int main(int argc, char *argv[]) {
                 if (0 == cmp_res) {
                     is_last_tick_faild = false;
                 } else {
-                    std::cerr << "pid: " << pid << " expected data is " << std::hex << (*val_check) << ", but real is "
-                              << (*(buf_pool + sizeof(int))) << std::dec << std::endl;
+                    std::cerr << "pid: " << pid << " expected data is ";
+                    util::string::dumphex(val_check, 1, std::cerr);
+                    std::cerr << ", but real is ";
+                    util::string::dumphex(buf_pool + sizeof(int), 1, std::cerr);
+                    std::cerr << std::endl;
                     *val_check = *(buf_pool + sizeof(int));
 
                     ++sum_data_err;
