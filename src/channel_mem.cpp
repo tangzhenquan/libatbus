@@ -463,10 +463,11 @@ namespace atbus {
                 // 新的尾部node游标
                 new_write_cur = mem_next_index(channel, write_cur, node_count);
 
-                // CAS
-                bool f = channel->atomic_write_cur.compare_exchange_weak(write_cur, new_write_cur);
+                // @see http://en.cppreference.com/w/cpp/atomic/atomic/compare_exchange
+                // CAS, 使用compare_exchange_weak可能低概率出现移动成功但是返回失败，然后导致有一个数据块被复写
+                bool f = channel->atomic_write_cur.compare_exchange_strong(write_cur, new_write_cur);
 
-                if (f) break;
+                if (likely(f)) break;
 
                 // 发现冲突原子操作失败则重试
             }
