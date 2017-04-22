@@ -108,8 +108,8 @@ int main(int argc, char *argv[]) {
                 if (0 == cmp_res) {
                     is_last_tick_faild = false;
                 } else {
-                    std::cerr << "pid: " << pid << " expected data is " << std::hex << (unsigned int)(*val_check) << ", but real is "
-                              << (unsigned int)(*(buf_pool + sizeof(int))) << std::dec << std::endl;
+                    std::cerr << "pid: " << pid << " expected data is " << std::hex << (*val_check) << ", but real is "
+                              << (*(buf_pool + sizeof(int))) << std::dec << std::endl;
                     *val_check = *(buf_pool + sizeof(int));
 
                     ++sum_data_err;

@@ -4,6 +4,25 @@
  *        附带c++的部分是为了避免命名空间污染并且c++的跨平台适配更加简单
  */
 
+#include "lock/atomic_int_type.h"
+#include <assert.h>
+#include <cstddef>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <ctime>
+#include <map>
+#include <stdint.h>
+
+#include "detail/libatbus_channel_export.h"
+#include "detail/libatbus_error.h"
+
+
+// spin_lock and lock_holder will include Windows.h, which should be included after Winsock2.h
+#include "common/string_oprs.h"
+#include "lock/lock_holder.h"
+#include "lock/spin_lock.h"
+
 #ifdef WIN32
 #include <Windows.h>
 
@@ -20,26 +39,6 @@
 #else
 #include <unistd.h>
 #endif
-
-#include "lock/atomic_int_type.h"
-#include <assert.h>
-#include <cstddef>
-#include <cstdio>
-#include <cstdlib>
-#include <cstring>
-#include <ctime>
-#include <map>
-#include <stdint.h>
-
-
-#include "common/string_oprs.h"
-#include "lock/lock_holder.h"
-#include "lock/spin_lock.h"
-
-#include "detail/libatbus_error.h"
-
-#include "detail/libatbus_channel_export.h"
-
 #ifdef ATBUS_CHANNEL_SHM
 
 namespace atbus {
