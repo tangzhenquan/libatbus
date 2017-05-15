@@ -80,49 +80,50 @@ int main(int argc, char *argv[]) {
         ++sum_seq;
     }
     // 创建写线程
-    std::thread *write_threads = new std::thread([&] {
-        char *buf_pool = new char[max_n * sizeof(size_t)];
-        int sleep_msec = 8;
+    std::thread *write_threads =
+        new std::thread([&sum_send_len, &sum_send_times, &sum_send_full, &sum_send_err, &sum_seq, pid, max_n, channel] {
+            char *buf_pool = new char[max_n * sizeof(size_t)];
+            int sleep_msec = 8;
 
-        while (true) {
-            size_t n = rand() % max_n; // 最大 4K-8K的包
-            if (0 == n) n = 1;         // 保证一定有数据包，保证收发次数一致
+            while (true) {
+                size_t n = rand() % max_n; // 最大 4K-8K的包
+                if (0 == n) n = 1;         // 保证一定有数据包，保证收发次数一致
 
-            *((int *)buf_pool) = pid;
-            memset(buf_pool + sizeof(int), (int)sum_seq, n * sizeof(size_t) - sizeof(int));
-            int res = shm_send(channel, buf_pool, n * sizeof(size_t));
+                *((int *)buf_pool) = pid;
+                memset(buf_pool + sizeof(int), (int)sum_seq, n * sizeof(size_t) - sizeof(int));
+                int res = shm_send(channel, buf_pool, n * sizeof(size_t));
 
-            if (res) {
-                if (EN_ATBUS_ERR_BUFF_LIMIT == res) {
-                    ++sum_send_full;
+                if (res) {
+                    if (EN_ATBUS_ERR_BUFF_LIMIT == res) {
+                        ++sum_send_full;
+                    } else {
+                        ++sum_send_err;
+
+                        std::pair<size_t, size_t> last_action = shm_last_action();
+                        fprintf(stderr, "shm_send error, ret code: %d. start: %d, end: %d\n", res, (int)last_action.first,
+                                (int)last_action.second);
+                    }
+
+                    std::this_thread::sleep_for(std::chrono::milliseconds(sleep_msec));
+                    if (sleep_msec < 32) {
+                        sleep_msec *= 2;
+                    }
+
                 } else {
-                    ++sum_send_err;
+                    ++sum_send_times;
+                    sum_send_len += n * sizeof(size_t);
 
-                    std::pair<size_t, size_t> last_action = shm_last_action();
-                    fprintf(stderr, "shm_send error, ret code: %d. start: %d, end: %d\n", res, (int)last_action.first,
-                            (int)last_action.second);
-                }
-
-                std::this_thread::sleep_for(std::chrono::milliseconds(sleep_msec));
-                if (sleep_msec < 32) {
-                    sleep_msec *= 2;
-                }
-
-            } else {
-                ++sum_send_times;
-                sum_send_len += n * sizeof(size_t);
-
-                ++sum_seq;
-                if (!sum_seq) {
                     ++sum_seq;
+                    if (!sum_seq) {
+                        ++sum_seq;
+                    }
+
+                    if (sleep_msec > 8) sleep_msec /= 2;
                 }
-
-                if (sleep_msec > 8) sleep_msec /= 2;
             }
-        }
 
-        delete[] buf_pool;
-    });
+            delete[] buf_pool;
+        });
 
 
     // 检查状态

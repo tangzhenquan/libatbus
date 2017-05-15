@@ -158,7 +158,7 @@ CASE_TEST(channel, mem_miso) {
     const size_t wn = 8;
     std::thread *write_threads[wn];
     for (size_t i = 0; i < wn; ++i) {
-        write_threads[i] = new std::thread([&] {
+        write_threads[i] = new std::thread([&left_sec, &sum_send_len, &sum_send_times, &sum_send_full, &sum_send_err, &sum_seq, channel] {
             size_t buf_pool[1024];
             size_t seq_head = sum_seq.fetch_add(1);
             size_t head_offset = sizeof(size_t) * 6;
@@ -203,7 +203,7 @@ CASE_TEST(channel, mem_miso) {
     }
 
     // 读进程
-    std::thread *read_thread = new std::thread([&] {
+    std::thread *read_thread = new std::thread([&sum_recv_len, &sum_recv_times, &sum_recv_err, &all_write_thread_exit, channel] {
         size_t buff_recv[1024]; // 最大 4K-8K的包
 
         size_t head_offset = sizeof(size_t) * 6;

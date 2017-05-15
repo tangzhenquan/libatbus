@@ -155,12 +155,14 @@ namespace atbus {
          * @note 为了压缩内存占用空间，这里使用手动对齐，不直接用 #pragma pack(sizoef(long))
          */
         struct mem_block {
-            static const size_t channel_head_size = sizeof(mem_channel_head_align);
-            static const size_t block_head_size = ((sizeof(mem_block_head) - 1) / sizeof(data_align_type) + 1) * sizeof(data_align_type);
-            static const size_t node_head_size = ((sizeof(mem_node_head) - 1) / sizeof(data_align_type) + 1) * sizeof(data_align_type);
+            enum size_def {
+                channel_head_size = sizeof(mem_channel_head_align),
+                block_head_size = ((sizeof(mem_block_head) - 1) / sizeof(data_align_type) + 1) * sizeof(data_align_type),
+                node_head_size = ((sizeof(mem_node_head) - 1) / sizeof(data_align_type) + 1) * sizeof(data_align_type),
 
-            static const size_t node_data_size = ATBUS_MACRO_DATA_NODE_SIZE;
-            static const size_t node_head_data_size = node_data_size - block_head_size;
+                node_data_size = ATBUS_MACRO_DATA_NODE_SIZE,
+                node_head_data_size = node_data_size - block_head_size,
+            };
         };
 
         /**

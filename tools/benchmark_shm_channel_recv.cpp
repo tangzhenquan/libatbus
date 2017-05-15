@@ -65,7 +65,7 @@ int main(int argc, char *argv[]) {
     size_t sum_data_err = 0;
 
     // 创建读线程
-    std::thread *read_threads = new std::thread([&] {
+    std::thread *read_threads = new std::thread([&sum_recv_len, &sum_recv_times, &sum_recv_err, &sum_data_err, max_n, channel] {
         char *buf_pool = new char[max_n * sizeof(size_t)];
         char *buf_check = new char[max_n * sizeof(size_t)];
 
