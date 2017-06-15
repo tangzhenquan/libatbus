@@ -3,10 +3,10 @@ language: cpp
 env:
   global:
     - LANG="zh_CN.UTF-8"
-    - MSGPACK_PREFIX=$HOME/prebuilt/msgpack-2.1.1 ;
-    - MSGPACK_VERSION=2.1.1 ;
-    - LIBUV_PREFIX=$HOME/prebuilt/libuv-1.11.0 ;
-    - LIBUV_VERSION=1.11.0
+    - MSGPACK_PREFIX=$HOME/prebuilt/msgpack-2.1.2 ;
+    - MSGPACK_VERSION=2.1.2 ;
+    - LIBUV_PREFIX=$HOME/prebuilt/libuv-1.12.0 ;
+    - LIBUV_VERSION=1.12.0
     - CMAKE_PREFIX=$HOME/prebuilt/cmake ;
     - CMAKE_LINUX_URL=https://cmake.org/files/v3.8/cmake-3.8.1-Linux-x86_64.sh ;
 matrix:
