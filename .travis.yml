@@ -80,14 +80,19 @@ before_install:
 
 install:
     - if [ "$TRAVIS_OS_NAME" == "linux" ] ; then
-    
+      
           if [ ! -e "$CMAKE_BIN" ]; then
+            
             mkdir -p "$CMAKE_PREFIX";
+            
             curl --insecure -L "$CMAKE_LINUX_URL" -o cmake-linux.sh ;
+            
             bash cmake-linux.sh --skip-license --prefix=$CMAKE_PREFIX ;
+            
           fi
-
+          
       fi
+      
     - if [ "$TRAVIS_OS_NAME" == "osx" ] ; then brew upgrade cmake; brew install --HEAD libuv; fi
 
 before_script:
