@@ -9,7 +9,7 @@
 > + Clang: 3.0 及以上 （建议 clang 3.4及以上）
 > + VC: 10 及以上 （建议VC 12及以上）
 
-+ [cmake](https://cmake.org/download/) 3.3.0 以上(建议 3.4 以上)
++ [cmake](https://cmake.org/download/) 3.7.0 以上
 + [msgpack](https://github.com/msgpack/msgpack-c)
 > 用于协议打解包,仅使用头文件
 

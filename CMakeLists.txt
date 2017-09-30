@@ -1,4 +1,4 @@
-﻿cmake_minimum_required(VERSION 3.3.0)
+﻿cmake_minimum_required(VERSION 3.7.0)
 cmake_policy(SET CMP0054 NEW)
 
 project(libatbus)
