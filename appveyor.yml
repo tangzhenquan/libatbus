@@ -258,39 +258,30 @@ test_script:
 
         if ( "$Env:OS" -ieq "MinGW" ) {
 
-            if ( -not (  Test-Path "$Env:APPVEYOR_BUILD_FOLDER/build/test/atbus_unit_test.exe" ) ) {
-
-                echo "Build failed.";
-
-                exit -1;
-
-            }
-
-            <#
             if ( "$Env:CMAKE_GEN" -ieq "MinGW32" ) {
 
-                echo "$Env:MSYS2_PREFIX/msys2_shell -mingw32 -lc cd '$Env:APPVEYOR_BUILD_FOLDER/build'; ./test/atbus_unit_test.exe"
+                echo "$Env:MSYS2_PREFIX/msys2_shell -mingw32 -lc cd '$Env:APPVEYOR_BUILD_FOLDER/build'; ctest . -V"
 
-                & "$Env:MSYS2_PREFIX/msys2_shell" -mingw32 -lc "cd '$Env:APPVEYOR_BUILD_FOLDER/build'; ./test/atbus_unit_test.exe > '$Env:MSYS2_LOG_FILE' 2>&1" | Out-Host
+                & "$Env:MSYS2_PREFIX/msys2_shell" -mingw32 -lc "cd '$Env:APPVEYOR_BUILD_FOLDER/build'; ctest . -V > '$Env:MSYS2_LOG_FILE' 2>&1" | Out-Host
 
                 Get-Content "$Env:MSYS2_LOG_FILE"
 
             } else {
 
-                echo "$Env:MSYS2_PREFIX/msys2_shell -mingw64 -lc cd '$Env:APPVEYOR_BUILD_FOLDER/build'; ./test/atbus_unit_test.exe"
+                echo "$Env:MSYS2_PREFIX/msys2_shell -mingw64 -lc cd '$Env:APPVEYOR_BUILD_FOLDER/build'; ctest . -V"
 
-                & "$Env:MSYS2_PREFIX/msys2_shell" -mingw64 -lc "cd '$Env:APPVEYOR_BUILD_FOLDER/build'; ./test/atbus_unit_test.exe > '$Env:MSYS2_LOG_FILE' 2>&1" | Out-Host
+                & "$Env:MSYS2_PREFIX/msys2_shell" -mingw64 -lc "cd '$Env:APPVEYOR_BUILD_FOLDER/build'; ctest . -V > '$Env:MSYS2_LOG_FILE' 2>&1" | Out-Host
 
                 Get-Content "$Env:MSYS2_LOG_FILE"
 
             }
-            #>
 
         } else {
 
             Copy-Item -Force "$Env:LIBUV_ROOT/libuv.dll" ./
 
-            & "test/$Env:CONFIGURATION/atbus_unit_test.exe"
+            & ctest . -V -C $Env:CONFIGURATION
+            
         }
 
 #
