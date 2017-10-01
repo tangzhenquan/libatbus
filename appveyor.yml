@@ -278,10 +278,10 @@ test_script:
 
         } else {
 
-            Copy-Item -Force "$Env:LIBUV_ROOT/libuv.dll" ./
+            $Env:PATH = "$Env:PATH;$Env:LIBUV_ROOT"
 
             & ctest . -V -C $Env:CONFIGURATION
-            
+
         }
 
 #
