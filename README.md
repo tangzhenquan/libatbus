@@ -26,13 +26,6 @@ Gitter
 + [libuv](http://libuv.org/)（用于网络通道）
 + [atframe_utils](https://github.com/atframework/atframe_utils)（基础公共代码）
 
-
-Why not c?
-------
-本来像用纯c写这个组件的，因为纯c比较容易控制结构清晰和代码简洁，但是为什么之后又改用C++了呢？首先一个原因是初期准备使用的协议打解包组件msgpack是c++的；另一方面c++提供了比较简单好用的数据结构容器和内存管理组件，更重要的是这些东西都是原生跨平台的。所以就干脆用C++和C++风格来实现。
-
-*PS:GCC都转依赖C++了我为嘛不能用？*
-
 关于MsgPack
 ------
 本来是想用flatbuffer做协议打解包的，因为使用flatbuffer的话不需要额外引入外部库。
@@ -70,6 +63,10 @@ Why not c?
 环境准备和构建流程
 ------
 使用cmake标准构建方式，默认的编译目标为Debug版本，详见 [使用（编译）流程](docs/Build.md)
+
+**注意： 默认的编译选项是Debug模式，压测和正式环境请使用 cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo 源码目录 [其他选项] 编译（相当于gcc -O2 -g -ggdb -DNDEBUG -Wall -Werror或MSVC /O2）**
+
+**注意： Windows下私有共享内存不允许跨进程共享，公有共享内存必须有管理员权限。如果Windows下出现初始化共享内存错误请使用管理员权限运行。**
 
 使用示例
 ------
