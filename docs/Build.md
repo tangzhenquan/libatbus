@@ -132,6 +132,13 @@ cmake --build . --target install;   # 或 make install
 
 ### 运行和测试
 
+```bash
+# MSVC请在构建目录下使用以下命令运行单元测试，其中Debug和之气按编译时的--config选项内容保持一致
+ctest . -V -C Debug
+# Unix like环境（包括mingw）在构建目录运行下面命令即可
+ctest . -V
+```
+
 单元测试会生成在[构建目录]/test下，sample会生成在[构建目录]/sample下，工具程序（比如压力测试程序）会生成在[构建目录]/tools下。并且不会被install
 
 cmake --build . --target install(或者make构建系统的make install) 仅会安装include目录和编译好的libs
