@@ -8,8 +8,10 @@
 
 #pragma once
 
-#ifndef LIBATBUS_CHANNEL_TYPES_H_
-#define LIBATBUS_CHANNEL_TYPES_H_
+#ifndef LIBATBUS_CHANNEL_TYPES_H
+#define LIBATBUS_CHANNEL_TYPES_H
+
+#pragma once
 
 #include <cstddef>
 #include <map>

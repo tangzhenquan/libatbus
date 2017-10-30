@@ -7,8 +7,10 @@
 
 #pragma once
 
-#ifndef LIBATBUS_ENDPOINT_H_
-#define LIBATBUS_ENDPOINT_H_
+#ifndef LIBATBUS_ENDPOINT_H
+#define LIBATBUS_ENDPOINT_H
+
+#pragma once
 
 #include <list>
 

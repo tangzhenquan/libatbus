@@ -5,8 +5,8 @@
  *      Author: owent
  */
 
-#ifndef LIBATBUS_NODE_H_
-#define LIBATBUS_NODE_H_
+#ifndef LIBATBUS_NODE_H
+#define LIBATBUS_NODE_H
 
 #pragma once
 

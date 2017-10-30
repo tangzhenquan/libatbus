@@ -1,7 +1,9 @@
 ﻿#pragma once
 
-#ifndef LIBATBUS_DETAIL_CRC32_H_
-#define LIBATBUS_DETAIL_CRC32_H_
+#ifndef LIBATBUS_DETAIL_CRC32_H
+#define LIBATBUS_DETAIL_CRC32_H
+
+#pragma once
 
 #include <stddef.h>
 #include <stdint.h>

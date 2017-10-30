@@ -8,8 +8,10 @@
 
 #pragma once
 
-#ifndef LIBATBUS_CHANNEL_EXPORT_H_
-#define LIBATBUS_CHANNEL_EXPORT_H_
+#ifndef LIBATBUS_CHANNEL_EXPORT_H
+#define LIBATBUS_CHANNEL_EXPORT_H
+
+#pragma once
 
 #include <cstddef>
 #include <ostream>

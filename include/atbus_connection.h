@@ -7,8 +7,10 @@
 
 #pragma once
 
-#ifndef LIBATBUS_CONNECTION_H_
-#define LIBATBUS_CONNECTION_H_
+#ifndef LIBATBUS_CONNECTION_H
+#define LIBATBUS_CONNECTION_H
+
+#pragma once
 
 #include <bitset>
 #include <ctime>

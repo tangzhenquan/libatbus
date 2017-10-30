@@ -7,8 +7,10 @@
 
 #pragma once
 
-#ifndef LIBATBUS_MSG_HANDLER_H_
-#define LIBATBUS_MSG_HANDLER_H_
+#ifndef LIBATBUS_MSG_HANDLER_H
+#define LIBATBUS_MSG_HANDLER_H
+
+#pragma once
 
 #include <bitset>
 #include <ctime>
