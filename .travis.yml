@@ -5,8 +5,8 @@ env:
     - LANG="zh_CN.UTF-8"
     - MSGPACK_PREFIX=$HOME/prebuilt/msgpack-2.1.5 ;
     - MSGPACK_VERSION=2.1.5 ;
-    - LIBUV_PREFIX=$HOME/prebuilt/libuv-1.15.0 ;
-    - LIBUV_VERSION=1.15.0
+    - LIBUV_PREFIX=$HOME/prebuilt/libuv-1.16.0 ;
+    - LIBUV_VERSION=1.16.0
     - CMAKE_PREFIX=$HOME/prebuilt/cmake ;
     - CMAKE_LINUX_URL=https://cmake.org/files/v3.9/cmake-3.9.3-Linux-x86_64.sh ;
 matrix:
