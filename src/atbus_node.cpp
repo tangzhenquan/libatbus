@@ -6,6 +6,10 @@
 
 #ifndef _MSC_VER
 
+#include <algorithm>
+#include <string>
+#include <vector>
+
 #include <sys/types.h>
 #include <unistd.h>
 
@@ -967,6 +971,58 @@ namespace atbus {
             return hn;
         }
 
+        // use sorted mac address first, hostname is too easy to conflict
+        {
+            std::vector<std::string> all_outter_inters;
+            uv_interface_address_t *interface_addrs = NULL;
+            int interface_sz = 0;
+            size_t total_size = 0;
+            uv_interface_addresses(&interface_addrs, &interface_sz);
+            for (int i = 0; i < interface_sz; ++i) {
+                uv_interface_address_t *inter_addr = interface_addrs + i;
+                if (inter_addr->is_internal) {
+                    continue;
+                }
+
+                std::string one_addr;
+                size_t dump_index = 0;
+                while (dump_index < sizeof(inter_addr->phys_addr) && 0 == inter_addr->phys_addr[dump_index]) {
+                    ++dump_index;
+                }
+                if (dump_index < sizeof(inter_addr->phys_addr)) {
+                    one_addr.resize((sizeof(inter_addr->phys_addr) - dump_index) * 2);
+                    util::string::dumphex(inter_addr->phys_addr + dump_index, (sizeof(inter_addr->phys_addr) - dump_index), &one_addr[0]);
+                }
+
+                if (!one_addr.empty()) {
+                    all_outter_inters.push_back(one_addr);
+                    total_size += one_addr.size();
+                }
+            }
+
+            if (total_size > 0) {
+                hn.reserve(total_size + all_outter_inters.size());
+            }
+
+            std::sort(all_outter_inters.begin(), all_outter_inters.end());
+            std::vector<std::string>::iterator new_end = std::unique(all_outter_inters.begin(), all_outter_inters.end());
+            all_outter_inters.erase(new_end, all_outter_inters.end());
+            for (size_t i = 0; i < all_outter_inters.size(); ++i) {
+                if (i > 0) {
+                    hn += ":";
+                }
+                hn += all_outter_inters[i];
+            }
+
+            if (NULL != interface_addrs) {
+                uv_free_interface_addresses(interface_addrs, interface_sz);
+            }
+        }
+
+        if (!hn.empty()) {
+            return hn;
+        }
+
         // @see man gethostname
         // 255 or less in posix standard
         // 64 in linux(defined as HOST_NAME_MAX)
@@ -1593,4 +1649,4 @@ namespace atbus {
     }
 
     node::stat_info_t::stat_info_t() : dispatch_times(0) {}
-}
+} // namespace atbus
