@@ -136,6 +136,8 @@ CASE_TEST(channel, mem_miso) {
     CASE_EXPECT_NE(NULL, channel);
     // 4KB header
 
+    // set longer timeout when in unit test(appveyor ci timeout sometimes)
+    CASE_EXPECT_EQ(0, mem_configure_set_write_timeout(channel, 256));
     srand(static_cast<unsigned>(time(NULL)));
 
     int left_sec = 16;
@@ -240,8 +242,9 @@ CASE_TEST(channel, mem_miso) {
                     CASE_EXPECT_EQ(data_seq[rdh], rdd);
 
                     if (data_seq[rdh] != rdd) {
-                        mem_show_channel(channel, CASE_MSG_INFO() << "rdh=" << rdh << ", data_seq[rdh]=" << data_seq[rdh] << ", rdd=" << rdd
-                                                                  << std::endl,
+                        mem_show_channel(channel,
+                                         CASE_MSG_INFO()
+                                             << "rdh=" << rdh << ", data_seq[rdh]=" << data_seq[rdh] << ", rdd=" << rdd << std::endl,
                                          true, 16);
                     }
 
