@@ -59,7 +59,7 @@ namespace atbus {
                 return *this;
             }
         };
-    }
+    } // namespace detail
 
     connection::connection() : state_(state_t::DISCONNECTED), owner_(NULL), binding_(NULL) {
         flags_.reset();
@@ -177,6 +177,7 @@ namespace atbus {
             state_ = state_t::CONNECTED;
             ATBUS_FUNC_NODE_DEBUG(*owner_, get_binding(), this, NULL, "channel connected(listen)");
 
+            owner_->on_new_connection(this);
             return res;
         } else if (0 == UTIL_STRFUNC_STRNCASE_CMP("shm", address_.scheme.c_str(), 3)) {
             channel::shm_channel *shm_chann = NULL;
@@ -205,6 +206,7 @@ namespace atbus {
             state_ = state_t::CONNECTED;
             ATBUS_FUNC_NODE_DEBUG(*owner_, get_binding(), this, NULL, "channel connected(listen)");
 
+            owner_->on_new_connection(this);
             return res;
         } else {
             detail::connection_async_data *async_data = new detail::connection_async_data(owner_);
@@ -273,6 +275,7 @@ namespace atbus {
                 ATBUS_FUNC_NODE_DEBUG(*owner_, binding_, this, NULL, "channel connected(connect)");
             }
 
+            owner_->on_new_connection(this);
             return res;
         } else if (0 == UTIL_STRFUNC_STRNCASE_CMP("shm", address_.scheme.c_str(), 3)) {
             channel::shm_channel *shm_chann = NULL;
@@ -307,6 +310,7 @@ namespace atbus {
                 ATBUS_FUNC_NODE_DEBUG(*owner_, binding_, this, NULL, "channel connected(connect)");
             }
 
+            owner_->on_new_connection(this);
             return res;
         } else {
             // redirect loopback address to local address
@@ -430,6 +434,7 @@ namespace atbus {
 
         } else {
             async_data->conn->flags_.set(flag_t::REG_FD, true);
+            async_data->conn->flags_.set(flag_t::LISTEN_FD, true);
             async_data->conn->state_ = state_t::CONNECTED;
             ATBUS_FUNC_NODE_DEBUG(*async_data->conn->owner_, async_data->conn->binding_, async_data->conn.get(), NULL,
                                   "channel connected(listen callback)");
@@ -438,6 +443,8 @@ namespace atbus {
             async_data->conn->conn_data_.shared.ios_fd.conn = connection;
             async_data->conn->conn_data_.free_fn = ios_free_fn;
             connection->data = async_data->conn.get();
+
+            async_data->owner_node->on_new_connection(async_data->conn.get());
         }
 
         delete async_data;
@@ -744,4 +751,4 @@ namespace atbus {
         obj.convert(m);
         return true;
     }
-}
+} // namespace atbus

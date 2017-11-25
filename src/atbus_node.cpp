@@ -1205,9 +1205,9 @@ namespace atbus {
             return EN_ATBUS_ERR_PARAMS;
         }
 
-        // 如果ID有效，则发送注册协议
+        // 如果ID有效，且是IO流连接，则发送注册协议
         // ID为0则是临时节点，不需要注册
-        if (get_id()) {
+        if (get_id() && conn->check_flag(connection::flag_t::REG_FD) && false == conn->check_flag(connection::flag_t::LISTEN_FD)) {
             int ret = msg_handler::send_reg(ATBUS_CMD_NODE_REG_REQ, *this, *conn, 0, 0);
             if (ret < 0) {
                 ATBUS_FUNC_NODE_ERROR(*this, NULL, conn, ret, 0);
