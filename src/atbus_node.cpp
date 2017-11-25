@@ -80,15 +80,21 @@ namespace atbus {
         conf->ttl = 16; // 默认最长8次跳转
 
         conf->first_idle_timeout = ATBUS_MACRO_CONNECTION_CONFIRM_TIMEOUT;
-        conf->ping_interval = 60;
+        conf->ping_interval = 8; // 默认ping包间隔为8s
         conf->retry_interval = 3;
-        conf->fault_tolerant = 3;
+        conf->fault_tolerant = 2; // 允许最多失败2次，第3次直接失败，默认配置里3次ping包无响应则是最多24s可以发现节点下线
         conf->backlog = ATBUS_MACRO_CONNECTION_BACKLOG;
 
         conf->msg_size = ATBUS_MACRO_MSG_LIMIT;
-        conf->recv_buffer_size = ATBUS_MACRO_MSG_LIMIT * 32; // default for 3 times of ATBUS_MACRO_MSG_LIMIT = 2MB
-        conf->send_buffer_size = ATBUS_MACRO_MSG_LIMIT;
-        conf->send_buffer_number = 0;
+
+        // recv_buffer_size 用于内存/共享内存通道的缓冲区长度，因为本机节点一般数量少所以默认设的大一点
+        // default for 128 times of ATBUS_MACRO_MSG_LIMIT = 8MB
+        conf->recv_buffer_size = ATBUS_MACRO_MSG_LIMIT * 128;
+
+        // send_buffer_size 用于IO流通道的发送缓冲区长度，远程节点可能数量很多所以设的小一点
+        // default for 32 times of ATBUS_MACRO_MSG_LIMIT = 2MB
+        conf->send_buffer_size = ATBUS_MACRO_MSG_LIMIT * 32;
+        conf->send_buffer_number = 0; // 默认不使用静态缓冲区，所以设为0
 
         conf->flags.reset();
     }
