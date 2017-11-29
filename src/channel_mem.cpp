@@ -57,7 +57,7 @@ namespace atbus {
                     // return atbus::detail::crc64(crc, static_cast<const unsigned char *>(s), l);
                 }
             };
-        }
+        } // namespace detail
 
         typedef ATBUS_MACRO_DATA_ALIGN_TYPE data_align_type;
 
@@ -148,7 +148,7 @@ namespace atbus {
             static size_t last_action_channel_end_node_index = 0;
             static size_t last_action_channel_begin_node_index = 0;
             static mem_channel *last_action_channel_ptr = NULL;
-        }
+        } // namespace detail
 
         /**
          * @brief 内存通道常量
@@ -378,6 +378,29 @@ namespace atbus {
         // 节点大小必须是对齐单位的2的N次方倍
         static_assert(0 == (mem_block::node_data_size & (mem_block::node_data_size - sizeof(data_align_type))),
                       "node size must be [data align size] * 2^N");
+
+
+        int mem_configure_set_write_timeout(mem_channel *channel, uint64_t ms) {
+            if (NULL == channel) return EN_ATBUS_ERR_PARAMS;
+            channel->conf.conf_send_timeout_ms = ms;
+            return EN_ATBUS_ERR_SUCCESS;
+        }
+
+        uint64_t mem_configure_get_write_timeout(mem_channel *channel) {
+            if (NULL == channel) return 0;
+            return channel->conf.conf_send_timeout_ms;
+        }
+
+        int mem_configure_set_write_retry_times(mem_channel *channel, size_t v) {
+            if (NULL == channel) return EN_ATBUS_ERR_PARAMS;
+            channel->conf.write_retry_times = v;
+            return EN_ATBUS_ERR_SUCCESS;
+        }
+
+        size_t mem_configure_get_write_retry_times(mem_channel *channel) {
+            if (NULL == channel) return 0;
+            return channel->conf.write_retry_times;
+        }
 
 
         int mem_attach(void *buf, size_t len, mem_channel **channel, const mem_conf *conf) {
@@ -861,5 +884,5 @@ namespace atbus {
                     << std::endl;
             }
         }
-    }
-}
+    } // namespace channel
+} // namespace atbus

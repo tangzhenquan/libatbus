@@ -138,7 +138,7 @@ namespace atbus {
             shm_record.handle = OpenFileMapping(FILE_MAP_ALL_ACCESS,         // read/write access
                                                 FALSE,                       // do not inherit the name
                                                 ATBUS_VC_TEXT(shm_file_name) // name of mapping object
-                                                );
+            );
             if (NULL != shm_record.handle) {
                 shm_record.buffer = (LPTSTR)MapViewOfFile(shm_record.handle,   // handle to map object
                                                           FILE_MAP_ALL_ACCESS, // read/write permission
@@ -167,7 +167,7 @@ namespace atbus {
                                                   0,                           // maximum object size (high-order DWORD)
                                                   static_cast<DWORD>(len),     // maximum object size (low-order DWORD)
                                                   ATBUS_VC_TEXT(shm_file_name) // name of mapping object
-                                                  );
+            );
 
             if (NULL == shm_record.handle) return EN_ATBUS_ERR_SHM_GET_FAILED;
 
@@ -196,18 +196,18 @@ namespace atbus {
             // linux下阻止从交换分区分配物理页
             shmflag |= SHM_NORESERVE;
 
-// 临时关闭大页表功能，等后续增加了以下判定之后再看情况加回来
-// 使用大页表要先判定 /proc/meminfo 内的一些字段内容，再配置大页表
-// -- Hugepagesize: 大页表的分页大小，如果ATBUS_MACRO_HUGETLB_SIZE小于这个值，要对齐到这个值
-// -- HugePages_Total: 大页表总大小
-// -- HugePages_Free: 大页表可用大小，如果可用值小于需要分配的空间，也不能用大页表
-//#ifdef ATBUS_MACRO_HUGETLB_SIZE
-//            // 如果大于4倍的大页表，则对齐到大页表并使用大页表
-//            if (len > (4 * ATBUS_MACRO_HUGETLB_SIZE)) {
-//                len = (len + (ATBUS_MACRO_HUGETLB_SIZE)-1) & (~((ATBUS_MACRO_HUGETLB_SIZE)-1));
-//                shmflag |= SHM_HUGETLB;
-//            }
-//#endif
+            // 临时关闭大页表功能，等后续增加了以下判定之后再看情况加回来
+            // 使用大页表要先判定 /proc/meminfo 内的一些字段内容，再配置大页表
+            // -- Hugepagesize: 大页表的分页大小，如果ATBUS_MACRO_HUGETLB_SIZE小于这个值，要对齐到这个值
+            // -- HugePages_Total: 大页表总大小
+            // -- HugePages_Free: 大页表可用大小，如果可用值小于需要分配的空间，也不能用大页表
+            //#ifdef ATBUS_MACRO_HUGETLB_SIZE
+            //            // 如果大于4倍的大页表，则对齐到大页表并使用大页表
+            //            if (len > (4 * ATBUS_MACRO_HUGETLB_SIZE)) {
+            //                len = (len + (ATBUS_MACRO_HUGETLB_SIZE)-1) & (~((ATBUS_MACRO_HUGETLB_SIZE)-1));
+            //                shmflag |= SHM_HUGETLB;
+            //            }
+            //#endif
 
 #endif
             shm_record.shm_id = shmget(shm_key, len, shmflag);
@@ -236,6 +236,31 @@ namespace atbus {
 
             return EN_ATBUS_ERR_SUCCESS;
         }
+
+        int shm_configure_set_write_timeout(shm_channel *channel, uint64_t ms) {
+            shm_channel_switcher switcher;
+            switcher.shm = channel;
+            return mem_configure_set_write_timeout(switcher.mem, ms);
+        }
+
+        uint64_t shm_configure_get_write_timeout(shm_channel *channel) {
+            shm_channel_switcher switcher;
+            switcher.shm = channel;
+            return mem_configure_get_write_timeout(switcher.mem);
+        }
+
+        int shm_configure_set_write_retry_times(shm_channel *channel, size_t times) {
+            shm_channel_switcher switcher;
+            switcher.shm = channel;
+            return mem_configure_set_write_retry_times(switcher.mem, times);
+        }
+
+        size_t shm_configure_get_write_retry_times(shm_channel *channel) {
+            shm_channel_switcher switcher;
+            switcher.shm = channel;
+            return mem_configure_get_write_retry_times(switcher.mem);
+        }
+
 
         int shm_attach(key_t shm_key, size_t len, shm_channel **channel, const shm_conf *conf) {
             shm_channel_switcher channel_s;
@@ -300,7 +325,7 @@ namespace atbus {
             switcher.shm = channel;
             mem_show_channel(switcher.mem, out, need_node_status, need_node_data);
         }
-    }
-}
+    } // namespace channel
+} // namespace atbus
 
 #endif
