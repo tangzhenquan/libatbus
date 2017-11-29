@@ -39,7 +39,7 @@ namespace atbus {
         struct auto_select_set {
             typedef ATBUS_ADVANCE_TYPE_SET(TVal) type;
         };
-    }
+    } // namespace detail
 
     class node;
 
@@ -52,7 +52,9 @@ namespace atbus {
             enum type {
                 RESETTING, /** 正在执行重置（防止递归死循环） **/
                 CONNECTION_SORTED,
-                DESTRUCTING, /** 正在执行析构 **/
+                DESTRUCTING,     /** 正在执行析构 **/
+                HAS_LISTEN_PORC, /** 是否有proc类的listen地址 **/
+                HAS_LISTEN_FD,   /** 是否有fd类的listen地址 **/
 
                 MUTABLE_FLAGS,
                 GLOBAL_ROUTER = MUTABLE_FLAGS, /** 全局路由表 **/
@@ -126,7 +128,7 @@ namespace atbus {
         ptr_t watch() const;
 
         inline const std::list<std::string> &get_listen() const { return listen_address_; }
-        inline void add_listen(const std::string &addr) { listen_address_.push_back(addr); }
+        void add_listen(const std::string &addr);
 
     private:
         static bool sort_connection_cmp_fn(const connection::ptr_t &left, const connection::ptr_t &right);
@@ -189,6 +191,6 @@ namespace atbus {
         };
         stat_t stat_;
     };
-}
+} // namespace atbus
 
 #endif /* LIBATBUS_ENDPOINT_H_ */

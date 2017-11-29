@@ -50,7 +50,7 @@ namespace atbus {
 
             return fn_names[cmd].c_str();
         }
-    }
+    } // namespace detail
 
     int msg_handler::dispatch_msg(node &n, connection *conn, protocol::msg *m, int status, int errcode) {
         static handler_fn_t fns[ATBUS_CMD_MAX] = {NULL};
@@ -186,7 +186,8 @@ namespace atbus {
         // 子节点转发成功
         if (res >= 0 && n.is_child_node(m.body.forward->to)) {
             // 如果来源和目标消息都来自于子节点，则通知建立直连
-            if (NULL != to_ep && n.is_child_node(direct_from_bus_id) && n.is_child_node(to_ep->get_id())) {
+            if (NULL != to_ep && to_ep->get_flag(endpoint::flag_t::HAS_LISTEN_FD) && n.is_child_node(direct_from_bus_id) &&
+                n.is_child_node(to_ep->get_id())) {
                 protocol::msg conn_syn_m;
                 conn_syn_m.init(n.get_id(), ATBUS_CMD_NODE_CONN_SYN, 0, 0, n.alloc_msg_seq());
                 protocol::conn_data *new_conn = conn_syn_m.body.make_body(conn_syn_m.body.conn);
@@ -196,13 +197,23 @@ namespace atbus {
                 }
 
                 const std::list<std::string> &listen_addrs = to_ep->get_listen();
+                const endpoint *from_ep = n.get_endpoint(direct_from_bus_id);
+                bool is_same_host = (NULL != from_ep && from_ep->get_hostname() == to_ep->get_hostname());
+
                 for (std::list<std::string>::const_iterator iter = listen_addrs.begin(); iter != listen_addrs.end(); ++iter) {
                     // 通知连接控制通道，控制通道不能是（共享）内存通道
-                    if (0 != UTIL_STRFUNC_STRNCASE_CMP("mem:", iter->c_str(), 4) &&
-                        0 != UTIL_STRFUNC_STRNCASE_CMP("shm:", iter->c_str(), 4)) {
-                        new_conn->address.address = *iter;
-                        break;
+                    if (0 == UTIL_STRFUNC_STRNCASE_CMP("mem:", iter->c_str(), 4) ||
+                        0 == UTIL_STRFUNC_STRNCASE_CMP("shm:", iter->c_str(), 4)) {
+                        continue;
                     }
+
+                    // Unix Sock不能跨机器
+                    if (0 == UTIL_STRFUNC_STRNCASE_CMP("unix:", iter->c_str(), 5) && !is_same_host) {
+                        continue;
+                    }
+
+                    new_conn->address.address = *iter;
+                    break;
                 }
 
                 if (!new_conn->address.address.empty()) {
@@ -534,4 +545,4 @@ namespace atbus {
 
         return EN_ATBUS_ERR_SUCCESS;
     }
-}
+} // namespace atbus

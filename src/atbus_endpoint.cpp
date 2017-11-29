@@ -6,6 +6,7 @@
 #include <ctime>
 #include <stdint.h>
 
+#include <common/string_oprs.h>
 
 #include "detail/buffer.h"
 
@@ -65,6 +66,8 @@ namespace atbus {
             (*iter)->reset();
         }
         data_conn_.clear();
+
+        listen_address_.clear();
 
         flags_.reset();
         // 只要endpoint存在，则它一定存在于owner_的某个位置。
@@ -230,6 +233,20 @@ namespace atbus {
         return watcher_.lock();
     }
 
+    void endpoint::add_listen(const std::string &addr) {
+        if (addr.empty()) {
+            return;
+        }
+
+        if (0 == UTIL_STRFUNC_STRNCASE_CMP("mem:", addr.c_str(), 4) || 0 == UTIL_STRFUNC_STRNCASE_CMP("shm:", addr.c_str(), 4)) {
+            flags_.set(flag_t::HAS_LISTEN_PORC, true);
+        } else {
+            flags_.set(flag_t::HAS_LISTEN_FD, true);
+        }
+
+        listen_address_.push_back(addr);
+    }
+
     bool endpoint::sort_connection_cmp_fn(const connection::ptr_t &left, const connection::ptr_t &right) {
         if (left->check_flag(connection::flag_t::ACCESS_SHARE_ADDR) != right->check_flag(connection::flag_t::ACCESS_SHARE_ADDR)) {
             return left->check_flag(connection::flag_t::ACCESS_SHARE_ADDR);
@@ -258,9 +275,7 @@ namespace atbus {
         return NULL;
     }
 
-    connection *endpoint::get_data_connection(endpoint *ep) const {
-        return get_data_connection(ep, true);
-    }
+    connection *endpoint::get_data_connection(endpoint *ep) const { return get_data_connection(ep, true); }
 
     connection *endpoint::get_data_connection(endpoint *ep, bool reuse_ctrl) const {
         if (NULL == ep) {
@@ -450,4 +465,4 @@ namespace atbus {
 
         return ret;
     }
-}
+} // namespace atbus
