@@ -88,7 +88,7 @@ struct node_reg_test_recv_msg_record_t {
 static node_reg_test_recv_msg_record_t recv_msg_history;
 
 static int node_reg_test_recv_msg_test_record_fn(const atbus::node &n, const atbus::endpoint *ep, const atbus::connection *conn,
-    const atbus::protocol::msg& m, const void *buffer, size_t len) {
+                                                 const atbus::protocol::msg &m, const void *buffer, size_t len) {
     recv_msg_history.n = &n;
     recv_msg_history.ep = ep;
     recv_msg_history.conn = conn;
@@ -164,11 +164,8 @@ CASE_TEST(atbus_node_reg, reset_and_send) {
 
         node1->connect("ipv4://127.0.0.1:16388");
 
-        UNITTEST_WAIT_UNTIL(conf.ev_loop,
-            node1->is_endpoint_available(node2->get_id()) &&
-            node2->is_endpoint_available(node1->get_id()),
-            8000, 0) {
-        }
+        UNITTEST_WAIT_UNTIL(conf.ev_loop, node1->is_endpoint_available(node2->get_id()) && node2->is_endpoint_available(node1->get_id()),
+                            8000, 0) {}
         // in windows CI, connection will be closed sometimes, it will lead to add one endpoint more than one times
         CASE_EXPECT_LE(check_ep_count + 2, recv_msg_history.add_endpoint_count);
 
@@ -187,10 +184,7 @@ CASE_TEST(atbus_node_reg, reset_and_send) {
         node2->set_on_recv_handle(node_reg_test_recv_msg_test_record_fn);
         node1->send_data(node2->get_id(), 0, send_data.data(), send_data.size());
 
-        UNITTEST_WAIT_UNTIL(conf.ev_loop,
-            count != recv_msg_history.count,
-            8000, 0) {
-        }
+        UNITTEST_WAIT_UNTIL(conf.ev_loop, count != recv_msg_history.count, 8000, 0) {}
 
         // check add endpoint callback
         CASE_EXPECT_EQ(send_data, recv_msg_history.data);
@@ -199,10 +193,8 @@ CASE_TEST(atbus_node_reg, reset_and_send) {
 
         // reset
         node1->reset();
-        UNITTEST_WAIT_UNTIL(conf.ev_loop,
-            NULL == node1->get_endpoint(node2->get_id()) &&
-            NULL == node2->get_endpoint(node1->get_id()),
-            8000, 64) {
+        UNITTEST_WAIT_UNTIL(conf.ev_loop, NULL == node1->get_endpoint(node2->get_id()) && NULL == node2->get_endpoint(node1->get_id()),
+                            8000, 64) {
             ++proc_t;
 
             node1->proc(proc_t, 0);
@@ -255,11 +247,8 @@ CASE_TEST(atbus_node_reg, destruct) {
 
         node1->connect("ipv4://127.0.0.1:16388");
 
-        UNITTEST_WAIT_UNTIL(conf.ev_loop,
-            node1->is_endpoint_available(node2->get_id()) &&
-            node2->is_endpoint_available(node1->get_id()),
-            8000, 0) {
-        }
+        UNITTEST_WAIT_UNTIL(conf.ev_loop, node1->is_endpoint_available(node2->get_id()) && node2->is_endpoint_available(node1->get_id()),
+                            8000, 0) {}
 
         for (int i = 0; i < 16; ++i) {
             uv_run(conf.ev_loop, UV_RUN_NOWAIT);
@@ -270,9 +259,7 @@ CASE_TEST(atbus_node_reg, destruct) {
         node1.reset();
 
         ++proc_t;
-        UNITTEST_WAIT_UNTIL(conf.ev_loop,
-            NULL == node2->get_endpoint(0x12345678),
-            8000, 64) {
+        UNITTEST_WAIT_UNTIL(conf.ev_loop, NULL == node2->get_endpoint(0x12345678), 8000, 64) {
             ++proc_t;
 
             node2->proc(proc_t, 0);
@@ -330,10 +317,9 @@ CASE_TEST(atbus_node_reg, reg_success) {
 
 
         // 注册成功自动会有可用的端点
-        UNITTEST_WAIT_UNTIL(conf.ev_loop,
-            node_child->is_endpoint_available(node_parent->get_id()) &&
-            node_parent->is_endpoint_available(node_child->get_id()),
-            8000, 0) {
+        UNITTEST_WAIT_UNTIL(
+            conf.ev_loop,
+            node_child->is_endpoint_available(node_parent->get_id()) && node_parent->is_endpoint_available(node_child->get_id()), 8000, 0) {
         }
 
         // in windows CI, connection will be closed sometimes, it will lead to add one endpoint more than one times
@@ -403,9 +389,9 @@ CASE_TEST(atbus_node_reg, conflict) {
         time_t proc_t = time(NULL) + 1;
         // 必然有一个失败的
         UNITTEST_WAIT_UNTIL(conf.ev_loop,
-            atbus::node::state_t::CREATED != node_child->get_state() && 
-            atbus::node::state_t::CREATED != node_child_fail->get_state(),
-            8000, 64) {
+                            atbus::node::state_t::CREATED != node_child->get_state() &&
+                                atbus::node::state_t::CREATED != node_child_fail->get_state(),
+                            8000, 64) {
             node_parent->proc(proc_t, 0);
             node_child->proc(proc_t, 0);
             node_child_fail->proc(proc_t, 0);
@@ -463,9 +449,7 @@ CASE_TEST(atbus_node_reg, reconnect_father_failed) {
 
         time_t proc_t = time(NULL) + 1;
         // 先等连接成功
-        UNITTEST_WAIT_UNTIL(conf.ev_loop,
-            atbus::node::state_t::RUNNING == node_child->get_state(),
-            8000, 64) {
+        UNITTEST_WAIT_UNTIL(conf.ev_loop, atbus::node::state_t::RUNNING == node_child->get_state(), 8000, 64) {
             node_parent->proc(proc_t, 0);
             node_child->proc(proc_t, 0);
             ++proc_t;
@@ -477,9 +461,7 @@ CASE_TEST(atbus_node_reg, reconnect_father_failed) {
         // 重连父节点，但是连接不成功也不会导致下线
         // 连接过程中的转态变化
         size_t retry_times = 0;
-        UNITTEST_WAIT_IF(conf.ev_loop,
-            atbus::node::state_t::RUNNING == node_child->get_state() || retry_times < 16,
-            8000, 64) {
+        UNITTEST_WAIT_IF(conf.ev_loop, atbus::node::state_t::RUNNING == node_child->get_state() || retry_times < 16, 8000, 64) {
             proc_t += conf.retry_interval + 1;
 
             node_child->proc(proc_t, 0);
@@ -487,7 +469,7 @@ CASE_TEST(atbus_node_reg, reconnect_father_failed) {
             if (atbus::node::state_t::RUNNING != node_child->get_state()) {
                 ++retry_times;
                 CASE_EXPECT_TRUE(atbus::node::state_t::LOST_PARENT == node_child->get_state() ||
-                    atbus::node::state_t::CONNECTING_PARENT == node_child->get_state());
+                                 atbus::node::state_t::CONNECTING_PARENT == node_child->get_state());
                 CASE_EXPECT_NE(atbus::node::state_t::CREATED, node_child->get_state());
                 CASE_EXPECT_NE(atbus::node::state_t::INITED, node_child->get_state());
             }
@@ -506,9 +488,9 @@ CASE_TEST(atbus_node_reg, reconnect_father_failed) {
         CASE_EXPECT_EQ(EN_ATBUS_ERR_SUCCESS, node_parent->listen("ipv4://127.0.0.1:16387"));
         CASE_EXPECT_EQ(EN_ATBUS_ERR_SUCCESS, node_parent->start());
 
-        UNITTEST_WAIT_IF(conf.ev_loop,
-            atbus::node::state_t::RUNNING != node_child->get_state(),
-            8000, 64) {
+        UNITTEST_WAIT_IF(
+            conf.ev_loop,
+            atbus::node::state_t::RUNNING != node_child->get_state() || NULL == node_parent->get_endpoint(node_child->get_id()), 8000, 64) {
             proc_t += conf.retry_interval;
             node_parent->proc(proc_t, 0);
             node_child->proc(proc_t, 0);

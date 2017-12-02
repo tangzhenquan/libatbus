@@ -7,7 +7,9 @@
 #include <stdint.h>
 
 
-#include "common/string_oprs.h"
+#include <common/file_system.h>
+#include <common/string_oprs.h>
+
 
 #include "detail/buffer.h"
 
@@ -209,6 +211,13 @@ namespace atbus {
             owner_->on_new_connection(this);
             return res;
         } else {
+            // listen 的地址应该转为绝对地址，方便跨组连接时可以不依赖相对目录
+            if (0 == UTIL_STRFUNC_STRNCASE_CMP("unix", address_.scheme.c_str(), 4)) {
+                if (false == util::file_system::is_abs_path(address_.host.c_str())) {
+                    address_.host = util::file_system::get_abs_path(address_.host.c_str());
+                }
+            }
+
             detail::connection_async_data *async_data = new detail::connection_async_data(owner_);
             if (NULL == async_data) {
                 ATBUS_FUNC_NODE_ERROR(*owner_, get_binding(), this, EN_ATBUS_ERR_MALLOC, 0);
