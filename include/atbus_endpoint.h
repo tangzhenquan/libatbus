@@ -43,7 +43,7 @@ namespace atbus {
 
     class node;
 
-    class endpoint CLASS_FINAL : public util::design_pattern::noncopyable {
+    class endpoint UTIL_CONFIG_FINAL : public util::design_pattern::noncopyable {
     public:
         typedef ATBUS_MACRO_BUSID_TYPE bus_id_t;
         typedef std::shared_ptr<endpoint> ptr_t;

@@ -36,7 +36,7 @@
 
 namespace atbus {
 
-    class node CLASS_FINAL : public util::design_pattern::noncopyable {
+    class node UTIL_CONFIG_FINAL : public util::design_pattern::noncopyable {
     public:
         typedef std::shared_ptr<node> ptr_t;
 
@@ -543,7 +543,7 @@ namespace atbus {
         void (*on_debug)(const char *file_path, size_t line, const node &, const endpoint *, const connection *, const protocol::msg *,
                          const char *fmt, ...);
     };
-}
+} // namespace atbus
 
 
 #define ATBUS_FUNC_NODE_ERROR(n, ep, conn, status, errorcode) (n).on_error(__FILE__, __LINE__, (ep), (conn), (status), (errorcode))

@@ -35,7 +35,7 @@ namespace atbus {
     class node;
     class endpoint;
 
-    class connection CLASS_FINAL : public util::design_pattern::noncopyable {
+    class connection UTIL_CONFIG_FINAL : public util::design_pattern::noncopyable {
     public:
         typedef std::shared_ptr<connection> ptr_t;
 
