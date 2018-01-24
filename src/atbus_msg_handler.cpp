@@ -135,7 +135,12 @@ namespace atbus {
         m.body.forward->to = m.body.forward->from;
         m.body.forward->from = n.get_id();
 
-        return n.send_ctrl_msg(m.body.forward->to, m);
+        int ret = n.send_ctrl_msg(m.body.forward->to, m);
+        if (ret < 0) {
+            ATBUS_FUNC_NODE_ERROR(n, NULL, NULL, ret, 0);
+        }
+
+        return ret;
     }
 
     int msg_handler::send_msg(node &n, connection &conn, const protocol::msg &m) {
@@ -252,10 +257,31 @@ namespace atbus {
             return EN_ATBUS_ERR_BAD_DATA;
         }
 
-        ATBUS_FUNC_NODE_ERROR(n, conn->get_binding(), conn, m.head.ret, 0);
-        n.on_send_data_failed(conn->get_binding(), conn, &m);
+        if (m.body.forward->to == n.get_id()) {
+            ATBUS_FUNC_NODE_ERROR(n, conn->get_binding(), conn, m.head.ret, 0);
+            n.on_send_data_failed(conn->get_binding(), conn, &m);
+            return EN_ATBUS_ERR_SUCCESS;
+        }
 
-        return EN_ATBUS_ERR_SUCCESS;
+        // 检查如果发送目标不是来源，则转发失败消息
+        endpoint *target = NULL;
+        connection *target_conn = NULL;
+        int ret = n.get_remote_channel(m.body.forward->to, &endpoint::get_data_connection, &target, &target_conn);
+        if (NULL == target || NULL == target_conn) {
+            ATBUS_FUNC_NODE_ERROR(n, target, target_conn, ret, 0);
+            return ret;
+        }
+
+        if (target->get_id() == m.head.src_bus_id) {
+            ret = EN_ATBUS_ERR_ATNODE_SRC_DST_IS_SAME;
+            ATBUS_FUNC_NODE_ERROR(n, target, target_conn, ret, 0);
+            return ret;
+        }
+
+        // 重设发送源
+        m.head.src_bus_id = n.get_id();
+        ret = send_msg(n, *target_conn, m);
+        return ret;
     }
 
     int msg_handler::on_recv_custom_cmd_req(node &n, connection *conn, protocol::msg &m, int status, int errcode) {

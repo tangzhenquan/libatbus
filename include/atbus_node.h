@@ -276,12 +276,22 @@ namespace atbus {
          * @brief 发送消息
          * @param tid 发送目标ID
          * @param mb 消息构建器
-         * @param fn 获取有效连接的接口
+         * @param fn 获取有效连接的接口，用以区分数据通道和控制通道
          * @param ep_out 如果发送成功，导出发送目标
          * @param conn_out 如果发送成功，导出发送连接
          * @return 0或错误码
          */
         int send_msg(bus_id_t tid, atbus::protocol::msg &mb, endpoint::get_connection_fn_t fn, endpoint **ep_out, connection **conn_out);
+
+        /**
+         * @brief 获取远程发送目标信息
+         * @param tid 发送目标ID，不能是自己的的BUS ID
+         * @param fn 获取有效连接的接口，用以区分数据通道和控制通道
+         * @param ep_out 如果发送成功，导出发送目标，否则导出NULL
+         * @param conn_out 如果发送成功，导出发送连接，否则导出NULL
+         * @return 0或错误码
+         */
+        int get_remote_channel(bus_id_t tid, endpoint::get_connection_fn_t fn, endpoint **ep_out, connection **conn_out);
 
         /**
          * @brief 根据对端ID查找直链的端点

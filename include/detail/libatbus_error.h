@@ -29,6 +29,7 @@ typedef enum {
     EN_ATBUS_ERR_ATNODE_TTL = -71,              // ttl限制
     EN_ATBUS_ERR_ATNODE_MASK_CONFLICT = -72,    // 域范围错误或冲突
     EN_ATBUS_ERR_ATNODE_ID_CONFLICT = -73,      // ID冲突
+    EN_ATBUS_ERR_ATNODE_SRC_DST_IS_SAME = -75,  // 发送源和发送目标不能相同
 
     EN_ATBUS_ERR_CHANNEL_SIZE_TOO_SMALL = -101,
     EN_ATBUS_ERR_CHANNEL_BUFFER_INVALID = -102, // 缓冲区错误（已被其他模块使用或检测冲突）

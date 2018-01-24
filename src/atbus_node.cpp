@@ -670,30 +670,65 @@ namespace atbus {
             return EN_ATBUS_ERR_SUCCESS;
         }
 
-#define ASSIGN_EPCONN(tar_var)                  \
-    {                                           \
-        if (NULL != ep_out) *ep_out = tar_var;  \
-        if (NULL != conn_out) *conn_out = conn; \
+        connection *conn = NULL;
+        int res = get_remote_channel(tid, fn, ep_out, &conn);
+        if (NULL != conn_out) {
+            *conn_out = conn;
+        }
+
+        if (res < 0) {
+            return res;
+        }
+
+        if (NULL == conn) {
+            return EN_ATBUS_ERR_ATNODE_NO_CONNECTION;
+        }
+
+        if (NULL != m.body.forward) {
+            m.body.forward->router.push_back(get_id());
+        }
+
+        // head 里永远是发起方bus_id
+        m.head.src_bus_id = get_id();
+
+        return msg_handler::send_msg(*this, *conn, m);
     }
 
+    int node::get_remote_channel(bus_id_t tid, endpoint::get_connection_fn_t fn, endpoint **ep_out, connection **conn_out) {
+#define ASSIGN_EPCONN()                   \
+    if (NULL != ep_out) *ep_out = target; \
+    if (NULL != conn_out) *conn_out = conn
+
+        endpoint *target = NULL;
         connection *conn = NULL;
+
+        ASSIGN_EPCONN();
+
+        if (state_t::CREATED == state_) {
+            return EN_ATBUS_ERR_NOT_INITED;
+        }
+
+        if (tid == get_id()) {
+            return EN_ATBUS_ERR_ATNODE_INVALID_ID;
+        }
+
         do {
             // 父节点单独判定，防止父节点被判定为兄弟节点
             if (node_father_.node_ && is_parent_node(tid)) {
-                endpoint *target = node_father_.node_.get();
+                target = node_father_.node_.get();
                 conn = (self_.get()->*fn)(target);
 
-                ASSIGN_EPCONN(target);
+                ASSIGN_EPCONN();
                 break;
             }
 
             // 兄弟节点(父节点会被判为可能是兄弟节点)
             if (is_brother_node(tid)) {
-                endpoint *target = find_child(node_brother_, tid);
+                target = find_child(node_brother_, tid);
                 if (NULL != target && target->is_child_node(tid)) {
                     conn = (self_.get()->*fn)(target);
 
-                    ASSIGN_EPCONN(target);
+                    ASSIGN_EPCONN();
                     break;
                 } else if (false == get_self_endpoint()->get_flag(endpoint::flag_t::GLOBAL_ROUTER) && node_father_.node_) {
                     // 如果没有全量表则发给父节点
@@ -703,22 +738,23 @@ namespace atbus {
                     //    C11  C12
                     // 当C11发往C12时触发这种情况
                     */
-                    endpoint *target = node_father_.node_.get();
+                    target = node_father_.node_.get();
                     conn = (self_.get()->*fn)(target);
 
-                    ASSIGN_EPCONN(target);
+                    ASSIGN_EPCONN();
                     break;
                 }
+
                 return EN_ATBUS_ERR_ATNODE_INVALID_ID;
             }
 
             // 子节点
             if (is_child_node(tid)) {
-                endpoint *target = find_child(node_children_, tid);
+                target = find_child(node_children_, tid);
                 if (NULL != target && target->is_child_node(tid)) {
                     conn = (self_.get()->*fn)(target);
 
-                    ASSIGN_EPCONN(target);
+                    ASSIGN_EPCONN();
                     break;
                 }
                 return EN_ATBUS_ERR_ATNODE_INVALID_ID;
@@ -732,27 +768,21 @@ namespace atbus {
             // 当C11发往C21或C22时触发这种情况
             */
             if (node_father_.node_ && false == get_self_endpoint()->get_flag(endpoint::flag_t::GLOBAL_ROUTER)) {
-                endpoint *target = node_father_.node_.get();
+                target = node_father_.node_.get();
                 conn = (self_.get()->*fn)(target);
 
-                ASSIGN_EPCONN(target);
+                ASSIGN_EPCONN();
                 break;
             }
         } while (false);
 
-        if (NULL == conn) {
+#undef ASSIGN_EPCONN
+
+        if (NULL == conn || NULL == target) {
             return EN_ATBUS_ERR_ATNODE_NO_CONNECTION;
         }
 
-        if (NULL != m.body.forward) {
-            m.body.forward->router.push_back(get_id());
-        }
-
-        // head 里永远是发起方bus_id
-        m.head.src_bus_id = get_id();
-
-#undef ASSIGN_EPCONN
-        return msg_handler::send_msg(*this, *conn, m);
+        return EN_ATBUS_ERR_SUCCESS;
     }
 
     endpoint *node::get_endpoint(bus_id_t tid) {

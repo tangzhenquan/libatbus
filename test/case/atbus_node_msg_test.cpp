@@ -68,14 +68,15 @@ struct node_msg_test_recv_msg_record_t {
     std::string data;
     int status;
     int count;
+    int remove_endpoint_count;
 
-    node_msg_test_recv_msg_record_t() : n(NULL), ep(NULL), conn(NULL), status(0), count(0) {}
+    node_msg_test_recv_msg_record_t() : n(NULL), ep(NULL), conn(NULL), status(0), count(0), remove_endpoint_count(0) {}
 };
 
 static node_msg_test_recv_msg_record_t recv_msg_history;
 
 static int node_msg_test_recv_msg_test_record_fn(const atbus::node &n, const atbus::endpoint *ep, const atbus::connection *conn,
-                                                 const atbus::protocol::msg& m, const void *buffer, size_t len) {
+                                                 const atbus::protocol::msg &m, const void *buffer, size_t len) {
     recv_msg_history.n = &n;
     recv_msg_history.ep = ep;
     recv_msg_history.conn = conn;
@@ -114,6 +115,11 @@ static int node_msg_test_send_data_failed_fn(const atbus::node &n, const atbus::
         recv_msg_history.data.clear();
     }
 
+    return 0;
+}
+
+static int node_msg_test_remove_endpoint_fn(const atbus::node &n, atbus::endpoint *ep, int) {
+    ++recv_msg_history.remove_endpoint_count;
     return 0;
 }
 
@@ -158,10 +164,11 @@ CASE_TEST(atbus_node_msg, ping_pong) {
 
         proc_t += conf.ping_interval;
 
-        UNITTEST_WAIT_UNTIL(conf.ev_loop, 
-            !node1->is_endpoint_available(node2->get_id()) || !node2->is_endpoint_available(node1->get_id()) ||
-            (node2->get_endpoint(node1->get_id())->get_stat_last_pong() > 0 && node1->get_endpoint(node2->get_id())->get_stat_last_pong() > 0),
-            8000, 32) {
+        UNITTEST_WAIT_UNTIL(conf.ev_loop,
+                            !node1->is_endpoint_available(node2->get_id()) || !node2->is_endpoint_available(node1->get_id()) ||
+                                (node2->get_endpoint(node1->get_id())->get_stat_last_pong() > 0 &&
+                                 node1->get_endpoint(node2->get_id())->get_stat_last_pong() > 0),
+                            8000, 32) {
             ++proc_t;
             node1->proc(proc_t, 0);
             node2->proc(proc_t, 0);
@@ -275,7 +282,7 @@ CASE_TEST(atbus_node_msg, send_cmd_to_self) {
 
         char cmds[][8] = {"self", "command", "yep"};
         size_t cmds_len[] = {strlen(cmds[0]), strlen(cmds[1]), strlen(cmds[2])};
-        const void* cmds_in[] = {cmds[0], cmds[1], cmds[2]};
+        const void *cmds_in[] = {cmds[0], cmds[1], cmds[2]};
 
         int count = recv_msg_history.count;
         node1->set_on_custom_cmd_handle(node_msg_test_recv_msg_test_custom_cmd_fn);
@@ -284,7 +291,7 @@ CASE_TEST(atbus_node_msg, send_cmd_to_self) {
         CASE_EXPECT_EQ(count + 1, recv_msg_history.count);
         CASE_EXPECT_EQ(cmds_len[0] + cmds_len[1] + cmds_len[2] + 3, recv_msg_history.data.size());
         size_t start_index = 0;
-        for (int i = 0; i < 3; ++ i) {
+        for (int i = 0; i < 3; ++i) {
             std::string l, r;
             l.assign(cmds[i], cmds_len[i]);
             r.assign(recv_msg_history.data.c_str() + start_index, cmds_len[i]);
@@ -337,13 +344,13 @@ CASE_TEST(atbus_node_msg, reset_and_send) {
 }
 
 static int node_msg_test_recv_and_send_msg_on_failed_fn(const atbus::node &n, const atbus::endpoint *ep, const atbus::connection *conn,
-                                                 const atbus::protocol::msg* m) {
+                                                        const atbus::protocol::msg *m) {
     ++recv_msg_history.count;
     return 0;
 }
 
 static int node_msg_test_recv_and_send_msg_fn(const atbus::node &n, const atbus::endpoint *ep, const atbus::connection *conn,
-                                                 const atbus::protocol::msg& m, const void *buffer, size_t len) {
+                                              const atbus::protocol::msg &m, const void *buffer, size_t len) {
     recv_msg_history.n = &n;
     recv_msg_history.ep = ep;
     recv_msg_history.conn = conn;
@@ -366,13 +373,13 @@ static int node_msg_test_recv_and_send_msg_fn(const atbus::node &n, const atbus:
     }
 
     std::string sended_data;
-    sended_data.assign(reinterpret_cast<const char*>(buffer), len);
+    sended_data.assign(reinterpret_cast<const char *>(buffer), len);
     sended_data += sended_data;
 
-    atbus::node* np = const_cast<atbus::node* >(&n);
+    atbus::node *np = const_cast<atbus::node *>(&n);
     np->set_on_recv_handle(node_msg_test_recv_msg_test_record_fn);
     np->set_on_send_data_failed_handle(node_msg_test_recv_and_send_msg_on_failed_fn);
-                     
+
     np->send_data(n.get_id(), 0, sended_data.c_str(), sended_data.size(), true);
     return 0;
 }
@@ -412,7 +419,6 @@ CASE_TEST(atbus_node_msg, send_msg_to_self_and_need_rsp) {
         CASE_EXPECT_EQ(count + 3, recv_msg_history.count);
         send_data += send_data;
         CASE_EXPECT_EQ(send_data, recv_msg_history.data);
-
     }
 
     unit_test_setup_exit(&ev_loop);
@@ -451,8 +457,9 @@ CASE_TEST(atbus_node_msg, parent_and_child) {
 
         time_t proc_t = time(NULL) + 1;
 
-        UNITTEST_WAIT_UNTIL(conf.ev_loop, node_child->is_endpoint_available(node_parent->get_id()) &&
-                                              node_parent->is_endpoint_available(node_child->get_id()),
+        UNITTEST_WAIT_UNTIL(conf.ev_loop,
+                            node_child->is_endpoint_available(node_parent->get_id()) &&
+                                node_parent->is_endpoint_available(node_child->get_id()),
                             8000, 64) {
             node_parent->proc(proc_t, 0);
             node_child->proc(proc_t, 0);
@@ -470,10 +477,7 @@ CASE_TEST(atbus_node_msg, parent_and_child) {
             send_data.assign("parent to child\0hello world!\n", sizeof("parent to child\0hello world!\n") - 1);
 
             node_parent->send_data(node_child->get_id(), 0, send_data.data(), send_data.size());
-            UNITTEST_WAIT_UNTIL(conf.ev_loop, 
-                count != recv_msg_history.count,
-                3000, 0) {
-            }
+            UNITTEST_WAIT_UNTIL(conf.ev_loop, count != recv_msg_history.count, 3000, 0) {}
 
             CASE_EXPECT_EQ(send_data, recv_msg_history.data);
         }
@@ -485,10 +489,7 @@ CASE_TEST(atbus_node_msg, parent_and_child) {
 
             count = recv_msg_history.count;
             node_child->send_data(node_parent->get_id(), 0, send_data.data(), send_data.size());
-            UNITTEST_WAIT_UNTIL(conf.ev_loop,
-                count != recv_msg_history.count,
-                3000, 0) {
-            }
+            UNITTEST_WAIT_UNTIL(conf.ev_loop, count != recv_msg_history.count, 3000, 0) {}
 
             CASE_EXPECT_EQ(send_data, recv_msg_history.data);
         }
@@ -539,9 +540,10 @@ CASE_TEST(atbus_node_msg, transfer_and_connect) {
         node_child_2->set_on_recv_handle(node_msg_test_recv_msg_test_record_fn);
 
         // wait for register finished
-        UNITTEST_WAIT_UNTIL(conf.ev_loop,
+        UNITTEST_WAIT_UNTIL(
+            conf.ev_loop,
             node_parent->is_endpoint_available(node_child_1->get_id()) && node_parent->is_endpoint_available(node_child_2->get_id()) &&
-            node_child_2->is_endpoint_available(node_parent->get_id()) && node_child_1->is_endpoint_available(node_parent->get_id()),
+                node_child_2->is_endpoint_available(node_parent->get_id()) && node_child_1->is_endpoint_available(node_parent->get_id()),
             8000, 64) {
             node_parent->proc(proc_t, 0);
             node_child_1->proc(proc_t, 0);
@@ -557,18 +559,12 @@ CASE_TEST(atbus_node_msg, transfer_and_connect) {
         int count = recv_msg_history.count;
         recv_msg_history.data.clear();
         node_child_1->send_data(node_child_2->get_id(), 0, send_data.data(), send_data.size());
-        UNITTEST_WAIT_UNTIL(conf.ev_loop,
-            count != recv_msg_history.count && !recv_msg_history.data.empty(),
-            5000, 0) {
-        }
+        UNITTEST_WAIT_UNTIL(conf.ev_loop, count != recv_msg_history.count && !recv_msg_history.data.empty(), 5000, 0) {}
 
         CASE_EXPECT_EQ(send_data, recv_msg_history.data);
 
         // 自动直连测试
-        UNITTEST_WAIT_UNTIL(conf.ev_loop,
-            node_child_1->is_endpoint_available(node_child_2->get_id()),
-            8000, 0) {
-        }
+        UNITTEST_WAIT_UNTIL(conf.ev_loop, node_child_1->is_endpoint_available(node_child_2->get_id()), 8000, 0) {}
         atbus::endpoint *ep1 = node_child_1->get_endpoint(node_child_2->get_id());
         CASE_EXPECT_NE(NULL, ep1);
     }
@@ -627,13 +623,13 @@ CASE_TEST(atbus_node_msg, transfer_only) {
 
         // wait for register finished
         UNITTEST_WAIT_UNTIL(conf.ev_loop,
-            node_child_1->is_endpoint_available(node_parent_1->get_id()) &&
-            node_parent_1->is_endpoint_available(node_child_1->get_id()) &&
-            node_child_2->is_endpoint_available(node_parent_2->get_id()) &&
-            node_parent_2->is_endpoint_available(node_child_2->get_id()) &&
-            node_parent_1->is_endpoint_available(node_parent_2->get_id()) &&
-            node_parent_2->is_endpoint_available(node_parent_1->get_id()),
-            8000, 64) {
+                            node_child_1->is_endpoint_available(node_parent_1->get_id()) &&
+                                node_parent_1->is_endpoint_available(node_child_1->get_id()) &&
+                                node_child_2->is_endpoint_available(node_parent_2->get_id()) &&
+                                node_parent_2->is_endpoint_available(node_child_2->get_id()) &&
+                                node_parent_1->is_endpoint_available(node_parent_2->get_id()) &&
+                                node_parent_2->is_endpoint_available(node_parent_1->get_id()),
+                            8000, 64) {
             node_parent_1->proc(proc_t, 0);
             node_parent_2->proc(proc_t, 0);
             node_child_1->proc(proc_t, 0);
@@ -649,10 +645,7 @@ CASE_TEST(atbus_node_msg, transfer_only) {
 
         int count = recv_msg_history.count;
         node_child_1->send_data(node_child_2->get_id(), 0, send_data.data(), send_data.size());
-        UNITTEST_WAIT_UNTIL(conf.ev_loop,
-            count != recv_msg_history.count,
-            8000, 0) {
-        }
+        UNITTEST_WAIT_UNTIL(conf.ev_loop, count != recv_msg_history.count, 8000, 0) {}
 
         CASE_EXPECT_EQ(send_data, recv_msg_history.data);
         for (int i = 0; i < 64; ++i) {
@@ -739,9 +732,9 @@ CASE_TEST(atbus_node_msg, transfer_failed) {
 
         // wait for register finished
         UNITTEST_WAIT_UNTIL(conf.ev_loop,
-            node_child_1->is_endpoint_available(node_parent->get_id()) &&
-            node_parent->is_endpoint_available(node_child_1->get_id()),
-            8000, 64) {
+                            node_child_1->is_endpoint_available(node_parent->get_id()) &&
+                                node_parent->is_endpoint_available(node_child_1->get_id()),
+                            8000, 64) {
             node_parent->proc(proc_t, 0);
             node_child_1->proc(proc_t, 0);
 
@@ -756,10 +749,7 @@ CASE_TEST(atbus_node_msg, transfer_failed) {
         CASE_EXPECT_EQ(EN_ATBUS_ERR_SUCCESS, node_child_1->send_data(0x12346890, 0, send_data.data(), send_data.size()));
         CASE_EXPECT_EQ(EN_ATBUS_ERR_SUCCESS, node_child_1->send_data(0x12356789, 0, send_data.data(), send_data.size()));
 
-        UNITTEST_WAIT_UNTIL(conf.ev_loop,
-            count + 1 < recv_msg_history.count,
-            8000, 0) {
-        }
+        UNITTEST_WAIT_UNTIL(conf.ev_loop, count + 1 < recv_msg_history.count, 8000, 0) {}
 
         CASE_EXPECT_EQ(count + 2, recv_msg_history.count);
         CASE_EXPECT_EQ(EN_ATBUS_ERR_ATNODE_INVALID_ID, recv_msg_history.status);
@@ -768,7 +758,96 @@ CASE_TEST(atbus_node_msg, transfer_failed) {
     unit_test_setup_exit(&ev_loop);
 }
 
-// TODO 发送给已下线兄弟节点并失败的回复通知测试（网络失败）
+// 通过两个父节点转发失败测试，本地连接不应该断
+//     F1 <-----> F2
+//    /            -(此连接断开)
+//   C1             C2
+// C1向C2发送消息，F2->F1->C1失败通知。重试多次后 F1-C1连接不断
+CASE_TEST(atbus_node_msg, transfer_failed_cross_parents) {
+    atbus::node::conf_t conf;
+    atbus::node::default_conf(&conf);
+    conf.children_mask = 16;
+    uv_loop_t ev_loop;
+    uv_loop_init(&ev_loop);
+
+    conf.ev_loop = &ev_loop;
+    conf.fault_tolerant = 2; // 容错设为2次。
+    size_t try_times = 5;    //我们尝试5次发失败
+
+    // 只有发生冲突才会注册不成功，否则会无限重试注册父节点，直到其上线
+    {
+        atbus::node::ptr_t node_parent_1 = atbus::node::create();
+        atbus::node::ptr_t node_parent_2 = atbus::node::create();
+        atbus::node::ptr_t node_child_1 = atbus::node::create();
+        node_parent_1->on_debug = node_msg_test_on_debug;
+        node_parent_2->on_debug = node_msg_test_on_debug;
+        node_child_1->on_debug = node_msg_test_on_debug;
+        node_parent_1->set_on_error_handle(node_msg_test_on_error);
+        node_child_1->set_on_error_handle(node_msg_test_on_error);
+        node_parent_2->set_on_error_handle(node_msg_test_on_error);
+
+        node_parent_1->init(0x12345678, &conf);
+        node_parent_1->set_on_remove_endpoint_handle(node_msg_test_remove_endpoint_fn);
+        node_parent_2->init(0x12356789, &conf);
+        node_parent_2->set_on_remove_endpoint_handle(node_msg_test_remove_endpoint_fn);
+
+
+        conf.children_mask = 8;
+        conf.father_address = "ipv4://127.0.0.1:16387";
+        node_child_1->init(0x12346789, &conf);
+
+        CASE_EXPECT_EQ(EN_ATBUS_ERR_SUCCESS, node_parent_1->listen("ipv4://127.0.0.1:16387"));
+        CASE_EXPECT_EQ(EN_ATBUS_ERR_SUCCESS, node_parent_2->listen("ipv4://127.0.0.1:16388"));
+        CASE_EXPECT_EQ(EN_ATBUS_ERR_SUCCESS, node_child_1->listen("ipv4://127.0.0.1:16389"));
+
+        CASE_EXPECT_EQ(EN_ATBUS_ERR_SUCCESS, node_parent_1->start());
+        CASE_EXPECT_EQ(EN_ATBUS_ERR_SUCCESS, node_parent_2->start());
+        CASE_EXPECT_EQ(EN_ATBUS_ERR_SUCCESS, node_child_1->start());
+
+        time_t proc_t = time(NULL) + 1;
+        node_child_1->set_on_recv_handle(node_msg_test_recv_msg_test_record_fn);
+        node_child_1->set_on_send_data_failed_handle(node_msg_test_send_data_failed_fn);
+        node_child_1->set_on_remove_endpoint_handle(node_msg_test_remove_endpoint_fn);
+
+        // wait for register finished
+        UNITTEST_WAIT_UNTIL(conf.ev_loop,
+                            node_child_1->is_endpoint_available(node_parent_1->get_id()) &&
+                                node_parent_1->is_endpoint_available(node_child_1->get_id()),
+                            8000, 64) {
+            node_parent_1->proc(proc_t, 0);
+            node_child_1->proc(proc_t, 0);
+
+            ++proc_t;
+        }
+
+        int before_remove_endpoint_count = recv_msg_history.remove_endpoint_count;
+        int before_test_count = recv_msg_history.count;
+        int recv_transfer_failed = 0;
+        for (size_t i = 0; i < try_times; ++i) {
+            // 转发消息
+            std::string send_data;
+            send_data.assign("transfer through parent\n", sizeof("transfer through parent\n") - 1);
+
+            int count = recv_msg_history.count;
+            int send_res = node_child_1->send_data(0x12356666, 0, send_data.data(), send_data.size());
+            CASE_EXPECT_EQ(EN_ATBUS_ERR_SUCCESS, send_res);
+
+            if (send_res != EN_ATBUS_ERR_SUCCESS) {
+                continue;
+            }
+
+            ++recv_transfer_failed;
+            UNITTEST_WAIT_UNTIL(conf.ev_loop, count < recv_msg_history.count, 8000, 0) {}
+        }
+
+        CASE_EXPECT_EQ(before_test_count + recv_transfer_failed, recv_msg_history.count);
+        CASE_EXPECT_EQ(before_remove_endpoint_count, recv_msg_history.remove_endpoint_count);
+        CASE_EXPECT_TRUE(node_child_1->is_endpoint_available(node_parent_1->get_id()));
+        CASE_EXPECT_TRUE(node_parent_1->is_endpoint_available(node_child_1->get_id()));
+    }
+
+    unit_test_setup_exit(&ev_loop);
+}
 
 
 // TODO 全量表第一次拉取测试
