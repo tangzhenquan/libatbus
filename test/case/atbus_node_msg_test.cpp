@@ -68,9 +68,10 @@ struct node_msg_test_recv_msg_record_t {
     std::string data;
     int status;
     int count;
+    int failed_count;
     int remove_endpoint_count;
 
-    node_msg_test_recv_msg_record_t() : n(NULL), ep(NULL), conn(NULL), status(0), count(0), remove_endpoint_count(0) {}
+    node_msg_test_recv_msg_record_t() : n(NULL), ep(NULL), conn(NULL), status(0), count(0), failed_count(0), remove_endpoint_count(0) {}
 };
 
 static node_msg_test_recv_msg_record_t recv_msg_history;
@@ -107,7 +108,7 @@ static int node_msg_test_send_data_failed_fn(const atbus::node &n, const atbus::
     recv_msg_history.ep = ep;
     recv_msg_history.conn = conn;
     recv_msg_history.status = NULL == m ? 0 : m->head.ret;
-    ++recv_msg_history.count;
+    ++recv_msg_history.failed_count;
 
     if (NULL != m && NULL != m->body.forward && NULL != m->body.forward->content.ptr && m->body.forward->content.size > 0) {
         recv_msg_history.data.assign(reinterpret_cast<const char *>(m->body.forward->content.ptr), m->body.forward->content.size);
@@ -745,13 +746,13 @@ CASE_TEST(atbus_node_msg, transfer_failed) {
         std::string send_data;
         send_data.assign("transfer through parent\n", sizeof("transfer through parent\n") - 1);
 
-        int count = recv_msg_history.count;
+        int count = recv_msg_history.failed_count;
         CASE_EXPECT_EQ(EN_ATBUS_ERR_SUCCESS, node_child_1->send_data(0x12346890, 0, send_data.data(), send_data.size()));
         CASE_EXPECT_EQ(EN_ATBUS_ERR_SUCCESS, node_child_1->send_data(0x12356789, 0, send_data.data(), send_data.size()));
 
-        UNITTEST_WAIT_UNTIL(conf.ev_loop, count + 1 < recv_msg_history.count, 8000, 0) {}
+        UNITTEST_WAIT_UNTIL(conf.ev_loop, count + 1 < recv_msg_history.failed_count, 8000, 0) {}
 
-        CASE_EXPECT_EQ(count + 2, recv_msg_history.count);
+        CASE_EXPECT_EQ(count + 2, recv_msg_history.failed_count);
         CASE_EXPECT_EQ(EN_ATBUS_ERR_ATNODE_INVALID_ID, recv_msg_history.status);
     }
 
@@ -809,10 +810,13 @@ CASE_TEST(atbus_node_msg, transfer_failed_cross_parents) {
         node_child_1->set_on_send_data_failed_handle(node_msg_test_send_data_failed_fn);
         node_child_1->set_on_remove_endpoint_handle(node_msg_test_remove_endpoint_fn);
 
+        node_parent_1->connect("ipv4://127.0.0.1:16388");
         // wait for register finished
         UNITTEST_WAIT_UNTIL(conf.ev_loop,
                             node_child_1->is_endpoint_available(node_parent_1->get_id()) &&
-                                node_parent_1->is_endpoint_available(node_child_1->get_id()),
+                                node_parent_1->is_endpoint_available(node_child_1->get_id()) &&
+                                node_parent_1->is_endpoint_available(node_parent_2->get_id()) &&
+                                node_parent_2->is_endpoint_available(node_parent_1->get_id()),
                             8000, 64) {
             node_parent_1->proc(proc_t, 0);
             node_child_1->proc(proc_t, 0);
@@ -821,14 +825,14 @@ CASE_TEST(atbus_node_msg, transfer_failed_cross_parents) {
         }
 
         int before_remove_endpoint_count = recv_msg_history.remove_endpoint_count;
-        int before_test_count = recv_msg_history.count;
+        int before_test_count = recv_msg_history.failed_count;
         int recv_transfer_failed = 0;
         for (size_t i = 0; i < try_times; ++i) {
             // 转发消息
             std::string send_data;
             send_data.assign("transfer through parent\n", sizeof("transfer through parent\n") - 1);
 
-            int count = recv_msg_history.count;
+            int count = recv_msg_history.failed_count;
             int send_res = node_child_1->send_data(0x12356666, 0, send_data.data(), send_data.size());
             CASE_EXPECT_EQ(EN_ATBUS_ERR_SUCCESS, send_res);
 
@@ -837,10 +841,10 @@ CASE_TEST(atbus_node_msg, transfer_failed_cross_parents) {
             }
 
             ++recv_transfer_failed;
-            UNITTEST_WAIT_UNTIL(conf.ev_loop, count < recv_msg_history.count, 8000, 0) {}
+            UNITTEST_WAIT_UNTIL(conf.ev_loop, count < recv_msg_history.failed_count, 8000, 0) {}
         }
 
-        CASE_EXPECT_EQ(before_test_count + recv_transfer_failed, recv_msg_history.count);
+        CASE_EXPECT_EQ(before_test_count + recv_transfer_failed, recv_msg_history.failed_count);
         CASE_EXPECT_EQ(before_remove_endpoint_count, recv_msg_history.remove_endpoint_count);
         CASE_EXPECT_TRUE(node_child_1->is_endpoint_available(node_parent_1->get_id()));
         CASE_EXPECT_TRUE(node_parent_1->is_endpoint_available(node_child_1->get_id()));
