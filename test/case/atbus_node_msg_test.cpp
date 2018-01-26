@@ -70,6 +70,7 @@ struct node_msg_test_recv_msg_record_t {
     int count;
     int failed_count;
     int remove_endpoint_count;
+    std::vector<ATBUS_MACRO_BUSID_TYPE> last_msg_router;
 
     node_msg_test_recv_msg_record_t() : n(NULL), ep(NULL), conn(NULL), status(0), count(0), failed_count(0), remove_endpoint_count(0) {}
 };
@@ -83,6 +84,11 @@ static int node_msg_test_recv_msg_test_record_fn(const atbus::node &n, const atb
     recv_msg_history.conn = conn;
     recv_msg_history.status = m.head.ret;
     ++recv_msg_history.count;
+    if (NULL != m.body.forward) {
+        recv_msg_history.last_msg_router = m.body.forward->router;
+    } else {
+        recv_msg_history.last_msg_router.clear();
+    }
 
     std::streamsize w = std::cout.width();
     if (NULL != buffer && len > 0) {
@@ -109,6 +115,11 @@ static int node_msg_test_send_data_failed_fn(const atbus::node &n, const atbus::
     recv_msg_history.conn = conn;
     recv_msg_history.status = NULL == m ? 0 : m->head.ret;
     ++recv_msg_history.failed_count;
+    if (NULL != m && NULL != m->body.forward) {
+        recv_msg_history.last_msg_router = m->body.forward->router;
+    } else {
+        recv_msg_history.last_msg_router.clear();
+    }
 
     if (NULL != m && NULL != m->body.forward && NULL != m->body.forward->content.ptr && m->body.forward->content.size > 0) {
         recv_msg_history.data.assign(reinterpret_cast<const char *>(m->body.forward->content.ptr), m->body.forward->content.size);
@@ -842,6 +853,11 @@ CASE_TEST(atbus_node_msg, transfer_failed_cross_parents) {
 
             ++recv_transfer_failed;
             UNITTEST_WAIT_UNTIL(conf.ev_loop, count < recv_msg_history.failed_count, 8000, 0) {}
+        }
+
+        CASE_EXPECT_FALSE(recv_msg_history.last_msg_router.empty());
+        if (!recv_msg_history.last_msg_router.empty()) {
+            CASE_EXPECT_EQ(0x12356789, recv_msg_history.last_msg_router.back());
         }
 
         CASE_EXPECT_EQ(before_test_count + recv_transfer_failed, recv_msg_history.failed_count);

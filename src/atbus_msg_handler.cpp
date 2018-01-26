@@ -132,8 +132,9 @@ namespace atbus {
 
     int msg_handler::send_transfer_rsp(node &n, protocol::msg &m, int32_t ret_code) {
         m.init(n.get_id(), ATBUS_CMD_DATA_TRANSFORM_RSP, 0, ret_code, m.head.sequence);
+        node::bus_id_t to_id = m.body.forward->to;
         m.body.forward->to = m.body.forward->from;
-        m.body.forward->from = n.get_id();
+        m.body.forward->from = to_id;
 
         int ret = n.send_ctrl_msg(m.body.forward->to, m);
         if (ret < 0) {

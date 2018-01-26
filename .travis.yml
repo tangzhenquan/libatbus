@@ -74,7 +74,6 @@ matrix:
         - USE_MSGPACK_ROOT=$MSGPACK_PREFIX ;
         - if [ -e "$REPO_DIR/build" ]; then rm -rf "$REPO_DIR/build"; fi
         - mkdir -p $REPO_DIR/build && cd $REPO_DIR/build ;
-        - echo "$CMAKE_BIN .. -DPROJECT_ENABLE_UNITTEST=ON -DPROJECT_ENABLE_SAMPLE=ON" ;
         - $CMAKE_BIN .. "-DCMAKE_C_FLAGS=$GCOV_FLAGS" "-DCMAKE_CXX_FLAGS=$GCOV_FLAGS" "-DCMAKE_EXE_LINKER_FLAGS=$GCOV_FLAGS" -DCMAKE_BUILD_TYPE=Debug -DPROJECT_ENABLE_UNITTEST=ON -DPROJECT_ENABLE_SAMPLE=ON -DPROJECT_ENABLE_TOOLS=ON -DLIBUV_ROOT=$LIBUV_PREFIX -DMSGPACK_ROOT=$USE_MSGPACK_ROOT ;
         - $CMAKE_BIN --build .
       after_success:
@@ -82,7 +81,7 @@ matrix:
         # run tools for coverage
         - timeout 10s ./tools/benchmark_shm_channel_recv 12345679 1024 4194304 > recv.log 2>&1 &
         - timeout 10s ./tools/benchmark_shm_channel_send 12345679 1024 4194304 > send.log 2>&1
-        - ./tools/show_shm_channel 12345679 1 16
+        - ./tools/show_shm_channel 12345679 1 16 > /dev/null
         - pip install --user cpp-coveralls
         - coveralls -r .. --gcov-options '\-lp' -e 3rd_party -e sample -e test -e tools -e build/CMakeFiles
 
