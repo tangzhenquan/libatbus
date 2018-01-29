@@ -132,13 +132,22 @@ CASE_TEST(channel, mem_miso) {
 
     mem_channel *channel = NULL;
 
+    CASE_EXPECT_EQ(EN_ATBUS_ERR_CHANNEL_SIZE_TOO_SMALL, mem_attach(buffer, 4096, &channel, NULL));
+    CASE_EXPECT_EQ(EN_ATBUS_ERR_CHANNEL_SIZE_TOO_SMALL, mem_init(buffer, 4096, &channel, NULL));
     CASE_EXPECT_EQ(0, mem_init(buffer, buffer_len, &channel, NULL));
     CASE_EXPECT_NE(NULL, channel);
     // 4KB header
 
     // set longer timeout when in unit test(appveyor ci timeout sometimes)
     CASE_EXPECT_EQ(0, mem_configure_set_write_timeout(channel, 256));
+    CASE_EXPECT_EQ(256, mem_configure_get_write_timeout(channel));
+    CASE_EXPECT_EQ(0, mem_configure_set_write_retry_times(channel, 3));
+    CASE_EXPECT_EQ(3, mem_configure_get_write_retry_times(channel));
     srand(static_cast<unsigned>(time(NULL)));
+
+    CASE_EXPECT_EQ(EN_ATBUS_ERR_PARAMS, mem_send(NULL, NULL, 0));
+    CASE_EXPECT_EQ(EN_ATBUS_ERR_SUCCESS, mem_send(channel, NULL, 0));
+    CASE_EXPECT_EQ(EN_ATBUS_ERR_BUFF_LIMIT, mem_send(channel, buffer, buffer_len));
 
     int left_sec = 16;
     util::lock::atomic_int_type<size_t> sum_send_len;
@@ -272,11 +281,13 @@ CASE_TEST(channel, mem_miso) {
             --left_sec;
             ++secs;
             CASE_THREAD_SLEEP_MS(1000);
+            std::pair<size_t, size_t> curent_cursor = ::atbus::channel::mem_last_action();
             CASE_MSG_INFO() << "NO." << secs << " second(s)" << std::endl;
             CASE_MSG_INFO() << "recv(" << sum_recv_times << " times, " << sum_recv_len << " Bytes) err " << sum_recv_err << " times"
                             << std::endl;
             CASE_MSG_INFO() << "send(" << sum_send_times.load() << " times, " << sum_send_len.load() << " Bytes) "
                             << "full " << sum_send_full.load() << " times, err " << sum_send_err.load() << " times" << std::endl;
+            CASE_MSG_INFO() << "\tdata nodes [" << curent_cursor.first << ", " << curent_cursor.second << ")" << std::endl;
 
         } while (left_sec >= 0);
     }

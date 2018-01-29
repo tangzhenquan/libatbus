@@ -496,28 +496,40 @@ namespace atbus {
 
     int node::disconnect(bus_id_t id) {
         if (node_father_.node_ && id == node_father_.node_->get_id()) {
-            node_father_.node_->reset();
-            node_father_.node_.reset();
+            endpoint::ptr_t ep_ptr;
+            ep_ptr.swap(node_father_.node_);
+
+            // event
+            if (event_msg_.on_endpoint_removed) {
+                flag_guard_t fgd(this, flag_t::EN_FT_IN_CALLBACK);
+                event_msg_.on_endpoint_removed(std::cref(*this), ep_ptr.get(), EN_ATBUS_ERR_SUCCESS);
+            }
+
+            ep_ptr->reset();
             return EN_ATBUS_ERR_SUCCESS;
         }
 
         endpoint *ep = find_child(node_brother_, id);
         if (NULL != ep && ep->get_id() == id) {
-            ep->reset();
+            endpoint::ptr_t ep_ptr = ep->watch();
 
             // 移除连接关系
             remove_child(node_brother_, id);
             // TODO 移除全局表
+
+            ep_ptr->reset();
             return EN_ATBUS_ERR_SUCCESS;
         }
 
         ep = find_child(node_children_, id);
         if (NULL != ep && ep->get_id() == id) {
-            ep->reset();
+            endpoint::ptr_t ep_ptr = ep->watch();
 
             // 移除连接关系
-            remove_child(node_brother_, id);
+            remove_child(node_children_, id);
             // TODO 移除全局表
+
+            ep_ptr->reset();
             return EN_ATBUS_ERR_SUCCESS;
         }
 
@@ -1082,9 +1094,9 @@ namespace atbus {
         return hn;
     }
 
-    bool node::set_hostname(const std::string &hn) {
+    bool node::set_hostname(const std::string &hn, bool force) {
         std::string &h = host_name_buffer();
-        if (h.empty()) {
+        if (force || h.empty()) {
             h = hn;
             return true;
         }
@@ -1471,34 +1483,36 @@ namespace atbus {
     }
 
     void node::set_on_recv_handle(evt_msg_t::on_recv_msg_fn_t fn) { event_msg_.on_recv_msg = fn; }
-    node::evt_msg_t::on_recv_msg_fn_t node::get_on_recv_handle() const { return event_msg_.on_recv_msg; }
+    const node::evt_msg_t::on_recv_msg_fn_t &node::get_on_recv_handle() const { return event_msg_.on_recv_msg; }
 
     void node::set_on_send_data_failed_handle(evt_msg_t::on_send_data_failed_fn_t fn) { event_msg_.on_send_data_failed = fn; }
-    node::evt_msg_t::on_send_data_failed_fn_t node::get_on_send_data_failed_handle() const { return event_msg_.on_send_data_failed; }
+    const node::evt_msg_t::on_send_data_failed_fn_t &node::get_on_send_data_failed_handle() const { return event_msg_.on_send_data_failed; }
 
     void node::set_on_error_handle(node::evt_msg_t::on_error_fn_t fn) { event_msg_.on_error = fn; }
-    node::evt_msg_t::on_error_fn_t node::get_on_error_handle() const { return event_msg_.on_error; }
+    const node::evt_msg_t::on_error_fn_t &node::get_on_error_handle() const { return event_msg_.on_error; }
 
     void node::set_on_register_handle(node::evt_msg_t::on_reg_fn_t fn) { event_msg_.on_reg = fn; }
-    node::evt_msg_t::on_reg_fn_t node::get_on_register_handle() const { return event_msg_.on_reg; }
+    const node::evt_msg_t::on_reg_fn_t &node::get_on_register_handle() const { return event_msg_.on_reg; }
 
     void node::set_on_shutdown_handle(evt_msg_t::on_node_down_fn_t fn) { event_msg_.on_node_down = fn; }
-    node::evt_msg_t::on_node_down_fn_t node::get_on_shutdown_handle() const { return event_msg_.on_node_down; }
+    const node::evt_msg_t::on_node_down_fn_t &node::get_on_shutdown_handle() const { return event_msg_.on_node_down; }
 
     void node::set_on_available_handle(node::evt_msg_t::on_node_up_fn_t fn) { event_msg_.on_node_up = fn; }
-    node::evt_msg_t::on_node_up_fn_t node::get_on_available_handle() const { return event_msg_.on_node_up; }
+    const node::evt_msg_t::on_node_up_fn_t &node::get_on_available_handle() const { return event_msg_.on_node_up; }
 
     void node::set_on_invalid_connection_handle(node::evt_msg_t::on_invalid_connection_fn_t fn) { event_msg_.on_invalid_connection = fn; }
-    node::evt_msg_t::on_invalid_connection_fn_t node::get_on_invalid_connection_handle() const { return event_msg_.on_invalid_connection; }
+    const node::evt_msg_t::on_invalid_connection_fn_t &node::get_on_invalid_connection_handle() const {
+        return event_msg_.on_invalid_connection;
+    }
 
     void node::set_on_custom_cmd_handle(evt_msg_t::on_custom_cmd_fn_t fn) { event_msg_.on_custom_cmd = fn; }
-    node::evt_msg_t::on_custom_cmd_fn_t node::get_on_custom_cmd_handle() const { return event_msg_.on_custom_cmd; }
+    const node::evt_msg_t::on_custom_cmd_fn_t &node::get_on_custom_cmd_handle() const { return event_msg_.on_custom_cmd; }
 
     void node::set_on_add_endpoint_handle(evt_msg_t::on_add_endpoint_fn_t fn) { event_msg_.on_endpoint_added = fn; }
-    node::evt_msg_t::on_add_endpoint_fn_t node::get_on_add_endpoint_handle() const { return event_msg_.on_endpoint_added; }
+    const node::evt_msg_t::on_add_endpoint_fn_t &node::get_on_add_endpoint_handle() const { return event_msg_.on_endpoint_added; }
 
     void node::set_on_remove_endpoint_handle(evt_msg_t::on_remove_endpoint_fn_t fn) { event_msg_.on_endpoint_removed = fn; }
-    node::evt_msg_t::on_remove_endpoint_fn_t node::get_on_remove_endpoint_handle() const { return event_msg_.on_endpoint_removed; }
+    const node::evt_msg_t::on_remove_endpoint_fn_t &node::get_on_remove_endpoint_handle() const { return event_msg_.on_endpoint_removed; }
 
     void node::ref_object(void *obj) {
         if (NULL == obj) {

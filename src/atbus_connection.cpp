@@ -211,11 +211,14 @@ namespace atbus {
             owner_->on_new_connection(this);
             return res;
         } else {
-            // listen 的地址应该转为绝对地址，方便跨组连接时可以不依赖相对目录
+            // Unix sock的listen的地址应该转为绝对地址，方便跨组连接时可以不依赖相对目录
+            // Unix sock也必须共享Host
             if (0 == UTIL_STRFUNC_STRNCASE_CMP("unix", address_.scheme.c_str(), 4)) {
                 if (false == util::file_system::is_abs_path(address_.host.c_str())) {
                     address_.host = util::file_system::get_abs_path(address_.host.c_str());
                 }
+
+                flags_.set(flag_t::ACCESS_SHARE_HOST, true);
             }
 
             detail::connection_async_data *async_data = new detail::connection_async_data(owner_);
@@ -276,6 +279,9 @@ namespace atbus {
             conn_data_.shared.mem.len = conf.recv_buffer_size;
             // 仅在listen时要设置proc,否则同机器的同名通道离线会导致proc中断
             // flags_.set(flag_t::REG_PROC, true);
+            flags_.set(flag_t::ACCESS_SHARE_ADDR, true);
+            flags_.set(flag_t::ACCESS_SHARE_HOST, true);
+
             if (NULL == binding_) {
                 state_ = state_t::HANDSHAKING;
                 ATBUS_FUNC_NODE_DEBUG(*owner_, binding_, this, NULL, "channel handshaking(connect)");
@@ -311,6 +317,8 @@ namespace atbus {
 
             // 仅在listen时要设置proc,否则同机器的同名通道离线会导致proc中断
             // flags_.set(flag_t::REG_PROC, true);
+            flags_.set(flag_t::ACCESS_SHARE_HOST, true);
+
             if (NULL == binding_) {
                 state_ = state_t::HANDSHAKING;
                 ATBUS_FUNC_NODE_DEBUG(*owner_, binding_, this, NULL, "channel handshaking(connect)");
@@ -327,6 +335,8 @@ namespace atbus {
                 make_address("ipv4", "127.0.0.1", address_.port, address_);
             } else if (0 == UTIL_STRFUNC_STRNCASE_CMP("ipv6", address_.scheme.c_str(), 4) && "::" == address_.host) {
                 make_address("ipv6", "::1", address_.port, address_);
+            } else if (0 == UTIL_STRFUNC_STRNCASE_CMP("unix", address_.scheme.c_str(), 4)) {
+                flags_.set(flag_t::ACCESS_SHARE_HOST, true);
             }
 
             detail::connection_async_data *async_data = new detail::connection_async_data(owner_);

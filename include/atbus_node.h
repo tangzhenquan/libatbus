@@ -358,7 +358,13 @@ namespace atbus {
 
         static int get_pid();
         static const std::string &get_hostname();
-        static bool set_hostname(const std::string &hn);
+        /**
+         * @brief 设置hostname，用于再查找路由路径时区分是否同物理机，不设置的话默认会自动检测本机地址生成一个
+         * @param hn 本机物理机名称，全局共享。仅会影响这之后创建的node
+         * @param force 是否强制设置，一般情况下已经有node使用过物理地址的情况下不允许设置
+         * @return 成功返回true
+         */
+        static bool set_hostname(const std::string &hn, bool force = false);
 
         inline const std::list<std::string> &get_listen_list() const { return self_->get_listen(); }
 
@@ -418,34 +424,34 @@ namespace atbus {
         void add_check_list(const endpoint::ptr_t &ep);
 
         void set_on_recv_handle(evt_msg_t::on_recv_msg_fn_t fn);
-        evt_msg_t::on_recv_msg_fn_t get_on_recv_handle() const;
+        const evt_msg_t::on_recv_msg_fn_t &get_on_recv_handle() const;
 
         void set_on_send_data_failed_handle(evt_msg_t::on_send_data_failed_fn_t fn);
-        evt_msg_t::on_send_data_failed_fn_t get_on_send_data_failed_handle() const;
+        const evt_msg_t::on_send_data_failed_fn_t &get_on_send_data_failed_handle() const;
 
         void set_on_error_handle(evt_msg_t::on_error_fn_t fn);
-        evt_msg_t::on_error_fn_t get_on_error_handle() const;
+        const evt_msg_t::on_error_fn_t &get_on_error_handle() const;
 
         void set_on_register_handle(evt_msg_t::on_reg_fn_t fn);
-        evt_msg_t::on_reg_fn_t get_on_register_handle() const;
+        const evt_msg_t::on_reg_fn_t &get_on_register_handle() const;
 
         void set_on_shutdown_handle(evt_msg_t::on_node_down_fn_t fn);
-        evt_msg_t::on_node_down_fn_t get_on_shutdown_handle() const;
+        const evt_msg_t::on_node_down_fn_t &get_on_shutdown_handle() const;
 
         void set_on_available_handle(evt_msg_t::on_node_up_fn_t fn);
-        evt_msg_t::on_node_up_fn_t get_on_available_handle() const;
+        const evt_msg_t::on_node_up_fn_t &get_on_available_handle() const;
 
         void set_on_invalid_connection_handle(evt_msg_t::on_invalid_connection_fn_t fn);
-        evt_msg_t::on_invalid_connection_fn_t get_on_invalid_connection_handle() const;
+        const evt_msg_t::on_invalid_connection_fn_t &get_on_invalid_connection_handle() const;
 
         void set_on_custom_cmd_handle(evt_msg_t::on_custom_cmd_fn_t fn);
-        evt_msg_t::on_custom_cmd_fn_t get_on_custom_cmd_handle() const;
+        const evt_msg_t::on_custom_cmd_fn_t &get_on_custom_cmd_handle() const;
 
         void set_on_add_endpoint_handle(evt_msg_t::on_add_endpoint_fn_t fn);
-        evt_msg_t::on_add_endpoint_fn_t get_on_add_endpoint_handle() const;
+        const evt_msg_t::on_add_endpoint_fn_t &get_on_add_endpoint_handle() const;
 
         void set_on_remove_endpoint_handle(evt_msg_t::on_remove_endpoint_fn_t fn);
-        evt_msg_t::on_remove_endpoint_fn_t get_on_remove_endpoint_handle() const;
+        const evt_msg_t::on_remove_endpoint_fn_t &get_on_remove_endpoint_handle() const;
 
         void ref_object(void *);
         void unref_object(void *);

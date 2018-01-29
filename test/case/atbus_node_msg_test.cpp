@@ -278,9 +278,15 @@ CASE_TEST(atbus_node_msg, send_cmd_to_self) {
     conf.ev_loop = &ev_loop;
 
     {
+        char cmds[][8] = {"self", "command", "yep"};
+        size_t cmds_len[] = {strlen(cmds[0]), strlen(cmds[1]), strlen(cmds[2])};
+        const void *cmds_in[] = {cmds[0], cmds[1], cmds[2]};
+
         atbus::node::ptr_t node1 = atbus::node::create();
         node1->on_debug = node_msg_test_on_debug;
         node1->set_on_error_handle(node_msg_test_on_error);
+
+        CASE_EXPECT_EQ(EN_ATBUS_ERR_NOT_INITED, node1->send_custom_cmd(node1->get_id(), cmds_in, cmds_len, 3));
 
         node1->init(0x12345678, &conf);
 
@@ -292,12 +298,9 @@ CASE_TEST(atbus_node_msg, send_cmd_to_self) {
         node1->poll();
         node1->proc(proc_t, 0);
 
-        char cmds[][8] = {"self", "command", "yep"};
-        size_t cmds_len[] = {strlen(cmds[0]), strlen(cmds[1]), strlen(cmds[2])};
-        const void *cmds_in[] = {cmds[0], cmds[1], cmds[2]};
-
         int count = recv_msg_history.count;
         node1->set_on_custom_cmd_handle(node_msg_test_recv_msg_test_custom_cmd_fn);
+        CASE_EXPECT_TRUE(!!node1->get_on_custom_cmd_handle());
         node1->send_custom_cmd(node1->get_id(), cmds_in, cmds_len, 3);
 
         CASE_EXPECT_EQ(count + 1, recv_msg_history.count);
@@ -478,6 +481,11 @@ CASE_TEST(atbus_node_msg, parent_and_child) {
             ++proc_t;
         }
 
+        // 顺便启动父子节点的ping
+        proc_t += conf.ping_interval + 1;
+        node_parent->proc(proc_t, 0);
+        node_child->proc(proc_t, 0);
+
         node_child->set_on_recv_handle(node_msg_test_recv_msg_test_record_fn);
         node_parent->set_on_recv_handle(node_msg_test_recv_msg_test_record_fn);
 
@@ -505,6 +513,9 @@ CASE_TEST(atbus_node_msg, parent_and_child) {
 
             CASE_EXPECT_EQ(send_data, recv_msg_history.data);
         }
+
+        CASE_EXPECT_GT(node_child->get_endpoint(node_parent->get_id())->get_stat_last_pong(), 0);
+        CASE_EXPECT_GT(node_parent->get_endpoint(node_child->get_id())->get_stat_last_pong(), 0);
     }
 
     unit_test_setup_exit(&ev_loop);
@@ -741,6 +752,7 @@ CASE_TEST(atbus_node_msg, transfer_failed) {
         time_t proc_t = time(NULL) + 1;
         node_child_1->set_on_recv_handle(node_msg_test_recv_msg_test_record_fn);
         node_child_1->set_on_send_data_failed_handle(node_msg_test_send_data_failed_fn);
+        CASE_EXPECT_TRUE(!!node_child_1->get_on_send_data_failed_handle());
 
         // wait for register finished
         UNITTEST_WAIT_UNTIL(conf.ev_loop,

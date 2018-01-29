@@ -248,15 +248,22 @@ namespace atbus {
     }
 
     bool endpoint::sort_connection_cmp_fn(const connection::ptr_t &left, const connection::ptr_t &right) {
-        if (left->check_flag(connection::flag_t::ACCESS_SHARE_ADDR) != right->check_flag(connection::flag_t::ACCESS_SHARE_ADDR)) {
-            return left->check_flag(connection::flag_t::ACCESS_SHARE_ADDR);
+        int lscore = 0, rscore = 0;
+        if (!left->check_flag(connection::flag_t::ACCESS_SHARE_ADDR)) {
+            lscore += 0x08;
+        }
+        if (!left->check_flag(connection::flag_t::ACCESS_SHARE_HOST)) {
+            lscore += 0x04;
         }
 
-        if (left->check_flag(connection::flag_t::ACCESS_SHARE_HOST) != right->check_flag(connection::flag_t::ACCESS_SHARE_HOST)) {
-            return left->check_flag(connection::flag_t::ACCESS_SHARE_HOST);
+        if (!right->check_flag(connection::flag_t::ACCESS_SHARE_ADDR)) {
+            rscore += 0x08;
+        }
+        if (!right->check_flag(connection::flag_t::ACCESS_SHARE_HOST)) {
+            rscore += 0x04;
         }
 
-        return false;
+        return lscore < rscore;
     }
 
     connection *endpoint::get_ctrl_connection(endpoint *ep) const {
