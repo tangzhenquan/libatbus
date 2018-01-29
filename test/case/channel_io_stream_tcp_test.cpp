@@ -8,6 +8,7 @@
 #include <iostream>
 #include <map>
 #include <memory>
+#include <sstream>
 
 
 #include "detail/libatbus_channel_export.h"
@@ -25,7 +26,7 @@ static void disconnected_callback_test_fn(atbus::channel::io_stream_channel *cha
                                           int status,                                       // libuv传入的转态码
                                           void *,                                           // 额外参数(不同事件不同含义)
                                           size_t s                                          // 额外参数长度
-                                          ) {
+) {
     CASE_EXPECT_NE(NULL, channel);
     CASE_EXPECT_NE(NULL, connection);
     CASE_EXPECT_EQ(0, status);
@@ -45,7 +46,7 @@ static void accepted_callback_test_fn(atbus::channel::io_stream_channel *channel
                                       int status,                                       // libuv传入的转态码
                                       void *,                                           // 额外参数(不同事件不同含义)
                                       size_t s                                          // 额外参数长度
-                                      ) {
+) {
     CASE_EXPECT_NE(NULL, channel);
     CASE_EXPECT_NE(NULL, connection);
     CASE_EXPECT_EQ(0, status);
@@ -65,7 +66,7 @@ static void listen_callback_test_fn(atbus::channel::io_stream_channel *channel, 
                                     int status,                                       // libuv传入的转态码
                                     void *,                                           // 额外参数(不同事件不同含义)
                                     size_t s                                          // 额外参数长度
-                                    ) {
+) {
     CASE_EXPECT_NE(NULL, channel);
     CASE_EXPECT_NE(NULL, connection);
     CASE_EXPECT_EQ(0, status);
@@ -82,7 +83,7 @@ static void connected_callback_test_fn(atbus::channel::io_stream_channel *channe
                                        int status,                                       // libuv传入的转态码
                                        void *,                                           // 额外参数(不同事件不同含义)
                                        size_t s                                          // 额外参数长度
-                                       ) {
+) {
     CASE_EXPECT_NE(NULL, channel);
     CASE_EXPECT_NE(NULL, connection);
     CASE_EXPECT_EQ(0, status);
@@ -135,7 +136,7 @@ static void recv_callback_check_fn(atbus::channel::io_stream_channel *channel,  
                                    int status,                                       // libuv传入的转态码
                                    void *input,                                      // 额外参数(不同事件不同含义)
                                    size_t s                                          // 额外参数长度
-                                   ) {
+) {
     CASE_EXPECT_NE(NULL, channel);
     CASE_EXPECT_NE(NULL, connection);
 
@@ -255,6 +256,10 @@ CASE_TEST(channel, io_stream_tcp_basic) {
                         << std::endl;
     }
 
+    std::stringstream ssout;
+    atbus::channel::io_stream_show_channel(NULL, ssout);
+    atbus::channel::io_stream_show_channel(&svr, ssout);
+
     atbus::channel::io_stream_close(&svr);
     atbus::channel::io_stream_close(&cli);
     CASE_EXPECT_EQ(0, svr.conn_pool.size());
@@ -356,7 +361,7 @@ static void recv_size_err_callback_check_fn(atbus::channel::io_stream_channel *c
                                             int status,                                       // libuv传入的转态码
                                             void *input,                                      // 额外参数(不同事件不同含义)
                                             size_t s                                          // 额外参数长度
-                                            ) {
+) {
     CASE_EXPECT_NE(NULL, channel);
     CASE_EXPECT_NE(NULL, connection);
 
@@ -445,7 +450,7 @@ static void connect_failed_callback_test_fn(atbus::channel::io_stream_channel *c
                                             int status,                                       // libuv传入的转态码
                                             void *,                                           // 额外参数(不同事件不同含义)
                                             size_t s                                          // 额外参数长度
-                                            ) {
+) {
     CASE_EXPECT_NE(NULL, channel);
     CASE_EXPECT_EQ(NULL, connection);
 
