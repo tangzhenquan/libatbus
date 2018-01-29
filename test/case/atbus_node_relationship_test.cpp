@@ -81,7 +81,7 @@ CASE_TEST(atbus_node_rela, child_endpoint_opr) {
 
     // 新端点子域冲突-父子关系
     ep = atbus::endpoint::create(node.get(), 0x12345680, 4, node->get_pid(), node->get_hostname());
-    CASE_EXPECT_EQ(EN_ATBUS_ERR_PARAMS, node->add_endpoint(NULL));
+    CASE_EXPECT_EQ(EN_ATBUS_ERR_PARAMS, node->add_endpoint(atbus::endpoint::ptr_t()));
     CASE_EXPECT_EQ(EN_ATBUS_ERR_ATNODE_MASK_CONFLICT, node->add_endpoint(ep));
 
     // 新端点子域冲突-子父关系
