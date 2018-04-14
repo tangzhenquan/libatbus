@@ -79,6 +79,7 @@ namespace atbus {
         extern int io_stream_disconnect_fd(io_stream_channel *channel, adapter::fd_t fd, io_stream_callback_t callback);
         extern int io_stream_try_write(io_stream_connection *connection);
         extern int io_stream_send(io_stream_connection *connection, const void *buf, size_t len);
+        extern size_t io_stream_get_max_unix_socket_length();
 
         extern void io_stream_show_channel(io_stream_channel *channel, std::ostream &out);
     } // namespace channel
