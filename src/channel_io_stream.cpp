@@ -16,8 +16,11 @@
 #ifndef _MSC_VER
 #include <sys/stat.h>
 #include <sys/types.h>
-#include <sys/un.h>
 #include <unistd.h>
+#endif
+
+#if defined(ATBUS_MACRO_WITH_UNIX_SOCK)
+#include <sys/un.h>
 #endif
 
 #include "common/string_oprs.h"
@@ -1703,7 +1706,7 @@ namespace atbus {
         }
 
         size_t io_stream_get_max_unix_socket_length() {
-#ifndef _MSC_VER
+#if defined(ATBUS_MACRO_WITH_UNIX_SOCK)
             return sizeof(sockaddr_un::sun_path);
 #endif
             return 0;
