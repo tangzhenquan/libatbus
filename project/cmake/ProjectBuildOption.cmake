@@ -27,5 +27,5 @@ set(BOOST_ROOT "" CACHE STRING "Boost root directory")
 option(PROJECT_TEST_ENABLE_BOOST_UNIT_TEST "Enable boost unit test." OFF)
 
 # find if we have Unix Sock
-include(CheckIncludeFile)
-CHECK_INCLUDE_FILE("sys/un.h" ATBUS_MACRO_WITH_UNIX_SOCK)
+include(CheckIncludeFiles)
+CHECK_INCLUDE_FILES("sys/un.h;sys/socket.h" ATBUS_MACRO_WITH_UNIX_SOCK)

@@ -19,7 +19,9 @@
 #include <unistd.h>
 #endif
 
-#if defined(ATBUS_MACRO_WITH_UNIX_SOCK)
+#include "detail/libatbus_config.h"
+
+#if defined(ATBUS_MACRO_WITH_UNIX_SOCK) && ATBUS_MACRO_WITH_UNIX_SOCK
 #include <sys/socket.h>
 #include <sys/un.h>
 #endif
@@ -1707,7 +1709,7 @@ namespace atbus {
         }
 
         size_t io_stream_get_max_unix_socket_length() {
-#if defined(ATBUS_MACRO_WITH_UNIX_SOCK)
+#if defined(ATBUS_MACRO_WITH_UNIX_SOCK) && ATBUS_MACRO_WITH_UNIX_SOCK
             return sizeof(sockaddr_un::sun_path);
 #endif
             return 0;
