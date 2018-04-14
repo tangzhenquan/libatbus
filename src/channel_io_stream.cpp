@@ -20,6 +20,7 @@
 #endif
 
 #if defined(ATBUS_MACRO_WITH_UNIX_SOCK)
+#include <sys/socket.h>
 #include <sys/un.h>
 #endif
 
