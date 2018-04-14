@@ -1062,7 +1062,7 @@ namespace atbus {
                 }
                 return ret;
             } else if (0 == UTIL_STRFUNC_STRNCASE_CMP("unix", addr.scheme.c_str(), 4)) {
-                if (0 != io_stream_get_max_unix_socket_length() && addr.host.size() >= sizeof(sockaddr_un::sun_path)) {
+                if (0 != io_stream_get_max_unix_socket_length() && addr.host.size() >= io_stream_get_max_unix_socket_length()) {
                     return EN_ATBUS_ERR_PIPE_ADDR_TOO_LONG;
                 }
 
