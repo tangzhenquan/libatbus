@@ -3,7 +3,7 @@ EchoWithColor(COLOR GREEN "-- Configure Unit Test ${CMAKE_CURRENT_LIST_DIR}")
 
 include("${PROJECT_TEST_BAS_DIR}/test.build_bin.cmake")
 
-include_directories(${PROJECT_ROOT_SRC_DIR})
+include_directories(${PROJECT_LIBATBUS_ROOT_SRC_DIR})
 
 file(GLOB_RECURSE PROJECT_TEST_SRC_LIST
     ${PROJECT_TEST_SRC_DIR}/app/*.cpp
