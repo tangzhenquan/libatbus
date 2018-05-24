@@ -62,11 +62,11 @@ namespace atbus {
 
             fns[ATBUS_CMD_NODE_SYNC_REQ] = msg_handler::on_recv_node_sync_req;
             fns[ATBUS_CMD_NODE_SYNC_RSP] = msg_handler::on_recv_node_sync_rsp;
-            fns[ATBUS_CMD_NODE_REG_REQ] = msg_handler::on_recv_node_reg_req;
-            fns[ATBUS_CMD_NODE_REG_RSP] = msg_handler::on_recv_node_reg_rsp;
+            fns[ATBUS_CMD_NODE_REG_REQ]  = msg_handler::on_recv_node_reg_req;
+            fns[ATBUS_CMD_NODE_REG_RSP]  = msg_handler::on_recv_node_reg_rsp;
             fns[ATBUS_CMD_NODE_CONN_SYN] = msg_handler::on_recv_node_conn_syn;
-            fns[ATBUS_CMD_NODE_PING] = msg_handler::on_recv_node_ping;
-            fns[ATBUS_CMD_NODE_PONG] = msg_handler::on_recv_node_pong;
+            fns[ATBUS_CMD_NODE_PING]     = msg_handler::on_recv_node_ping;
+            fns[ATBUS_CMD_NODE_PONG]     = msg_handler::on_recv_node_pong;
         }
 
         if (NULL == m) {
@@ -115,8 +115,8 @@ namespace atbus {
             return EN_ATBUS_ERR_MALLOC;
         }
 
-        reg->bus_id = n.get_id();
-        reg->pid = n.get_pid();
+        reg->bus_id   = n.get_id();
+        reg->pid      = n.get_pid();
         reg->hostname = n.get_hostname();
 
         for (std::list<std::string>::const_iterator iter = n.get_listen_list().begin(); iter != n.get_listen_list().end(); ++iter) {
@@ -125,15 +125,15 @@ namespace atbus {
         }
 
         reg->children_id_mask = n.get_self_endpoint()->get_children_mask();
-        reg->flags = n.get_self_endpoint()->get_flags();
+        reg->flags            = n.get_self_endpoint()->get_flags();
 
         return send_msg(n, conn, m);
     }
 
     int msg_handler::send_transfer_rsp(node &n, protocol::msg &m, int32_t ret_code) {
-        m.init(n.get_id(), ATBUS_CMD_DATA_TRANSFORM_RSP, 0, ret_code, m.head.sequence);
+        m.init(n.get_id(), ATBUS_CMD_DATA_TRANSFORM_RSP, m.head.type, ret_code, m.head.sequence);
         node::bus_id_t to_id = m.body.forward->to;
-        m.body.forward->to = m.body.forward->from;
+        m.body.forward->to   = m.body.forward->from;
         m.body.forward->from = to_id;
 
         int ret = n.send_ctrl_msg(m.body.forward->to, m);
@@ -182,7 +182,7 @@ namespace atbus {
             return send_transfer_rsp(n, m, EN_ATBUS_ERR_ATNODE_TTL);
         }
 
-        int res = 0;
+        int res         = 0;
         endpoint *to_ep = NULL;
         // 转发数据
         node::bus_id_t direct_from_bus_id = m.head.src_bus_id;
@@ -203,8 +203,8 @@ namespace atbus {
                 }
 
                 const std::list<std::string> &listen_addrs = to_ep->get_listen();
-                const endpoint *from_ep = n.get_endpoint(direct_from_bus_id);
-                bool is_same_host = (NULL != from_ep && from_ep->get_hostname() == to_ep->get_hostname());
+                const endpoint *from_ep                    = n.get_endpoint(direct_from_bus_id);
+                bool is_same_host                          = (NULL != from_ep && from_ep->get_hostname() == to_ep->get_hostname());
 
                 for (std::list<std::string>::const_iterator iter = listen_addrs.begin(); iter != listen_addrs.end(); ++iter) {
                     // 通知连接控制通道，控制通道不能是（共享）内存通道
@@ -265,9 +265,9 @@ namespace atbus {
         }
 
         // 检查如果发送目标不是来源，则转发失败消息
-        endpoint *target = NULL;
+        endpoint *target        = NULL;
         connection *target_conn = NULL;
-        int ret = n.get_remote_channel(m.body.forward->to, &endpoint::get_data_connection, &target, &target_conn);
+        int ret                 = n.get_remote_channel(m.body.forward->to, &endpoint::get_data_connection, &target, &target_conn);
         if (NULL == target || NULL == target_conn) {
             ATBUS_FUNC_NODE_ERROR(n, target, target_conn, ret, 0);
             return ret;
@@ -281,7 +281,7 @@ namespace atbus {
 
         // 重设发送源
         m.head.src_bus_id = n.get_id();
-        ret = send_msg(n, *target_conn, m);
+        ret               = send_msg(n, *target_conn, m);
         return ret;
     }
 
@@ -309,8 +309,8 @@ namespace atbus {
     }
 
     int msg_handler::on_recv_node_reg_req(node &n, connection *conn, protocol::msg &m, int status, int errcode) {
-        endpoint *ep = NULL;
-        int32_t res = EN_ATBUS_ERR_SUCCESS;
+        endpoint *ep     = NULL;
+        int32_t res      = EN_ATBUS_ERR_SUCCESS;
         int32_t rsp_code = EN_ATBUS_ERR_SUCCESS;
 
         do {
@@ -418,7 +418,7 @@ namespace atbus {
                 }
 
                 bool check_hostname = false;
-                bool check_pid = false;
+                bool check_pid      = false;
 
                 // unix sock and shm only available in the same host
                 if (0 == UTIL_STRFUNC_STRNCASE_CMP("unix:", chan.address.c_str(), 5) ||
