@@ -3,12 +3,12 @@ language: cpp
 env:
   global:
     - LANG="zh_CN.UTF-8"
-    - MSGPACK_PREFIX=$HOME/prebuilt/msgpack-2.1.5 ;
-    - MSGPACK_VERSION=2.1.5 ;
-    - LIBUV_PREFIX=$HOME/prebuilt/libuv-1.19.1 ;
-    - LIBUV_VERSION=1.19.1
+    - MSGPACK_PREFIX=$HOME/prebuilt/msgpack-3.0.1 ;
+    - MSGPACK_VERSION=3.0.1 ;
+    - LIBUV_PREFIX=$HOME/prebuilt/libuv-1.22.0 ;
+    - LIBUV_VERSION=1.22.0
     - CMAKE_PREFIX=$HOME/prebuilt/cmake ;
-    - CMAKE_LINUX_URL=https://cmake.org/files/v3.10/cmake-3.10.2-Linux-x86_64.sh ;
+    - CMAKE_LINUX_URL=https://cmake.org/files/v3.11/cmake-3.11.4-Linux-x86_64.sh ;
 matrix:
   include:
     - os: osx
@@ -46,16 +46,16 @@ matrix:
     - os: linux
       dist: trusty
       sudo: required
-      env: USE_CC=gcc-7 USE_CXX=g++-7 CMAKE_BIN=$CMAKE_PREFIX/bin/cmake CTEST_BIN=$CMAKE_PREFIX/bin/ctest
+      env: USE_CC=gcc-8 USE_CXX=g++-8 CMAKE_BIN=$CMAKE_PREFIX/bin/cmake CTEST_BIN=$CMAKE_PREFIX/bin/ctest
       addons:
         apt:
           sources:
             - ubuntu-toolchain-r-test
           packages:
-            - gcc-7
-            - gcc-7-multilib
-            - g++-7
-            - g++-7-multilib
+            - gcc-8
+            - gcc-8-multilib
+            - g++-8
+            - g++-8-multilib
     #- os: linux
     #  dist: trusty
     #  sudo: required

@@ -75,7 +75,7 @@ namespace atbus {
                                              int status,                       // libuv传入的转态码
                                              void *,                           // 额外参数(不同事件不同含义)
                                              size_t s                          // 额外参数长度
-                                             );
+        );
 
         struct io_stream_callback_evt_t {
             enum mem_fn_t {
@@ -116,10 +116,10 @@ namespace atbus {
 
             // 数据区域
             ::atbus::detail::buffer_manager read_buffers; // 读数据缓冲区(两种Buffer管理方式，一种动态，一种静态)
-                                                 /**
-                                                  * @brief 由于大多数数据包都比较小
-                                                  *        当数据包比较小时和动态直接放在动态int的数据包一起，这样可以减少内存拷贝次数
-                                                  */
+                                                          /**
+                                                           * @brief 由于大多数数据包都比较小
+                                                           *        当数据包比较小时和动态直接放在动态int的数据包一起，这样可以减少内存拷贝次数
+                                                           */
             typedef struct {
                 char buffer[ATBUS_MACRO_DATA_SMALL_SIZE]; // varint数据暂存区和小数据包存储区
                 size_t len;                               // varint数据暂存区和小数据包存储区已使用长度
@@ -143,8 +143,12 @@ namespace atbus {
             size_t recv_buffer_max_size;
             size_t recv_buffer_limit_size;
 
-            time_t confirm_timeout;
             int backlog; // backlog indicates the number of connections the kernel might queue
+
+            time_t confirm_timeout;
+            size_t max_read_net_eagain_count;
+            size_t max_read_check_block_size_failed_count;
+            size_t max_read_check_hash_failed_count;
         };
 
         struct io_stream_channel {
@@ -170,7 +174,10 @@ namespace atbus {
 
             int error_code; // 记录外部的错误码
             // 统计信息
-            util::lock::seq_alloc_u32 active_reqs; // 正在进行的req数量
+            util::lock::seq_alloc_u32 active_reqs;     // 正在进行的req数量
+            size_t read_net_eagain_count;              // 读到的网络重试错误数量
+            size_t read_check_block_size_failed_count; // 读到的数据块长度检查错误数量
+            size_t read_check_hash_failed_count;       // 读到的数据hash检查错误数量
 
             // 自定义数据区域
             void *data;
@@ -187,8 +194,8 @@ namespace atbus {
 #define ATBUS_CHANNEL_REQ_END(channel)         \
     assert(ATBUS_CHANNEL_REQ_ACTIVE(channel)); \
     (channel)->active_reqs.dec()
-    }
-}
+    } // namespace channel
+} // namespace atbus
 
 
 #endif /* LIBATBUS_CHANNEL_EXPORT_H_ */

@@ -190,6 +190,11 @@ namespace atbus {
             conf->recv_buffer_limit_size = ATBUS_MACRO_MSG_LIMIT;
 
             conf->backlog = ATBUS_MACRO_CONNECTION_BACKLOG;
+
+            conf->confirm_timeout                        = 10;
+            conf->max_read_net_eagain_count              = 256;
+            conf->max_read_check_block_size_failed_count = 10;
+            conf->max_read_check_hash_failed_count       = 10;
         }
 
         static adapter::loop_t *io_stream_get_loop(io_stream_channel *channel) {
@@ -226,7 +231,10 @@ namespace atbus {
 
             memset(channel->evt.callbacks, 0, sizeof(channel->evt.callbacks));
 
-            channel->error_code = 0;
+            channel->error_code                         = 0;
+            channel->read_net_eagain_count              = 0;
+            channel->read_check_block_size_failed_count = 0;
+            channel->read_check_hash_failed_count       = 0;
             return EN_ATBUS_ERR_SUCCESS;
         }
 
@@ -322,6 +330,7 @@ namespace atbus {
                 buf->base = NULL;
                 buf->len  = 0;
                 uv_read_stop(conn_raw_ptr->handle.get());
+                return;
             }
 
             void *data   = NULL;
@@ -364,6 +373,11 @@ namespace atbus {
 
             // 读取完或EAGAIN或signal中断，直接忽略即可
             if (0 == nread || UV_EAGAIN == nread || UV_EAI_AGAIN == nread || UV_EINTR == nread) {
+                ++channel->read_net_eagain_count;
+                if (channel->read_net_eagain_count > channel->conf.max_read_net_eagain_count) {
+                    // eagain for too many times, just close
+                    io_stream_disconnect(channel, conn_raw_ptr, NULL);
+                }
                 return;
             }
 
@@ -415,8 +429,16 @@ namespace atbus {
                         int errcode = EN_ATBUS_ERR_SUCCESS;
                         if (check_hash != expect_hash) {
                             errcode = EN_ATBUS_ERR_BAD_DATA;
+                            ++channel->read_check_hash_failed_count;
+                            if (channel->read_check_hash_failed_count > channel->conf.max_read_check_hash_failed_count) {
+                                is_free = true;
+                            }
                         } else if (channel->conf.recv_buffer_limit_size > 0 && msg_len > channel->conf.recv_buffer_limit_size) {
                             errcode = EN_ATBUS_ERR_INVALID_SIZE;
+                            ++channel->read_check_block_size_failed_count;
+                            if (channel->read_check_block_size_failed_count > channel->conf.max_read_check_block_size_failed_count) {
+                                is_free = true;
+                            }
                         }
 
                         io_stream_channel_callback(io_stream_callback_evt_t::EN_FN_RECVED, channel, conn_raw_ptr, 0, errcode,
@@ -444,6 +466,8 @@ namespace atbus {
                             is_free = true;
                             buff_start += sizeof(uint32_t) + vint_len;
                             buff_left_len -= sizeof(uint32_t) + vint_len;
+
+                            ++channel->read_check_block_size_failed_count;
                             break;
                         }
                     }
@@ -478,8 +502,16 @@ namespace atbus {
                 int errcode = EN_ATBUS_ERR_SUCCESS;
                 if (check_hash != expect_hash) {
                     errcode = EN_ATBUS_ERR_BAD_DATA;
+                    ++channel->read_check_hash_failed_count;
+                    if (channel->read_check_hash_failed_count > channel->conf.max_read_check_hash_failed_count) {
+                        is_free = true;
+                    }
                 } else if (channel->conf.recv_buffer_limit_size > 0 && msg_len > channel->conf.recv_buffer_limit_size) {
                     errcode = EN_ATBUS_ERR_INVALID_SIZE;
+                    ++channel->read_check_block_size_failed_count;
+                    if (channel->read_check_block_size_failed_count > channel->conf.max_read_check_block_size_failed_count) {
+                        is_free = true;
+                    }
                 }
 
                 io_stream_channel_callback(io_stream_callback_evt_t::EN_FN_RECVED, channel, conn_raw_ptr, 0, errcode,
@@ -1750,5 +1782,5 @@ namespace atbus {
                 out << "\t\tread_buffers.limit_size: " << iter->second->read_buffers.limit().limit_size_ << std::endl;
             }
         }
-    }
+    } // namespace channel
 } // namespace atbus

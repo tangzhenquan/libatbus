@@ -52,9 +52,9 @@ namespace atbus {
     }
 
     node::node() : state_(state_t::CREATED), ev_loop_(NULL), static_buffer_(NULL), on_debug(NULL) {
-        event_timer_.sec = 0;
-        event_timer_.usec = 0;
-        event_timer_.node_sync_push = 0;
+        event_timer_.sec                   = 0;
+        event_timer_.usec                  = 0;
+        event_timer_.node_sync_push        = 0;
         event_timer_.father_opr_time_point = 0;
 
         flags_.reset();
@@ -74,14 +74,14 @@ namespace atbus {
     }
 
     void node::default_conf(conf_t *conf) {
-        conf->ev_loop = NULL;
+        conf->ev_loop       = NULL;
         conf->children_mask = 0;
-        conf->loop_times = 128;
-        conf->ttl = 16; // 默认最长8次跳转
+        conf->loop_times    = 128;
+        conf->ttl           = 16; // 默认最长8次跳转
 
         conf->first_idle_timeout = ATBUS_MACRO_CONNECTION_CONFIRM_TIMEOUT;
-        conf->ping_interval = 8; // 默认ping包间隔为8s
-        conf->retry_interval = 3;
+        conf->ping_interval      = 8; // 默认ping包间隔为8s
+        conf->retry_interval     = 3;
         conf->fault_tolerant = 2; // 允许最多失败2次，第3次直接失败，默认配置里3次ping包无响应则是最多24s可以发现节点下线
         conf->backlog = ATBUS_MACRO_CONNECTION_BACKLOG;
 
@@ -93,7 +93,7 @@ namespace atbus {
 
         // send_buffer_size 用于IO流通道的发送缓冲区长度，远程节点可能数量很多所以设的小一点
         // default for 32 times of ATBUS_MACRO_MSG_LIMIT = 2MB
-        conf->send_buffer_size = ATBUS_MACRO_MSG_LIMIT * 32;
+        conf->send_buffer_size   = ATBUS_MACRO_MSG_LIMIT * 32;
         conf->send_buffer_number = 0; // 默认不使用静态缓冲区，所以设为0
 
         conf->flags.reset();
@@ -121,7 +121,7 @@ namespace atbus {
         }
 
         ev_loop_ = conf_.ev_loop;
-        self_ = endpoint::create(this, id, conf_.children_mask, get_pid(), get_hostname());
+        self_    = endpoint::create(this, id, conf_.children_mask, get_pid(), get_hostname());
         if (!self_) {
             return EN_ATBUS_ERR_MALLOC;
         }
@@ -152,10 +152,10 @@ namespace atbus {
                 // 如果父节点被激活了，那么父节点操作时间必须更新到非0值，以启用这个功能
                 if (connect(conf_.father_address.c_str()) >= 0) {
                     event_timer_.father_opr_time_point = event_timer_.sec + conf_.first_idle_timeout;
-                    state_ = state_t::CONNECTING_PARENT;
+                    state_                             = state_t::CONNECTING_PARENT;
                 } else {
                     event_timer_.father_opr_time_point = event_timer_.sec + conf_.retry_interval;
-                    state_ = state_t::LOST_PARENT;
+                    state_                             = state_t::LOST_PARENT;
                 }
             }
         } else {
@@ -258,7 +258,7 @@ namespace atbus {
 
     int node::proc(time_t sec, time_t usec) {
         if (sec > event_timer_.sec) {
-            event_timer_.sec = sec;
+            event_timer_.sec  = sec;
             event_timer_.usec = usec;
         } else if (sec == event_timer_.sec && usec > event_timer_.usec) {
             event_timer_.usec = usec;
@@ -324,7 +324,7 @@ namespace atbus {
                 } else {
                     // 下一次判定父节点连接超时再重新连接
                     event_timer_.father_opr_time_point = sec + conf_.first_idle_timeout;
-                    state_ = state_t::CONNECTING_PARENT;
+                    state_                             = state_t::CONNECTING_PARENT;
                 }
             } else {
                 int res = ping_endpoint(*node_father_.node_);
@@ -395,7 +395,7 @@ namespace atbus {
 
     int node::poll() {
         // point to point IO stream channels
-        int loop_left = conf_.loop_times;
+        int loop_left        = conf_.loop_times;
         size_t stat_dispatch = stat_.dispatch_times;
         while (iostream_channel_ && loop_left > 0 &&
                EN_ATBUS_ERR_EV_RUN == channel::io_stream_run(get_iostream_channel(), adapter::RUN_NOWAIT)) {
@@ -438,6 +438,19 @@ namespace atbus {
             return EN_ATBUS_ERR_NOT_INITED;
         }
 
+        // if there is already connection of this addr not completed, just return success
+        for (evt_timer_t::timer_desc_ls<connection::ptr_t>::type::iterator iter = event_timer_.connecting_list.begin();
+             iter != event_timer_.connecting_list.end(); ++iter) {
+            if (!iter->second || iter->second->is_connected()) {
+                continue;
+            }
+
+            if (0 == UTIL_STRFUNC_STRNCASE_CMP(addr_str, iter->second->get_address().address.c_str(),
+                                               iter->second->get_address().address.size())) {
+                return EN_ATBUS_ERR_SUCCESS;
+            }
+        }
+
         connection::ptr_t conn = connection::create(this);
         if (!conn) {
             return EN_ATBUS_ERR_MALLOC;
@@ -467,6 +480,21 @@ namespace atbus {
 
         if (NULL == ep) {
             return EN_ATBUS_ERR_PARAMS;
+        }
+
+        // if there is already connection of this addr not completed, just return success
+        for (evt_timer_t::timer_desc_ls<connection::ptr_t>::type::iterator iter = event_timer_.connecting_list.begin();
+             iter != event_timer_.connecting_list.end(); ++iter) {
+            if (!iter->second || iter->second->is_connected()) {
+                continue;
+            }
+
+            if (iter->second->get_binding() == ep) {
+                if (0 == UTIL_STRFUNC_STRNCASE_CMP(addr_str, iter->second->get_address().address.c_str(),
+                                                   iter->second->get_address().address.size())) {
+                    return EN_ATBUS_ERR_SUCCESS;
+                }
+            }
         }
 
         connection::ptr_t conn = connection::create(this);
@@ -552,10 +580,10 @@ namespace atbus {
 
             // fake body
             protocol::forward_data data;
-            m.body.forward = &data;
-            m.body.forward->from = tid;
-            m.body.forward->to = tid;
-            m.body.forward->content.ptr = buffer;
+            m.body.forward               = &data;
+            m.body.forward->from         = tid;
+            m.body.forward->to           = tid;
+            m.body.forward->content.ptr  = buffer;
             m.body.forward->content.size = s;
             if (require_rsp) {
                 m.body.forward->set_flag(atbus::protocol::forward_data::FLAG_REQUIRE_RSP);
@@ -575,9 +603,9 @@ namespace atbus {
             return EN_ATBUS_ERR_MALLOC;
         }
 
-        m.body.forward->from = get_id();
-        m.body.forward->to = tid;
-        m.body.forward->content.ptr = buffer;
+        m.body.forward->from         = get_id();
+        m.body.forward->to           = tid;
+        m.body.forward->content.ptr  = buffer;
         m.body.forward->content.size = s;
         if (require_rsp) {
             m.body.forward->set_flag(atbus::protocol::forward_data::FLAG_REQUIRE_RSP);
@@ -618,7 +646,7 @@ namespace atbus {
 
         for (size_t i = 0; i < arr_count; ++i) {
             atbus::protocol::bin_data_block cmd;
-            cmd.ptr = arr_buf[i];
+            cmd.ptr  = arr_buf[i];
             cmd.size = arr_size[i];
 
             m.body.custom->commands.push_back(cmd);
@@ -683,7 +711,7 @@ namespace atbus {
         }
 
         connection *conn = NULL;
-        int res = get_remote_channel(tid, fn, ep_out, &conn);
+        int res          = get_remote_channel(tid, fn, ep_out, &conn);
         if (NULL != conn_out) {
             *conn_out = conn;
         }
@@ -728,7 +756,7 @@ namespace atbus {
             // 父节点单独判定，防止父节点被判定为兄弟节点
             if (node_father_.node_ && is_parent_node(tid)) {
                 target = node_father_.node_.get();
-                conn = (self_.get()->*fn)(target);
+                conn   = (self_.get()->*fn)(target);
 
                 ASSIGN_EPCONN();
                 break;
@@ -751,7 +779,7 @@ namespace atbus {
                     // 当C11发往C12时触发这种情况
                     */
                     target = node_father_.node_.get();
-                    conn = (self_.get()->*fn)(target);
+                    conn   = (self_.get()->*fn)(target);
 
                     ASSIGN_EPCONN();
                     break;
@@ -781,7 +809,7 @@ namespace atbus {
             */
             if (node_father_.node_ && false == get_self_endpoint()->get_flag(endpoint::flag_t::GLOBAL_ROUTER)) {
                 target = node_father_.node_.get();
-                conn = (self_.get()->*fn)(target);
+                conn   = (self_.get()->*fn)(target);
 
                 ASSIGN_EPCONN();
                 break;
@@ -1023,8 +1051,8 @@ namespace atbus {
         {
             std::vector<std::string> all_outter_inters;
             uv_interface_address_t *interface_addrs = NULL;
-            int interface_sz = 0;
-            size_t total_size = 0;
+            int interface_sz                        = 0;
+            size_t total_size                       = 0;
             uv_interface_addresses(&interface_addrs, &interface_sz);
             for (int i = 0; i < interface_sz; ++i) {
                 uv_interface_address_t *inter_addr = interface_addrs + i;
@@ -1359,10 +1387,10 @@ namespace atbus {
 
             // fake body
             protocol::forward_data data;
-            m.body.forward = &data;
-            m.body.forward->from = get_id();
-            m.body.forward->to = get_id();
-            m.body.forward->content.ptr = &bin_data[sizeof(int) + msg_head_len];
+            m.body.forward               = &data;
+            m.body.forward->from         = get_id();
+            m.body.forward->to           = get_id();
+            m.body.forward->content.ptr  = &bin_data[sizeof(int) + msg_head_len];
             m.body.forward->content.size = bin_data.size() - sizeof(int) - msg_head_len;
             memcpy(&m.body.forward->flags, &bin_data[msg_head_len], sizeof(int));
 
@@ -1387,7 +1415,7 @@ namespace atbus {
             atbus::protocol::msg m;
             // fake body
             protocol::custom_command_data data;
-            m.body.custom = &data;
+            m.body.custom       = &data;
             m.body.custom->from = get_id();
 
             do {
@@ -1399,7 +1427,7 @@ namespace atbus {
                 memcpy(&m.head, &bin_datas[0][0], msg_head_len);
                 m.body.custom->commands.resize(bin_datas.size() - 1);
                 for (size_t i = 1; i < bin_datas.size(); ++i) {
-                    m.body.custom->commands[i - 1].ptr = &bin_datas[i][0];
+                    m.body.custom->commands[i - 1].ptr  = &bin_datas[i][0];
                     m.body.custom->commands[i - 1].size = bin_datas[i].size();
                 }
 
@@ -1435,7 +1463,7 @@ namespace atbus {
 
         // 出错则增加错误计数
         uint32_t ping_seq = msg_seq_alloc_.inc();
-        int res = msg_handler::send_ping(*this, *ctl_conn, ping_seq);
+        int res           = msg_handler::send_ping(*this, *ctl_conn, ping_seq);
         if (res < 0) {
             add_endpoint_fault(ep);
             return res;
@@ -1667,11 +1695,11 @@ namespace atbus {
         iostream_channel_->data = this;
 
         // callbacks
-        iostream_channel_->evt.callbacks[channel::io_stream_callback_evt_t::EN_FN_ACCEPTED] = connection::iostream_on_accepted;
-        iostream_channel_->evt.callbacks[channel::io_stream_callback_evt_t::EN_FN_CONNECTED] = connection::iostream_on_connected;
+        iostream_channel_->evt.callbacks[channel::io_stream_callback_evt_t::EN_FN_ACCEPTED]     = connection::iostream_on_accepted;
+        iostream_channel_->evt.callbacks[channel::io_stream_callback_evt_t::EN_FN_CONNECTED]    = connection::iostream_on_connected;
         iostream_channel_->evt.callbacks[channel::io_stream_callback_evt_t::EN_FN_DISCONNECTED] = connection::iostream_on_disconnected;
-        iostream_channel_->evt.callbacks[channel::io_stream_callback_evt_t::EN_FN_RECVED] = connection::iostream_on_recv_cb;
-        iostream_channel_->evt.callbacks[channel::io_stream_callback_evt_t::EN_FN_WRITEN] = connection::iostream_on_written;
+        iostream_channel_->evt.callbacks[channel::io_stream_callback_evt_t::EN_FN_RECVED]       = connection::iostream_on_recv_cb;
+        iostream_channel_->evt.callbacks[channel::io_stream_callback_evt_t::EN_FN_WRITEN]       = connection::iostream_on_written;
 
         return iostream_channel_.get();
     }
@@ -1688,13 +1716,13 @@ namespace atbus {
 
         // 接收大小和msg size一致即可，可以只使用一块静态buffer
         iostream_conf_->recv_buffer_limit_size = conf_.msg_size;
-        iostream_conf_->recv_buffer_max_size = conf_.msg_size + conf_.msg_size;
+        iostream_conf_->recv_buffer_max_size   = conf_.msg_size + conf_.msg_size;
 
-        iostream_conf_->send_buffer_static = conf_.send_buffer_number;
-        iostream_conf_->send_buffer_max_size = conf_.send_buffer_size;
+        iostream_conf_->send_buffer_static     = conf_.send_buffer_number;
+        iostream_conf_->send_buffer_max_size   = conf_.send_buffer_size;
         iostream_conf_->send_buffer_limit_size = conf_.msg_size;
-        iostream_conf_->confirm_timeout = conf_.first_idle_timeout;
-        iostream_conf_->backlog = conf_.backlog;
+        iostream_conf_->confirm_timeout        = conf_.first_idle_timeout;
+        iostream_conf_->backlog                = conf_.backlog;
 
         return iostream_conf_.get();
     }

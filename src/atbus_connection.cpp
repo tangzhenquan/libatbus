@@ -79,7 +79,7 @@ namespace atbus {
             return ret;
         }
 
-        ret->owner_ = owner;
+        ret->owner_   = owner;
         ret->watcher_ = ret;
 
         owner->add_connection_timer(ret);
@@ -170,8 +170,8 @@ namespace atbus {
 
             // 加入轮询队列
             conn_data_.shared.mem.channel = mem_chann;
-            conn_data_.shared.mem.buffer = reinterpret_cast<void *>(ad);
-            conn_data_.shared.mem.len = conf.recv_buffer_size;
+            conn_data_.shared.mem.buffer  = reinterpret_cast<void *>(ad);
+            conn_data_.shared.mem.len     = conf.recv_buffer_size;
             owner_->add_proc_connection(watcher_.lock());
             flags_.set(flag_t::REG_PROC, true);
             flags_.set(flag_t::ACCESS_SHARE_ADDR, true);
@@ -201,7 +201,7 @@ namespace atbus {
             // 加入轮询队列
             conn_data_.shared.shm.channel = shm_chann;
             conn_data_.shared.shm.shm_key = shm_key;
-            conn_data_.shared.shm.len = conf.recv_buffer_size;
+            conn_data_.shared.shm.len     = conf.recv_buffer_size;
             owner_->add_proc_connection(watcher_.lock());
             flags_.set(flag_t::REG_PROC, true);
             flags_.set(flag_t::ACCESS_SHARE_HOST, true);
@@ -227,9 +227,9 @@ namespace atbus {
                 return EN_ATBUS_ERR_MALLOC;
             }
             connection::ptr_t self = watcher_.lock();
-            async_data->conn = self;
+            async_data->conn       = self;
 
-            state_ = state_t::CONNECTING;
+            state_  = state_t::CONNECTING;
             int res = channel::io_stream_listen(owner_->get_iostream_channel(), address_, iostream_on_listen_cb, async_data, 0);
             if (res < 0) {
                 ATBUS_FUNC_NODE_ERROR(*owner_, get_binding(), this, res, owner_->get_iostream_channel()->error_code);
@@ -275,8 +275,8 @@ namespace atbus {
 
             // 连接信息
             conn_data_.shared.mem.channel = mem_chann;
-            conn_data_.shared.mem.buffer = reinterpret_cast<void *>(ad);
-            conn_data_.shared.mem.len = conf.recv_buffer_size;
+            conn_data_.shared.mem.buffer  = reinterpret_cast<void *>(ad);
+            conn_data_.shared.mem.len     = conf.recv_buffer_size;
             // 仅在listen时要设置proc,否则同机器的同名通道离线会导致proc中断
             // flags_.set(flag_t::REG_PROC, true);
             flags_.set(flag_t::ACCESS_SHARE_ADDR, true);
@@ -313,7 +313,7 @@ namespace atbus {
             // 连接信息
             conn_data_.shared.shm.channel = shm_chann;
             conn_data_.shared.shm.shm_key = shm_key;
-            conn_data_.shared.shm.len = conf.recv_buffer_size;
+            conn_data_.shared.shm.len     = conf.recv_buffer_size;
 
             // 仅在listen时要设置proc,否则同机器的同名通道离线会导致proc中断
             // flags_.set(flag_t::REG_PROC, true);
@@ -345,9 +345,9 @@ namespace atbus {
                 return EN_ATBUS_ERR_MALLOC;
             }
             connection::ptr_t self = watcher_.lock();
-            async_data->conn = self;
+            async_data->conn       = self;
 
-            state_ = state_t::CONNECTING;
+            state_  = state_t::CONNECTING;
             int res = channel::io_stream_connect(owner_->get_iostream_channel(), address_, iostream_on_connected_cb, async_data, 0);
             if (res < 0) {
                 ATBUS_FUNC_NODE_ERROR(*owner_, get_binding(), this, res, owner_->get_iostream_channel()->error_code);
@@ -459,9 +459,9 @@ namespace atbus {
                                   "channel connected(listen callback)");
 
             async_data->conn->conn_data_.shared.ios_fd.channel = channel;
-            async_data->conn->conn_data_.shared.ios_fd.conn = connection;
-            async_data->conn->conn_data_.free_fn = ios_free_fn;
-            connection->data = async_data->conn.get();
+            async_data->conn->conn_data_.shared.ios_fd.conn    = connection;
+            async_data->conn->conn_data_.free_fn               = ios_free_fn;
+            connection->data                                   = async_data->conn.get();
 
             async_data->owner_node->on_new_connection(async_data->conn.get());
         }
@@ -495,11 +495,11 @@ namespace atbus {
             }
 
             async_data->conn->conn_data_.shared.ios_fd.channel = channel;
-            async_data->conn->conn_data_.shared.ios_fd.conn = connection;
+            async_data->conn->conn_data_.shared.ios_fd.conn    = connection;
 
             async_data->conn->conn_data_.free_fn = ios_free_fn;
             async_data->conn->conn_data_.push_fn = ios_push_fn;
-            connection->data = async_data->conn.get();
+            connection->data                     = async_data->conn.get();
 
             async_data->owner_node->on_new_connection(async_data->conn.get());
         }
@@ -561,7 +561,7 @@ namespace atbus {
             return;
         }
 
-        ptr_t conn = create(n);
+        ptr_t conn   = create(n);
         conn->state_ = state_t::HANDSHAKING;
         conn->flags_.set(flag_t::REG_FD, true);
 
@@ -569,8 +569,8 @@ namespace atbus {
         conn->conn_data_.push_fn = ios_push_fn;
 
         conn->conn_data_.shared.ios_fd.channel = channel;
-        conn->conn_data_.shared.ios_fd.conn = conn_ios;
-        conn_ios->data = conn.get();
+        conn->conn_data_.shared.ios_fd.conn    = conn_ios;
+        conn_ios->data                         = conn.get();
 
         // copy address
         conn->address_ = conn_ios->addr;
@@ -631,8 +631,8 @@ namespace atbus {
     }
 
     int connection::shm_proc_fn(node &n, connection &conn, time_t sec, time_t usec) {
-        int ret = 0;
-        size_t left_times = n.get_conf().loop_times;
+        int ret                             = 0;
+        size_t left_times                   = n.get_conf().loop_times;
         detail::buffer_block *static_buffer = n.get_temp_static_buffer();
         if (NULL == static_buffer) {
             return ATBUS_FUNC_NODE_ERROR(n, NULL, &conn, EN_ATBUS_ERR_NOT_INITED, 0);
@@ -687,8 +687,8 @@ namespace atbus {
     }
 
     int connection::mem_proc_fn(node &n, connection &conn, time_t sec, time_t usec) {
-        int ret = 0;
-        size_t left_times = n.get_conf().loop_times;
+        int ret                             = 0;
+        size_t left_times                   = n.get_conf().loop_times;
         detail::buffer_block *static_buffer = n.get_temp_static_buffer();
         if (NULL == static_buffer) {
             return ATBUS_FUNC_NODE_ERROR(n, NULL, &conn, EN_ATBUS_ERR_NOT_INITED, 0);
@@ -759,15 +759,21 @@ namespace atbus {
     }
 
     bool connection::unpack(void *res, connection &conn, atbus::protocol::msg &m, void *buffer, size_t s) {
-        msgpack::unpacked *result = reinterpret_cast<msgpack::unpacked *>(res);
-        msgpack::unpack(*result, reinterpret_cast<const char *>(buffer), s);
-        msgpack::object obj = result->get();
-        if (obj.is_nil()) {
+        try {
+            msgpack::unpacked *result = reinterpret_cast<msgpack::unpacked *>(res);
+            msgpack::unpack(*result, reinterpret_cast<const char *>(buffer), s);
+            msgpack::object obj = result->get();
+            if (obj.is_nil()) {
+                ATBUS_FUNC_NODE_ERROR(*conn.owner_, conn.binding_, &conn, EN_ATBUS_ERR_UNPACK, EN_ATBUS_ERR_UNPACK);
+                return false;
+            }
+
+            obj.convert(m);
+        } catch (...) {
             ATBUS_FUNC_NODE_ERROR(*conn.owner_, conn.binding_, &conn, EN_ATBUS_ERR_UNPACK, EN_ATBUS_ERR_UNPACK);
             return false;
         }
 
-        obj.convert(m);
         return true;
     }
 } // namespace atbus
