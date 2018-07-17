@@ -181,6 +181,14 @@ namespace atbus {
             enum { value = 0 };
         };
 
+        static void mem_copy_conf(mem_conf& dst, const mem_conf& src) {
+            dst.protect_node_count = src.protect_node_count;
+            dst.protect_memory_size = src.protect_memory_size;
+            dst.conf_send_timeout_ms = src.conf_send_timeout_ms;
+            dst.write_retry_times = src.write_retry_times;
+            dst.atomic_recver_identify = src.atomic_recver_identify;
+        }
+
         /**
          * @brief 检查标记位
          * @param flag 待操作的flag
@@ -446,7 +454,7 @@ namespace atbus {
 
             // 配置初始化
             if (NULL != conf) {
-                memcpy(&head->channel.conf, conf, sizeof(*conf));
+                mem_copy_conf(head->channel.conf, *conf);
             } else {
                 mem_default_conf(&head->channel);
             }
