@@ -163,7 +163,7 @@ namespace atbus {
 
 // debug 版本做内存填充，方便调试
 #if !defined(NDEBUG) || defined(_DEBUG)
-            memset(p->pointer_, 0x5e5e5e5e, full_size(p->size_));
+            memset((void *)p, 0x5e5e5e5e, full_size(p->size_));
 #endif
 
             return fn::buffer_next(p->pointer_, p->size_);
