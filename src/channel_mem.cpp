@@ -136,7 +136,7 @@ namespace atbus {
 
 
         typedef enum {
-            MF_WRITEN = 0x00000001,
+            MF_WRITEN     = 0x00000001,
             MF_START_NODE = 0x00000002,
         } MEM_FLAG;
 
@@ -145,9 +145,9 @@ namespace atbus {
              * @brief 调试辅助信息
              * @note 不再使用tls记录调试信息，以防跨线程dump拿不到数据
              */
-            static size_t last_action_channel_end_node_index = 0;
+            static size_t last_action_channel_end_node_index   = 0;
             static size_t last_action_channel_begin_node_index = 0;
-            static mem_channel *last_action_channel_ptr = NULL;
+            static mem_channel *last_action_channel_ptr        = NULL;
         } // namespace detail
 
         /**
@@ -157,10 +157,10 @@ namespace atbus {
         struct mem_block {
             enum size_def {
                 channel_head_size = sizeof(mem_channel_head_align),
-                block_head_size = ((sizeof(mem_block_head) - 1) / sizeof(data_align_type) + 1) * sizeof(data_align_type),
-                node_head_size = ((sizeof(mem_node_head) - 1) / sizeof(data_align_type) + 1) * sizeof(data_align_type),
+                block_head_size   = ((sizeof(mem_block_head) - 1) / sizeof(data_align_type) + 1) * sizeof(data_align_type),
+                node_head_size    = ((sizeof(mem_node_head) - 1) / sizeof(data_align_type) + 1) * sizeof(data_align_type),
 
-                node_data_size = ATBUS_MACRO_DATA_NODE_SIZE,
+                node_data_size      = ATBUS_MACRO_DATA_NODE_SIZE,
                 node_head_data_size = node_data_size - block_head_size,
             };
         };
@@ -181,11 +181,11 @@ namespace atbus {
             enum { value = 0 };
         };
 
-        static void mem_copy_conf(mem_conf& dst, const mem_conf& src) {
-            dst.protect_node_count = src.protect_node_count;
-            dst.protect_memory_size = src.protect_memory_size;
-            dst.conf_send_timeout_ms = src.conf_send_timeout_ms;
-            dst.write_retry_times = src.write_retry_times;
+        static void mem_copy_conf(mem_conf &dst, const mem_conf &src) {
+            dst.protect_node_count     = src.protect_node_count;
+            dst.protect_memory_size    = src.protect_memory_size;
+            dst.conf_send_timeout_ms   = src.conf_send_timeout_ms;
+            dst.write_retry_times      = src.write_retry_times;
             dst.atomic_recver_identify = src.atomic_recver_identify;
         }
 
@@ -225,11 +225,12 @@ namespace atbus {
 #endif
             channel->conf.write_retry_times = 4; // 默认写序列错误重试4次
 
-            // 默认留1/128的数据块用于保护缓冲区
+
             if (!channel->conf.protect_node_count && channel->conf.protect_memory_size) {
                 channel->conf.protect_node_count =
                     (channel->conf.protect_memory_size + mem_block::node_data_size - 1) / mem_block::node_data_size;
             } else if (!channel->conf.protect_node_count) {
+                // 默认留1/128的数据块用于保护缓冲区
                 channel->conf.protect_node_count = channel->node_count >> 7;
 
                 // protect at most 16KB
@@ -438,7 +439,7 @@ namespace atbus {
             head->channel.node_size = mem_block::node_data_size;
             {
                 head->channel.node_size_bin_power = 0;
-                size_t node_size = head->channel.node_size;
+                size_t node_size                  = head->channel.node_size;
                 while (node_size > 1) {
                     node_size >>= 1;
                     ++head->channel.node_size_bin_power;
@@ -448,9 +449,9 @@ namespace atbus {
 
             // 偏移位置计算
             head->channel.area_channel_offset = (char *)&head->channel - (char *)buf;
-            head->channel.area_head_offset = sizeof(mem_channel_head_align);
-            head->channel.area_data_offset = head->channel.area_head_offset + head->channel.node_count * mem_block::node_head_size;
-            head->channel.area_end_offset = head->channel.area_data_offset + head->channel.node_count * head->channel.node_size;
+            head->channel.area_head_offset    = sizeof(mem_channel_head_align);
+            head->channel.area_data_offset    = head->channel.area_head_offset + head->channel.node_count * mem_block::node_head_size;
+            head->channel.area_end_offset     = head->channel.area_data_offset + head->channel.node_count * head->channel.node_size;
 
             // 配置初始化
             if (NULL != conf) {
@@ -513,12 +514,12 @@ namespace atbus {
                 // 发现冲突原子操作失败则重试
             }
             detail::last_action_channel_begin_node_index = write_cur;
-            detail::last_action_channel_end_node_index = new_write_cur;
-            detail::last_action_channel_ptr = channel;
+            detail::last_action_channel_end_node_index   = new_write_cur;
+            detail::last_action_channel_ptr              = channel;
 
             // 数据缓冲区操作 - 初始化
-            void *buffer_start = NULL;
-            size_t buffer_len = 0;
+            void *buffer_start         = NULL;
+            size_t buffer_len          = 0;
             mem_block_head *block_head = mem_get_block_head(channel, write_cur, &buffer_start, &buffer_len);
             memset(block_head, 0x00, sizeof(mem_block_head));
 
@@ -527,8 +528,8 @@ namespace atbus {
                 block_head->buffer_size = 0;
 
                 volatile mem_node_head *first_node_head = mem_get_node_head(channel, write_cur, NULL, NULL);
-                first_node_head->flag = set_flag(0, MF_START_NODE);
-                first_node_head->operation_seq = opr_seq;
+                first_node_head->flag                   = set_flag(0, MF_START_NODE);
+                first_node_head->operation_seq          = opr_seq;
 
                 for (size_t i = mem_next_index(channel, write_cur, 1); i != new_write_cur; i = mem_next_index(channel, i, 1)) {
                     volatile mem_node_head *this_node_head = mem_get_node_head(channel, i, NULL, NULL);
@@ -540,7 +541,7 @@ namespace atbus {
                     //     return EN_ATBUS_ERR_NODE_BAD_BLOCK_WSEQ_ID;
                     // }
 
-                    this_node_head->flag = set_flag(0, MF_WRITEN);
+                    this_node_head->flag          = set_flag(0, MF_WRITEN);
                     this_node_head->operation_seq = opr_seq;
                 }
             }
@@ -567,7 +568,7 @@ namespace atbus {
                 UTIL_LOCK_ATOMIC_THREAD_FENCE(util::lock::memory_order_acquire);
 
                 volatile mem_node_head *first_node_head = mem_get_node_head(channel, write_cur, NULL, NULL);
-                first_node_head->flag = set_flag(first_node_head->flag, MF_WRITEN);
+                first_node_head->flag                   = set_flag(first_node_head->flag, MF_WRITEN);
 
                 // 设置屏障，强制内存刷入
                 UTIL_LOCK_ATOMIC_THREAD_FENCE(util::lock::memory_order_release);
@@ -584,7 +585,7 @@ namespace atbus {
         int mem_send(mem_channel *channel, const void *buf, size_t len) {
             if (NULL == channel) return EN_ATBUS_ERR_PARAMS;
 
-            int ret = 0;
+            int ret               = 0;
             size_t left_try_times = channel->conf.write_retry_times;
             while (left_try_times-- > 0) {
                 int ret = mem_send_real(channel, buf, len);
@@ -606,11 +607,11 @@ namespace atbus {
 
             int ret = EN_ATBUS_ERR_SUCCESS;
 
-            void *buffer_start = NULL;
-            size_t buffer_len = 0;
+            void *buffer_start         = NULL;
+            size_t buffer_len          = 0;
             mem_block_head *block_head = NULL;
-            size_t read_begin_cur = channel->atomic_read_cur.load();
-            const size_t ori_read_cur = read_begin_cur;
+            size_t read_begin_cur      = channel->atomic_read_cur.load();
+            const size_t ori_read_cur  = read_begin_cur;
             size_t read_end_cur;
             size_t write_cur = channel->atomic_write_cur.load();
             // std::atomic_thread_fence(std::memory_order_seq_cst);
@@ -646,7 +647,7 @@ namespace atbus {
                 if (likely(check_flag(node_head->flag, MF_WRITEN))) {
                     // 容错处理 -- 不是起始节点
                     if (unlikely(!check_flag(node_head->flag, MF_START_NODE))) {
-                        read_begin_cur = mem_next_index(channel, read_begin_cur, 1);
+                        read_begin_cur  = mem_next_index(channel, read_begin_cur, 1);
                         node_head->flag = 0;
 
                         ++channel->read_bad_node_count;
@@ -665,7 +666,7 @@ namespace atbus {
                     // 上面提到的快速跳过流程
                     if (unlikely(timeout_operation_seq && timeout_operation_seq == node_head->operation_seq &&
                                  !check_flag(node_head->flag, MF_START_NODE))) {
-                        read_begin_cur = mem_next_index(channel, read_begin_cur, 1);
+                        read_begin_cur  = mem_next_index(channel, read_begin_cur, 1);
                         node_head->flag = 0;
 
                         ++channel->read_bad_node_count;
@@ -675,7 +676,7 @@ namespace atbus {
                     // 初次读取超时
                     if (!channel->first_failed_writing_time) {
                         channel->first_failed_writing_time = cnow;
-                        ret = ret ? ret : EN_ATBUS_ERR_NO_DATA;
+                        ret                                = ret ? ret : EN_ATBUS_ERR_NO_DATA;
                         break;
                     }
 
@@ -685,7 +686,7 @@ namespace atbus {
                     if (channel->first_failed_writing_time && cd > channel->conf.conf_send_timeout_ms) {
                         timeout_operation_seq = node_head->operation_seq;
 
-                        read_begin_cur = mem_next_index(channel, read_begin_cur, 1);
+                        read_begin_cur  = mem_next_index(channel, read_begin_cur, 1);
                         node_head->flag = 0;
 
                         ++channel->read_bad_node_count;
@@ -709,7 +710,7 @@ namespace atbus {
                     block_head->buffer_size >= channel->area_end_offset - channel->area_data_offset - channel->conf.protect_memory_size) {
                     ret = ret ? ret : EN_ATBUS_ERR_NODE_BAD_BLOCK_BUFF_SIZE;
 
-                    read_begin_cur = mem_next_index(channel, read_begin_cur, 1);
+                    read_begin_cur  = mem_next_index(channel, read_begin_cur, 1);
                     node_head->flag = 0;
 
                     ++channel->read_bad_node_count;
@@ -748,7 +749,7 @@ namespace atbus {
                 {
                     size_t nodes_num = mem_get_node_range_count(channel, read_begin_cur, read_end_cur);
                     if (mem_calc_node_num(channel, block_head->buffer_size) != nodes_num) {
-                        ret = ret ? ret : EN_ATBUS_ERR_NODE_BAD_BLOCK_NODE_NUM;
+                        ret            = ret ? ret : EN_ATBUS_ERR_NODE_BAD_BLOCK_NODE_NUM;
                         read_begin_cur = mem_next_index(channel, read_begin_cur, 1);
                         // 上面的循环已经重置过flag了
 
@@ -803,8 +804,8 @@ namespace atbus {
 
             // 用于调试的节点编号信息
             detail::last_action_channel_begin_node_index = ori_read_cur;
-            detail::last_action_channel_end_node_index = read_end_cur;
-            detail::last_action_channel_ptr = channel;
+            detail::last_action_channel_end_node_index   = read_end_cur;
+            detail::last_action_channel_ptr              = channel;
             return ret;
         }
 
@@ -817,15 +818,20 @@ namespace atbus {
                 return;
             }
 
-            size_t read_cur = channel->atomic_read_cur.load();
-            size_t write_cur = channel->atomic_write_cur.load();
+            size_t read_cur       = channel->atomic_read_cur.load();
+            size_t write_cur      = channel->atomic_write_cur.load();
             size_t available_node = mem_get_available_node_count(channel, read_cur, write_cur);
+            size_t node_size      = channel->node_size;
+            size_t node_count     = channel->node_count;
 
             out << "Summary:" << std::endl
-                << "\tchannel node size: " << channel->node_size << std::endl
-                << "\tchannel node count: " << channel->node_count << std::endl
+                << "\tchannel node size: " << node_size << std::endl
+                << "\tchannel node count: " << node_count << std::endl
                 << "\tchannel using memory size: " << (channel->area_end_offset - channel->area_channel_offset) << std::endl
                 << "\tchannel available node number: " << available_node << std::endl
+                << "\tchannel buffer size: " << (node_size * node_count) << std::endl
+                << "\tchannel used buffer size: " << ((node_size - available_node) * node_count) << std::endl
+                << "\tchannel free buffer size: " << (available_node * node_count) << std::endl
                 << std::endl;
 
             out << "Configure:" << std::endl
@@ -862,9 +868,9 @@ namespace atbus {
             if (need_node_status) {
                 out << std::endl << "Node head list:" << std::endl;
                 for (size_t i = 0; i < channel->node_count; ++i) {
-                    void *data_ptr = 0;
+                    void *data_ptr                    = 0;
                     volatile mem_node_head *node_head = mem_get_node_head(channel, i, &data_ptr, NULL);
-                    bool start_node = check_flag(node_head->flag, MF_START_NODE);
+                    bool start_node                   = check_flag(node_head->flag, MF_START_NODE);
 
                     if (start_node) {
                         mem_block_head *block_head = mem_get_block_head(channel, i, NULL, NULL);
