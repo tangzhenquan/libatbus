@@ -302,7 +302,7 @@ namespace atbus {
         std::list<std::string> rsp_data;
         int ret = n.on_custom_cmd(NULL == conn ? NULL : conn->get_binding(), conn, m.body.custom->from, cmd_args, rsp_data);
         // shm & mem ignore response from other node
-        if ((NULL != conn && conn->is_connected() && conn->check_flag(connection::flag_t::REG_FD)) || n.get_id() == m.body.custom->from) {
+        if ((NULL != conn && conn->is_running() && conn->check_flag(connection::flag_t::REG_FD)) || n.get_id() == m.body.custom->from) {
             atbus::protocol::msg rsp_msg;
             rsp_msg.init(n.get_id(), ATBUS_CMD_CUSTOM_CMD_RSP, 0, ret, m.head.sequence);
 
