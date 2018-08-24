@@ -90,18 +90,34 @@ namespace atbus {
         typedef std::map<bus_id_t, endpoint::ptr_t> endpoint_collection_t;
 
         struct evt_msg_t {
+            // 接收消息事件回调 => 参数列表: 发起节点，来源对端，来源连接，消息体，数据地址，数据长度
             typedef std::function<int(const node &, const endpoint *, const connection *, const protocol::msg &, const void *, size_t)>
                 on_recv_msg_fn_t;
+            // 发送或消息失败事件回调 => 参数列表: 发起节点，来源对端，来源连接，消息体
             typedef std::function<int(const node &, const endpoint *, const connection *, const protocol::msg *m)> on_send_data_failed_fn_t;
+            // 错误回调 => 参数列表: 发起节点，来源对端，来源连接，状态码（通常来自libuv），错误码
             typedef std::function<int(const node &, const endpoint *, const connection *, int, int)> on_error_fn_t;
+            // 新对端注册事件回调 => 参数列表: 发起节点，来源对端，来源连接，返回码（通常来自libuv）
             typedef std::function<int(const node &, const endpoint *, const connection *, int)> on_reg_fn_t;
+            // 节点关闭事件回调 => 参数列表: 发起节点，下线原因
             typedef std::function<int(const node &, int)> on_node_down_fn_t;
+            // 节点开始服务事件回调 => 参数列表: 发起节点，错误码，通常是 EN_ATBUS_ERR_SUCCESS
             typedef std::function<int(const node &, int)> on_node_up_fn_t;
+            // 失效连接事件回调 => 参数列表: 发起节点，来源连接，错误码，通常是 EN_ATBUS_ERR_NODE_TIMEOUT
             typedef std::function<int(const node &, const connection *, int)> on_invalid_connection_fn_t;
+            // 接收到命令消息事件回调 => 参数列表:
+            //      发起节点，来源对端，来源连接，来源节点ID，命令参数列表，返回信息列表（跨节点的共享内存和内存通道的返回消息将被忽略）
             typedef std::function<int(const node &, const endpoint *, const connection *, bus_id_t,
-                                      const std::vector<std::pair<const void *, size_t> > &)>
+                                      const std::vector<std::pair<const void *, size_t> > &, std::list<std::string> &)>
                 on_custom_cmd_fn_t;
+            // 接收到命令回包事件回调 => 参数列表: 发起节点，来源对端，来源连接，来源节点ID，回包数据列表，对应请求包的sequence
+            typedef std::function<int(const node &, const endpoint *, const connection *, bus_id_t,
+                                      const std::vector<std::pair<const void *, size_t> > &, uint64_t)>
+                on_custom_rsp_fn_t;
+
+            // 对端上线事件回调 => 参数列表: 发起节点，新增的对端，错误码，通常是 EN_ATBUS_ERR_SUCCESS
             typedef std::function<int(const node &, endpoint *, int)> on_add_endpoint_fn_t;
+            // 对端离线事件回调 => 参数列表: 发起节点，新增的对端，错误码，通常是 EN_ATBUS_ERR_SUCCESS
             typedef std::function<int(const node &, endpoint *, int)> on_remove_endpoint_fn_t;
 
             on_recv_msg_fn_t on_recv_msg;
@@ -112,6 +128,7 @@ namespace atbus {
             on_node_up_fn_t on_node_up;
             on_invalid_connection_fn_t on_invalid_connection;
             on_custom_cmd_fn_t on_custom_cmd;
+            on_custom_rsp_fn_t on_custom_rsp;
             on_add_endpoint_fn_t on_endpoint_added;
             on_remove_endpoint_fn_t on_endpoint_removed;
         };
@@ -249,9 +266,10 @@ namespace atbus {
          * @param arr_buf 自定义消息内容数组
          * @param arr_size 自定义消息内容长度
          * @param arr_count 自定义消息数组个数
+         * @param seq 返回本次自定义消息的发送序号
          * @return 0或错误码
          */
-        int send_custom_cmd(bus_id_t tid, const void *arr_buf[], size_t arr_size[], size_t arr_count);
+        int send_custom_cmd(bus_id_t tid, const void *arr_buf[], size_t arr_size[], size_t arr_count, uint64_t *seq = NULL);
 
         /**
          * @brief 发送控制消息
@@ -391,7 +409,9 @@ namespace atbus {
         int on_actived();
         int on_parent_reg_done();
         int on_custom_cmd(const endpoint *, const connection *, bus_id_t from,
-                          const std::vector<std::pair<const void *, size_t> > &cmd_args);
+                          const std::vector<std::pair<const void *, size_t> > &cmd_args, std::list<std::string> &rsp);
+        int on_custom_rsp(const endpoint *, const connection *, bus_id_t from,
+                          const std::vector<std::pair<const void *, size_t> > &cmd_args, uint64_t seq);
 
         /**
          * @brief 关闭node
@@ -419,7 +439,7 @@ namespace atbus {
 
         int pull_node_sync();
 
-        uint32_t alloc_msg_seq();
+        uint64_t alloc_msg_seq();
 
         void add_check_list(const endpoint::ptr_t &ep);
 
@@ -446,6 +466,9 @@ namespace atbus {
 
         void set_on_custom_cmd_handle(evt_msg_t::on_custom_cmd_fn_t fn);
         const evt_msg_t::on_custom_cmd_fn_t &get_on_custom_cmd_handle() const;
+
+        void set_on_custom_rsp_handle(evt_msg_t::on_custom_rsp_fn_t fn);
+        const evt_msg_t::on_custom_rsp_fn_t &get_on_custom_rsp_handle() const;
 
         void set_on_add_endpoint_handle(evt_msg_t::on_add_endpoint_fn_t fn);
         const evt_msg_t::on_add_endpoint_fn_t &get_on_add_endpoint_handle() const;
@@ -489,7 +512,7 @@ namespace atbus {
         // 配置
         conf_t conf_;
         std::weak_ptr<node> watcher_; // just like std::shared_from_this<T>
-        util::lock::seq_alloc_u32 msg_seq_alloc_;
+        util::lock::seq_alloc_u64 msg_seq_alloc_;
 
         // 引用的资源标记（释放时要保证这些资源引用被移除）
         std::set<void *> ref_objs_;

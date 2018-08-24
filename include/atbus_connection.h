@@ -117,7 +117,7 @@ namespace atbus {
 
 
         /**
-         * @brief 监听数据接收地址
+         * @brief 发送数据
          * @param buffer 数据块地址
          * @param s 数据块长度
          * @return 0或错误码

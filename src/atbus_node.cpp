@@ -620,7 +620,7 @@ namespace atbus {
         return send_msg(tid, mb, &endpoint::get_data_connection, ep_out, conn_out);
     }
 
-    int node::send_custom_cmd(bus_id_t tid, const void *arr_buf[], size_t arr_size[], size_t arr_count) {
+    int node::send_custom_cmd(bus_id_t tid, const void *arr_buf[], size_t arr_size[], size_t arr_count, uint64_t *seq) {
         if (state_t::CREATED == state_) {
             return EN_ATBUS_ERR_NOT_INITED;
         }
@@ -635,7 +635,8 @@ namespace atbus {
         }
 
         atbus::protocol::msg m;
-        m.init(get_id(), ATBUS_CMD_CUSTOM_CMD_REQ, 0, 0, alloc_msg_seq());
+        uint64_t msg_seq = alloc_msg_seq();
+        m.init(get_id(), ATBUS_CMD_CUSTOM_CMD_REQ, 0, 0, msg_seq);
 
         if (NULL == m.body.make_body(m.body.custom)) {
             return EN_ATBUS_ERR_MALLOC;
@@ -652,7 +653,12 @@ namespace atbus {
             m.body.custom->commands.push_back(cmd);
         }
 
-        return send_data_msg(tid, m);
+        if (NULL != seq) {
+            *seq = msg_seq;
+        }
+
+        int ret = send_data_msg(tid, m);
+        return ret;
     }
 
     int node::send_ctrl_msg(bus_id_t tid, atbus::protocol::msg &mb) { return send_ctrl_msg(tid, mb, NULL, NULL); }
@@ -673,7 +679,7 @@ namespace atbus {
             }
 
             assert((ATBUS_CMD_DATA_TRANSFORM_REQ == m.head.cmd && m.body.forward) ||
-                   (ATBUS_CMD_CUSTOM_CMD_REQ == m.head.cmd && m.body.custom));
+                   ((ATBUS_CMD_CUSTOM_CMD_REQ == m.head.cmd || ATBUS_CMD_CUSTOM_CMD_RSP == m.head.cmd) && m.body.custom));
             typedef std::vector<unsigned char> bin_data_block_t;
 
             const size_t msg_head_len = sizeof(::atbus::protocol::msg_head);
@@ -688,7 +694,7 @@ namespace atbus {
             }
 
             // self command msg
-            if (ATBUS_CMD_CUSTOM_CMD_REQ == m.head.cmd && m.body.custom) {
+            if ((ATBUS_CMD_CUSTOM_CMD_REQ == m.head.cmd || ATBUS_CMD_CUSTOM_CMD_RSP == m.head.cmd) && m.body.custom) {
                 self_cmd_msgs_.push_back(std::vector<bin_data_block_t>());
                 std::vector<bin_data_block_t> &cmds = self_cmd_msgs_.back();
                 cmds.reserve(1 + m.body.custom->commands.size());
@@ -1336,10 +1342,19 @@ namespace atbus {
     }
 
     int node::on_custom_cmd(const endpoint *ep, const connection *conn, bus_id_t from,
-                            const std::vector<std::pair<const void *, size_t> > &cmd_args) {
+                            const std::vector<std::pair<const void *, size_t> > &cmd_args, std::list<std::string> &rsp) {
         if (event_msg_.on_custom_cmd) {
             flag_guard_t fgd(this, flag_t::EN_FT_IN_CALLBACK);
-            event_msg_.on_custom_cmd(std::cref(*this), ep, conn, from, std::cref(cmd_args));
+            event_msg_.on_custom_cmd(std::cref(*this), ep, conn, from, std::cref(cmd_args), std::ref(rsp));
+        }
+        return EN_ATBUS_ERR_SUCCESS;
+    }
+
+    int node::on_custom_rsp(const endpoint *ep, const connection *conn, bus_id_t from,
+                            const std::vector<std::pair<const void *, size_t> > &cmd_args, uint64_t seq) {
+        if (event_msg_.on_custom_rsp) {
+            flag_guard_t fgd(this, flag_t::EN_FT_IN_CALLBACK);
+            event_msg_.on_custom_rsp(std::cref(*this), ep, conn, from, std::cref(cmd_args), seq);
         }
         return EN_ATBUS_ERR_SUCCESS;
     }
@@ -1490,8 +1505,8 @@ namespace atbus {
         return EN_ATBUS_ERR_SUCCESS;
     }
 
-    uint32_t node::alloc_msg_seq() {
-        uint32_t ret = 0;
+    uint64_t node::alloc_msg_seq() {
+        uint64_t ret = 0;
         while (!ret) {
             ret = msg_seq_alloc_.inc();
         }
@@ -1535,6 +1550,9 @@ namespace atbus {
 
     void node::set_on_custom_cmd_handle(evt_msg_t::on_custom_cmd_fn_t fn) { event_msg_.on_custom_cmd = fn; }
     const node::evt_msg_t::on_custom_cmd_fn_t &node::get_on_custom_cmd_handle() const { return event_msg_.on_custom_cmd; }
+
+    void node::set_on_custom_rsp_handle(evt_msg_t::on_custom_rsp_fn_t fn) { event_msg_.on_custom_rsp = fn; }
+    const node::evt_msg_t::on_custom_rsp_fn_t &node::get_on_custom_rsp_handle() const { return event_msg_.on_custom_rsp; }
 
     void node::set_on_add_endpoint_handle(evt_msg_t::on_add_endpoint_fn_t fn) { event_msg_.on_endpoint_added = fn; }
     const node::evt_msg_t::on_add_endpoint_fn_t &node::get_on_add_endpoint_handle() const { return event_msg_.on_endpoint_added; }

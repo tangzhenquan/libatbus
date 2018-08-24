@@ -269,7 +269,8 @@ namespace atbus {
                 return res;
             }
 
-            conn_data_.proc_fn = mem_proc_fn;
+            // conn_data_.proc_fn = mem_proc_fn;
+            conn_data_.proc_fn = NULL;
             conn_data_.free_fn = mem_free_fn;
             conn_data_.push_fn = mem_push_fn;
 
@@ -306,7 +307,8 @@ namespace atbus {
                 return res;
             }
 
-            conn_data_.proc_fn = shm_proc_fn;
+            // conn_data_.proc_fn = shm_proc_fn;
+            conn_data_.proc_fn = NULL;
             conn_data_.free_fn = shm_free_fn;
             conn_data_.push_fn = shm_push_fn;
 

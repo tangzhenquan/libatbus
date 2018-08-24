@@ -22,6 +22,7 @@ namespace atbus {
                 ATBUS_CMD_REG_NAME(ATBUS_CMD_DATA_TRANSFORM_RSP);
 
                 ATBUS_CMD_REG_NAME(ATBUS_CMD_CUSTOM_CMD_REQ);
+                ATBUS_CMD_REG_NAME(ATBUS_CMD_CUSTOM_CMD_RSP);
 
                 ATBUS_CMD_REG_NAME(ATBUS_CMD_NODE_SYNC_REQ);
                 ATBUS_CMD_REG_NAME(ATBUS_CMD_NODE_SYNC_RSP);
@@ -59,6 +60,7 @@ namespace atbus {
             fns[ATBUS_CMD_DATA_TRANSFORM_RSP] = msg_handler::on_recv_data_transfer_rsp;
 
             fns[ATBUS_CMD_CUSTOM_CMD_REQ] = msg_handler::on_recv_custom_cmd_req;
+            fns[ATBUS_CMD_CUSTOM_CMD_RSP] = msg_handler::on_recv_custom_cmd_rsp;
 
             fns[ATBUS_CMD_NODE_SYNC_REQ] = msg_handler::on_recv_node_sync_req;
             fns[ATBUS_CMD_NODE_SYNC_RSP] = msg_handler::on_recv_node_sync_rsp;
@@ -297,7 +299,51 @@ namespace atbus {
             cmd_args.push_back(std::make_pair(m.body.custom->commands[i].ptr, m.body.custom->commands[i].size));
         }
 
-        return n.on_custom_cmd(NULL == conn ? NULL : conn->get_binding(), conn, m.body.custom->from, cmd_args);
+        std::list<std::string> rsp_data;
+        int ret = n.on_custom_cmd(NULL == conn ? NULL : conn->get_binding(), conn, m.body.custom->from, cmd_args, rsp_data);
+        // shm & mem ignore response from other node
+        if ((NULL != conn && conn->is_connected() && conn->check_flag(connection::flag_t::REG_FD)) || n.get_id() == m.body.custom->from) {
+            atbus::protocol::msg rsp_msg;
+            rsp_msg.init(n.get_id(), ATBUS_CMD_CUSTOM_CMD_RSP, 0, ret, m.head.sequence);
+
+            if (NULL == rsp_msg.body.make_body(rsp_msg.body.custom)) {
+                return EN_ATBUS_ERR_MALLOC;
+            }
+
+            rsp_msg.body.custom->from = n.get_id();
+            rsp_msg.body.custom->commands.reserve(rsp_data.size());
+
+            for (std::list<std::string>::iterator iter = rsp_data.begin(); iter != rsp_data.end(); ++iter) {
+                atbus::protocol::bin_data_block cmd;
+                cmd.ptr  = (*iter).c_str();
+                cmd.size = (*iter).size();
+
+                rsp_msg.body.custom->commands.push_back(cmd);
+            }
+
+            if (NULL == conn) {
+                ret = n.send_data_msg(rsp_msg.body.custom->from, rsp_msg);
+            } else {
+                ret = msg_handler::send_msg(n, *conn, rsp_msg);
+            }
+        }
+
+        return ret;
+    }
+
+    int msg_handler::on_recv_custom_cmd_rsp(node &n, connection *conn, protocol::msg &m, int status, int errcode) {
+        if (NULL == m.body.custom) {
+            ATBUS_FUNC_NODE_ERROR(n, NULL == conn ? NULL : conn->get_binding(), conn, EN_ATBUS_ERR_BAD_DATA, 0);
+            return EN_ATBUS_ERR_BAD_DATA;
+        }
+
+        std::vector<std::pair<const void *, size_t> > cmd_args;
+        cmd_args.reserve(m.body.custom->commands.size());
+        for (size_t i = 0; i < m.body.custom->commands.size(); ++i) {
+            cmd_args.push_back(std::make_pair(m.body.custom->commands[i].ptr, m.body.custom->commands[i].size));
+        }
+
+        return n.on_custom_rsp(NULL == conn ? NULL : conn->get_binding(), conn, m.body.custom->from, cmd_args, m.head.sequence);
     }
 
     int msg_handler::on_recv_node_sync_req(node &n, connection *conn, protocol::msg &, int status, int errcode) {

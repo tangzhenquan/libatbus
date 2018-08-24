@@ -71,17 +71,22 @@ struct node_msg_test_recv_msg_record_t {
     int failed_count;
     int remove_endpoint_count;
     std::vector<ATBUS_MACRO_BUSID_TYPE> last_msg_router;
+    uint64_t last_cmd_seq;
+    uint64_t expect_cmd_req_from;
+    uint64_t expect_cmd_rsp_from;
 
-    node_msg_test_recv_msg_record_t() : n(NULL), ep(NULL), conn(NULL), status(0), count(0), failed_count(0), remove_endpoint_count(0) {}
+    node_msg_test_recv_msg_record_t()
+        : n(NULL), ep(NULL), conn(NULL), status(0), count(0), failed_count(0), remove_endpoint_count(0), last_cmd_seq(0),
+          expect_cmd_req_from(0), expect_cmd_rsp_from(0) {}
 };
 
 static node_msg_test_recv_msg_record_t recv_msg_history;
 
 static int node_msg_test_recv_msg_test_record_fn(const atbus::node &n, const atbus::endpoint *ep, const atbus::connection *conn,
                                                  const atbus::protocol::msg &m, const void *buffer, size_t len) {
-    recv_msg_history.n = &n;
-    recv_msg_history.ep = ep;
-    recv_msg_history.conn = conn;
+    recv_msg_history.n      = &n;
+    recv_msg_history.ep     = ep;
+    recv_msg_history.conn   = conn;
     recv_msg_history.status = m.head.ret;
     ++recv_msg_history.count;
     if (NULL != m.body.forward) {
@@ -110,9 +115,9 @@ static int node_msg_test_recv_msg_test_record_fn(const atbus::node &n, const atb
 
 static int node_msg_test_send_data_failed_fn(const atbus::node &n, const atbus::endpoint *ep, const atbus::connection *conn,
                                              const atbus::protocol::msg *m) {
-    recv_msg_history.n = &n;
-    recv_msg_history.ep = ep;
-    recv_msg_history.conn = conn;
+    recv_msg_history.n      = &n;
+    recv_msg_history.ep     = ep;
+    recv_msg_history.conn   = conn;
     recv_msg_history.status = NULL == m ? 0 : m->head.ret;
     ++recv_msg_history.failed_count;
     if (NULL != m && NULL != m->body.forward) {
@@ -148,8 +153,8 @@ CASE_TEST(atbus_node_msg, ping_pong) {
     {
         atbus::node::ptr_t node1 = atbus::node::create();
         atbus::node::ptr_t node2 = atbus::node::create();
-        node1->on_debug = node_msg_test_on_debug;
-        node2->on_debug = node_msg_test_on_debug;
+        node1->on_debug          = node_msg_test_on_debug;
+        node2->on_debug          = node_msg_test_on_debug;
         node1->set_on_error_handle(node_msg_test_on_error);
         node2->set_on_error_handle(node_msg_test_on_error);
 
@@ -191,13 +196,38 @@ CASE_TEST(atbus_node_msg, ping_pong) {
 }
 
 static int node_msg_test_recv_msg_test_custom_cmd_fn(const atbus::node &, const atbus::endpoint *, const atbus::connection *,
-                                                     atbus::node::bus_id_t, const std::vector<std::pair<const void *, size_t> > &data) {
+                                                     atbus::node::bus_id_t from, const std::vector<std::pair<const void *, size_t> > &data,
+                                                     std::list<std::string> &rsp) {
     ++recv_msg_history.count;
 
     recv_msg_history.data.clear();
     for (size_t i = 0; i < data.size(); ++i) {
         recv_msg_history.data.append(static_cast<const char *>(data[i].first), data[i].second);
         recv_msg_history.data += '\0';
+        rsp.push_back(std::string(static_cast<const char *>(data[i].first), data[i].second));
+    }
+
+    rsp.push_back("run custom cmd done");
+
+    CASE_EXPECT_EQ(from, recv_msg_history.expect_cmd_req_from);
+    return 0;
+}
+
+static int node_msg_test_recv_msg_test_custom_rsp_fn(const atbus::node &, const atbus::endpoint *, const atbus::connection *,
+                                                     atbus::node::bus_id_t from, const std::vector<std::pair<const void *, size_t> > &data,
+                                                     uint64_t seq) {
+    ++recv_msg_history.count;
+
+    for (size_t i = 0; i < data.size(); ++i) {
+        std::string text(static_cast<const char *>(data[i].first), data[i].second);
+        CASE_MSG_INFO() << "Custom Rsp(" << seq << "): " << text << std::endl;
+    }
+
+    CASE_EXPECT_EQ(seq, recv_msg_history.last_cmd_seq);
+    CASE_EXPECT_EQ(from, recv_msg_history.expect_cmd_rsp_from);
+    CASE_EXPECT_GT(data.size(), 1);
+    if (data.size() > 1) {
+        CASE_EXPECT_EQ(0, UTIL_STRFUNC_STRNCMP("run custom cmd done", static_cast<const char *>(data.back().first), data.back().second));
     }
 
     return 0;
@@ -216,8 +246,8 @@ CASE_TEST(atbus_node_msg, custom_cmd) {
     do {
         atbus::node::ptr_t node1 = atbus::node::create();
         atbus::node::ptr_t node2 = atbus::node::create();
-        node1->on_debug = node_msg_test_on_debug;
-        node2->on_debug = node_msg_test_on_debug;
+        node1->on_debug          = node_msg_test_on_debug;
+        node2->on_debug          = node_msg_test_on_debug;
         node1->set_on_error_handle(node_msg_test_on_error);
         node2->set_on_error_handle(node_msg_test_on_error);
 
@@ -243,23 +273,27 @@ CASE_TEST(atbus_node_msg, custom_cmd) {
 
         int count = recv_msg_history.count;
         node2->set_on_custom_cmd_handle(node_msg_test_recv_msg_test_custom_cmd_fn);
+        node1->set_on_custom_rsp_handle(node_msg_test_recv_msg_test_custom_rsp_fn);
 
-        char test_str[] = "hello world!";
+        char test_str[]       = "hello world!";
         std::string send_data = test_str;
         const void *custom_data[3];
-        custom_data[0] = &test_str[0];
-        custom_data[1] = &test_str[6];
-        custom_data[2] = &test_str[11];
+        custom_data[0]      = &test_str[0];
+        custom_data[1]      = &test_str[6];
+        custom_data[2]      = &test_str[11];
         size_t custom_len[] = {5, 5, 1};
 
-        send_data[5] = '\0';
+        send_data[5]  = '\0';
         send_data[11] = '\0';
         send_data += '!';
         send_data += '\0';
 
-        CASE_EXPECT_EQ(0, node1->send_custom_cmd(node2->get_id(), custom_data, custom_len, 3));
+        recv_msg_history.last_cmd_seq        = 0;
+        recv_msg_history.expect_cmd_req_from = node1->get_id();
+        recv_msg_history.expect_cmd_rsp_from = node2->get_id();
+        CASE_EXPECT_EQ(0, node1->send_custom_cmd(node2->get_id(), custom_data, custom_len, 3, &recv_msg_history.last_cmd_seq));
 
-        UNITTEST_WAIT_UNTIL(conf.ev_loop, count != recv_msg_history.count, 3000, 0) {}
+        UNITTEST_WAIT_UNTIL(conf.ev_loop, count + 1 < recv_msg_history.count, 3000, 0) {}
 
         CASE_EXPECT_EQ(send_data, recv_msg_history.data);
     } while (false);
@@ -278,12 +312,12 @@ CASE_TEST(atbus_node_msg, send_cmd_to_self) {
     conf.ev_loop = &ev_loop;
 
     {
-        char cmds[][8] = {"self", "command", "yep"};
-        size_t cmds_len[] = {strlen(cmds[0]), strlen(cmds[1]), strlen(cmds[2])};
+        char cmds[][8]        = {"self", "command", "yep"};
+        size_t cmds_len[]     = {strlen(cmds[0]), strlen(cmds[1]), strlen(cmds[2])};
         const void *cmds_in[] = {cmds[0], cmds[1], cmds[2]};
 
         atbus::node::ptr_t node1 = atbus::node::create();
-        node1->on_debug = node_msg_test_on_debug;
+        node1->on_debug          = node_msg_test_on_debug;
         node1->set_on_error_handle(node_msg_test_on_error);
 
         CASE_EXPECT_EQ(EN_ATBUS_ERR_NOT_INITED, node1->send_custom_cmd(node1->get_id(), cmds_in, cmds_len, 3));
@@ -300,10 +334,15 @@ CASE_TEST(atbus_node_msg, send_cmd_to_self) {
 
         int count = recv_msg_history.count;
         node1->set_on_custom_cmd_handle(node_msg_test_recv_msg_test_custom_cmd_fn);
+        node1->set_on_custom_rsp_handle(node_msg_test_recv_msg_test_custom_rsp_fn);
         CASE_EXPECT_TRUE(!!node1->get_on_custom_cmd_handle());
-        node1->send_custom_cmd(node1->get_id(), cmds_in, cmds_len, 3);
 
-        CASE_EXPECT_EQ(count + 1, recv_msg_history.count);
+        recv_msg_history.last_cmd_seq        = 0;
+        recv_msg_history.expect_cmd_req_from = node1->get_id();
+        recv_msg_history.expect_cmd_rsp_from = node1->get_id();
+        node1->send_custom_cmd(node1->get_id(), cmds_in, cmds_len, 3, &recv_msg_history.last_cmd_seq);
+
+        CASE_EXPECT_EQ(count + 2, recv_msg_history.count);
         CASE_EXPECT_EQ(cmds_len[0] + cmds_len[1] + cmds_len[2] + 3, recv_msg_history.data.size());
         size_t start_index = 0;
         for (int i = 0; i < 3; ++i) {
@@ -331,7 +370,7 @@ CASE_TEST(atbus_node_msg, reset_and_send) {
 
     {
         atbus::node::ptr_t node1 = atbus::node::create();
-        node1->on_debug = node_msg_test_on_debug;
+        node1->on_debug          = node_msg_test_on_debug;
         node1->set_on_error_handle(node_msg_test_on_error);
 
         node1->init(0x12345678, &conf);
@@ -366,9 +405,9 @@ static int node_msg_test_recv_and_send_msg_on_failed_fn(const atbus::node &n, co
 
 static int node_msg_test_recv_and_send_msg_fn(const atbus::node &n, const atbus::endpoint *ep, const atbus::connection *conn,
                                               const atbus::protocol::msg &m, const void *buffer, size_t len) {
-    recv_msg_history.n = &n;
-    recv_msg_history.ep = ep;
-    recv_msg_history.conn = conn;
+    recv_msg_history.n      = &n;
+    recv_msg_history.ep     = ep;
+    recv_msg_history.conn   = conn;
     recv_msg_history.status = m.head.ret;
     ++recv_msg_history.count;
 
@@ -411,7 +450,7 @@ CASE_TEST(atbus_node_msg, send_msg_to_self_and_need_rsp) {
 
     {
         atbus::node::ptr_t node1 = atbus::node::create();
-        node1->on_debug = node_msg_test_on_debug;
+        node1->on_debug          = node_msg_test_on_debug;
         node1->set_on_error_handle(node_msg_test_on_error);
 
         node1->init(0x12345678, &conf);
@@ -452,15 +491,15 @@ CASE_TEST(atbus_node_msg, parent_and_child) {
 
     {
         atbus::node::ptr_t node_parent = atbus::node::create();
-        atbus::node::ptr_t node_child = atbus::node::create();
-        node_parent->on_debug = node_msg_test_on_debug;
-        node_child->on_debug = node_msg_test_on_debug;
+        atbus::node::ptr_t node_child  = atbus::node::create();
+        node_parent->on_debug          = node_msg_test_on_debug;
+        node_child->on_debug           = node_msg_test_on_debug;
         node_parent->set_on_error_handle(node_msg_test_on_error);
         node_child->set_on_error_handle(node_msg_test_on_error);
 
         node_parent->init(0x12345678, &conf);
 
-        conf.children_mask = 8;
+        conf.children_mask  = 8;
         conf.father_address = "ipv4://127.0.0.1:16387";
         node_child->init(0x12346789, &conf);
 
@@ -533,19 +572,19 @@ CASE_TEST(atbus_node_msg, transfer_and_connect) {
 
     // 只有发生冲突才会注册不成功，否则会无限重试注册父节点，直到其上线
     {
-        atbus::node::ptr_t node_parent = atbus::node::create();
+        atbus::node::ptr_t node_parent  = atbus::node::create();
         atbus::node::ptr_t node_child_1 = atbus::node::create();
         atbus::node::ptr_t node_child_2 = atbus::node::create();
-        node_parent->on_debug = node_msg_test_on_debug;
-        node_child_1->on_debug = node_msg_test_on_debug;
-        node_child_2->on_debug = node_msg_test_on_debug;
+        node_parent->on_debug           = node_msg_test_on_debug;
+        node_child_1->on_debug          = node_msg_test_on_debug;
+        node_child_2->on_debug          = node_msg_test_on_debug;
         node_parent->set_on_error_handle(node_msg_test_on_error);
         node_child_1->set_on_error_handle(node_msg_test_on_error);
         node_child_2->set_on_error_handle(node_msg_test_on_error);
 
         node_parent->init(0x12345678, &conf);
 
-        conf.children_mask = 8;
+        conf.children_mask  = 8;
         conf.father_address = "ipv4://127.0.0.1:16387";
         node_child_1->init(0x12346789, &conf);
         node_child_2->init(0x12346890, &conf);
@@ -609,12 +648,12 @@ CASE_TEST(atbus_node_msg, transfer_only) {
     {
         atbus::node::ptr_t node_parent_1 = atbus::node::create();
         atbus::node::ptr_t node_parent_2 = atbus::node::create();
-        atbus::node::ptr_t node_child_1 = atbus::node::create();
-        atbus::node::ptr_t node_child_2 = atbus::node::create();
-        node_parent_1->on_debug = node_msg_test_on_debug;
-        node_parent_2->on_debug = node_msg_test_on_debug;
-        node_child_1->on_debug = node_msg_test_on_debug;
-        node_child_2->on_debug = node_msg_test_on_debug;
+        atbus::node::ptr_t node_child_1  = atbus::node::create();
+        atbus::node::ptr_t node_child_2  = atbus::node::create();
+        node_parent_1->on_debug          = node_msg_test_on_debug;
+        node_parent_2->on_debug          = node_msg_test_on_debug;
+        node_child_1->on_debug           = node_msg_test_on_debug;
+        node_child_2->on_debug           = node_msg_test_on_debug;
         node_parent_1->set_on_error_handle(node_msg_test_on_error);
         node_parent_2->set_on_error_handle(node_msg_test_on_error);
         node_child_1->set_on_error_handle(node_msg_test_on_error);
@@ -623,7 +662,7 @@ CASE_TEST(atbus_node_msg, transfer_only) {
         node_parent_1->init(0x12345678, &conf);
         node_parent_2->init(0x12356789, &conf);
 
-        conf.children_mask = 8;
+        conf.children_mask  = 8;
         conf.father_address = "ipv4://127.0.0.1:16387";
         node_child_1->init(0x12346789, &conf);
         conf.father_address = "ipv4://127.0.0.1:16388";
@@ -696,7 +735,7 @@ CASE_TEST(atbus_node_msg, send_failed) {
 
     {
         atbus::node::ptr_t node_parent = atbus::node::create();
-        node_parent->on_debug = node_msg_test_on_debug;
+        node_parent->on_debug          = node_msg_test_on_debug;
         node_parent->set_on_error_handle(node_msg_test_on_error);
         node_parent->init(0x12345678, &conf);
 
@@ -730,16 +769,16 @@ CASE_TEST(atbus_node_msg, transfer_failed) {
 
     // 只有发生冲突才会注册不成功，否则会无限重试注册父节点，直到其上线
     {
-        atbus::node::ptr_t node_parent = atbus::node::create();
+        atbus::node::ptr_t node_parent  = atbus::node::create();
         atbus::node::ptr_t node_child_1 = atbus::node::create();
-        node_parent->on_debug = node_msg_test_on_debug;
-        node_child_1->on_debug = node_msg_test_on_debug;
+        node_parent->on_debug           = node_msg_test_on_debug;
+        node_child_1->on_debug          = node_msg_test_on_debug;
         node_parent->set_on_error_handle(node_msg_test_on_error);
         node_child_1->set_on_error_handle(node_msg_test_on_error);
 
         node_parent->init(0x12345678, &conf);
 
-        conf.children_mask = 8;
+        conf.children_mask  = 8;
         conf.father_address = "ipv4://127.0.0.1:16387";
         node_child_1->init(0x12346789, &conf);
 
@@ -794,18 +833,18 @@ CASE_TEST(atbus_node_msg, transfer_failed_cross_parents) {
     uv_loop_t ev_loop;
     uv_loop_init(&ev_loop);
 
-    conf.ev_loop = &ev_loop;
+    conf.ev_loop        = &ev_loop;
     conf.fault_tolerant = 2; // 容错设为2次。
-    size_t try_times = 5;    //我们尝试5次发失败
+    size_t try_times    = 5; //我们尝试5次发失败
 
     // 只有发生冲突才会注册不成功，否则会无限重试注册父节点，直到其上线
     {
         atbus::node::ptr_t node_parent_1 = atbus::node::create();
         atbus::node::ptr_t node_parent_2 = atbus::node::create();
-        atbus::node::ptr_t node_child_1 = atbus::node::create();
-        node_parent_1->on_debug = node_msg_test_on_debug;
-        node_parent_2->on_debug = node_msg_test_on_debug;
-        node_child_1->on_debug = node_msg_test_on_debug;
+        atbus::node::ptr_t node_child_1  = atbus::node::create();
+        node_parent_1->on_debug          = node_msg_test_on_debug;
+        node_parent_2->on_debug          = node_msg_test_on_debug;
+        node_child_1->on_debug           = node_msg_test_on_debug;
         node_parent_1->set_on_error_handle(node_msg_test_on_error);
         node_child_1->set_on_error_handle(node_msg_test_on_error);
         node_parent_2->set_on_error_handle(node_msg_test_on_error);
@@ -816,7 +855,7 @@ CASE_TEST(atbus_node_msg, transfer_failed_cross_parents) {
         node_parent_2->set_on_remove_endpoint_handle(node_msg_test_remove_endpoint_fn);
 
 
-        conf.children_mask = 8;
+        conf.children_mask  = 8;
         conf.father_address = "ipv4://127.0.0.1:16387";
         node_child_1->init(0x12346789, &conf);
 
@@ -848,14 +887,14 @@ CASE_TEST(atbus_node_msg, transfer_failed_cross_parents) {
         }
 
         int before_remove_endpoint_count = recv_msg_history.remove_endpoint_count;
-        int before_test_count = recv_msg_history.failed_count;
-        int recv_transfer_failed = 0;
+        int before_test_count            = recv_msg_history.failed_count;
+        int recv_transfer_failed         = 0;
         for (size_t i = 0; i < try_times; ++i) {
             // 转发消息
             std::string send_data;
             send_data.assign("transfer through parent\n", sizeof("transfer through parent\n") - 1);
 
-            int count = recv_msg_history.failed_count;
+            int count    = recv_msg_history.failed_count;
             int send_res = node_child_1->send_data(0x12356666, 0, send_data.data(), send_data.size());
             CASE_EXPECT_EQ(EN_ATBUS_ERR_SUCCESS, send_res);
 
