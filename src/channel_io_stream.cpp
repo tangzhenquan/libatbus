@@ -26,6 +26,7 @@
 #include <sys/un.h>
 #endif
 
+#include "common/file_system.h"
 #include "common/string_oprs.h"
 #include "config/compiler_features.h"
 #include "std/smart_ptr.h"
@@ -1104,6 +1105,15 @@ namespace atbus {
                     return EN_ATBUS_ERR_PIPE_ADDR_TOO_LONG;
                 }
 
+                // try to mkdir for basedir
+                {
+                    std::string dirname;
+                    if (util::file_system::dirname(addr.host.c_str(), addr.host.size(), dirname)) {
+                        if (!util::file_system::is_exist(dirname.c_str())) {
+                            util::file_system::mkdir(dirname.c_str(), true);
+                        }
+                    }
+                }
                 std::shared_ptr<adapter::stream_t> listen_conn;
                 std::shared_ptr<io_stream_connection> conn;
                 adapter::pipe_t *handle = io_stream_make_stream_ptr<adapter::pipe_t>(listen_conn);

@@ -457,9 +457,9 @@ namespace atbus {
         }
 
         // 内存通道和共享内存通道不允许协商握手，必须直接指定endpoint
-        if (0 == UTIL_STRFUNC_STRNCASE_CMP("mem", addr_str, 3)) {
+        if (0 == UTIL_STRFUNC_STRNCASE_CMP("mem:", addr_str, 4)) {
             return EN_ATBUS_ERR_ACCESS_DENY;
-        } else if (0 == UTIL_STRFUNC_STRNCASE_CMP("shm", addr_str, 3)) {
+        } else if (0 == UTIL_STRFUNC_STRNCASE_CMP("shm:", addr_str, 4)) {
             return EN_ATBUS_ERR_ACCESS_DENY;
         }
 
