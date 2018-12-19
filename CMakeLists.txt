@@ -2,7 +2,13 @@
 
 enable_testing()
 
-project(libatbus)
+project(libatbus C CXX)
+
+set(LIBATBUS_VERSION_MAJOR "1")
+set(LIBATBUS_VERSION_MINOR "0")
+set(LIBATBUS_VERSION_PATCH "0")
+set(LIBATBUS_VERSION "${LIBATBUS_VERSION_MAJOR}.${LIBATBUS_VERSION_MINOR}.${LIBATBUS_VERSION_PATCH}")
+
 
 # 准备下载依赖组件
 include ("${CMAKE_CURRENT_LIST_DIR}/3rd_party/atframe_utils/libatframe_utils.prepare.cmake")
@@ -51,3 +57,32 @@ endif()
 if (PROJECT_ENABLE_TOOLS)
     add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/tools")
 endif()
+
+## 生成文档和导入配置
+
+# Install configuration
+set(CMAKE_INSTALL_CMAKEDIR "${CMAKE_INSTALL_LIBDIR}/cmake" CACHE STRING "Directory relative to CMAKE_INSTALL to install the cmake configuration files")
+
+include(CMakePackageConfigHelpers)
+set(INCLUDE_INSTALL_DIR include)
+
+file(MAKE_DIRECTORY "${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/cmake")
+
+configure_package_config_file(
+    "${CMAKE_CURRENT_LIST_DIR}/libatbus-config.cmake.in"
+    "${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/cmake/libatbus-config.cmake"
+    INSTALL_DESTINATION ${CMAKE_INSTALL_CMAKEDIR}
+    PATH_VARS LIBATBUS_VERSION INCLUDE_INSTALL_DIR CMAKE_INSTALL_LIBDIR PROJECT_SOURCE_DIR
+    NO_CHECK_REQUIRED_COMPONENTS_MACRO
+)
+
+write_basic_package_version_file(
+    "${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/cmake/libatbus-config-version.cmake"
+    VERSION ${LIBATBUS_VERSION}
+    COMPATIBILITY SameMajorVersion
+)
+
+install(
+    FILES "${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/cmake/libatbus-config.cmake" "${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/cmake/libatbus-config-version.cmake"
+    DESTINATION ${CMAKE_INSTALL_CMAKEDIR}
+)
