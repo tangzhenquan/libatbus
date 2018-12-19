@@ -3,22 +3,22 @@ language: cpp
 env:
   global:
     - LANG="zh_CN.UTF-8"
-    - MSGPACK_PREFIX=$HOME/prebuilt/msgpack-3.0.1 ;
-    - MSGPACK_VERSION=3.0.1 ;
-    - LIBUV_PREFIX=$HOME/prebuilt/libuv-1.22.0 ;
-    - LIBUV_VERSION=1.22.0
+    - MSGPACK_PREFIX=$HOME/prebuilt/msgpack-3.1.1 ;
+    - MSGPACK_VERSION=3.1.1 ;
+    - LIBUV_PREFIX=$HOME/prebuilt/libuv-1.24.0 ;
+    - LIBUV_VERSION=1.24.0
     - CMAKE_PREFIX=$HOME/prebuilt/cmake ;
-    - CMAKE_LINUX_URL=https://cmake.org/files/v3.11/cmake-3.11.4-Linux-x86_64.sh ;
+    - CMAKE_LINUX_URL=https://cmake.org/files/v3.13/cmake-3.13.1-Linux-x86_64.sh ;
 matrix:
   include:
     - os: osx
       env: USE_CC=clang USE_CXX=clang++ CMAKE_BIN=cmake CTEST_BIN=ctest
     - os: linux
-      dist: trusty
+      dist: xenial
       sudo: required
       env: USE_CC=gcc USE_CXX=g++ CMAKE_BIN=$CMAKE_PREFIX/bin/cmake CTEST_BIN=$CMAKE_PREFIX/bin/ctest
     - os: linux
-      dist: trusty
+      dist: xenial
       sudo: required
       env: USE_CC=gcc-4.4 USE_CXX=g++-4.4 CMAKE_BIN=$CMAKE_PREFIX/bin/cmake CTEST_BIN=$CMAKE_PREFIX/bin/ctest # MSGPACK_VERSION=1.4.2
       addons:
@@ -31,7 +31,7 @@ matrix:
             - gcc-4.4
             - gcc-4.4-multilib
     - os: linux
-      dist: trusty
+      dist: xenial
       sudo: required
       env: USE_CC=gcc-4.9 USE_CXX=g++-4.9 CMAKE_BIN=$CMAKE_PREFIX/bin/cmake CTEST_BIN=$CMAKE_PREFIX/bin/ctest
       addons:
@@ -44,7 +44,7 @@ matrix:
             - g++-4.9
             - g++-4.9-multilib
     - os: linux
-      dist: trusty
+      dist: xenial
       sudo: required
       env: USE_CC=gcc-8 USE_CXX=g++-8 CMAKE_BIN=$CMAKE_PREFIX/bin/cmake CTEST_BIN=$CMAKE_PREFIX/bin/ctest
       addons:
@@ -57,15 +57,15 @@ matrix:
             - g++-8
             - g++-8-multilib
     #- os: linux
-    #  dist: trusty
+    #  dist: xenial
     #  sudo: required
     #  env: USE_CC=clang USE_CXX=clang++ CMAKE_BIN=$CMAKE_PREFIX/bin/cmake CTEST_BIN=$CMAKE_PREFIX/bin/ctest
     # - os: linux
-    #   dist: trusty
+    #   dist: xenial
     #   sudo: required
     #   env: USE_CC=clang-3.8 USE_CXX=clang++-3.8 CMAKE_BIN=$CMAKE_PREFIX/bin/cmake CTEST_BIN=$CMAKE_PREFIX/bin/ctest
     - os: linux
-      dist: trusty
+      dist: xenial
       sudo: required
       env: COVERALLS_SERVICE_NAME=travis-ci GCOV_FLAGS='--coverage -fprofile-arcs -ftest-coverage' CMAKE_BIN=$CMAKE_PREFIX/bin/cmake CTEST_BIN=$CMAKE_PREFIX/bin/ctest
       # COVERALLS_REPO_TOKEN is set in travis-ci
