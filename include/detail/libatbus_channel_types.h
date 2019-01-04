@@ -61,10 +61,25 @@ namespace atbus {
         struct mem_channel;
         struct mem_conf;
 
+        struct mem_stats_block_error {
+            // 统计信息
+            size_t write_check_sequence_failed_count; // 写完后校验操作序号错误
+            size_t write_retry_count;                 // 写操作内部重试次数
+
+            size_t read_bad_node_count;                // 读到的错误数据节点数量
+            size_t read_bad_block_count;               // 读到的错误数据块数量
+            size_t read_write_timeout_count;           // 读到的写超时保护数量
+            size_t read_check_block_size_failed_count; // 读到的数据块长度检查错误数量
+            size_t read_check_node_size_failed_count;  // 读到的数据节点和长度检查错误数量
+            size_t read_check_hash_failed_count;       // 读到的数据hash值检查错误数量
+        };
+
 #ifdef ATBUS_CHANNEL_SHM
         // shared memory channel
         struct shm_channel;
         struct shm_conf;
+
+        typedef mem_stats_block_error shm_stats_block_error;
 #endif
 
         // stream channel(tcp,pipe(unix socket) and etc. udp is not a stream)
