@@ -4,7 +4,6 @@
  *        附带c++的部分是为了避免命名空间污染并且c++的跨平台适配更加简单
  */
 
-#include "lock/atomic_int_type.h"
 #include <assert.h>
 #include <cstddef>
 #include <cstdio>
@@ -13,6 +12,11 @@
 #include <ctime>
 #include <map>
 #include <stdint.h>
+
+#include "detail/libatbus_adapter_libuv.h"
+
+#include "lock/atomic_int_type.h"
+#include "lock/spin_lock.h"
 
 #include "detail/libatbus_channel_export.h"
 #include "detail/libatbus_error.h"
