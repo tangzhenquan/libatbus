@@ -1,6 +1,4 @@
-﻿#include "config/compiler_features.h"
-#include "lock/atomic_int_type.h"
-#include <chrono>
+﻿#include <chrono>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -13,9 +11,14 @@
 #include <thread>
 
 
+#include "config/compiler_features.h"
+
 #include "detail/libatbus_channel_export.h"
-#include "frame/test_macros.h"
+#include "lock/atomic_int_type.h"
 #include <detail/libatbus_error.h>
+
+
+#include "frame/test_macros.h"
 
 
 CASE_TEST(channel, mem_siso) {

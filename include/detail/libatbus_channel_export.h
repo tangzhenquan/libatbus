@@ -20,6 +20,7 @@
 #include <utility>
 
 #include "libatbus_adapter_libuv.h"
+
 #include "libatbus_config.h"
 
 #include "libatbus_channel_types.h"
