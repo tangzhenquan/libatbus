@@ -217,9 +217,9 @@ CASE_TEST(channel, mem_miso) {
     std::thread *read_thread = new std::thread([&sum_recv_len, &sum_recv_times, &sum_recv_err, &all_write_thread_exit, channel] {
         size_t buff_recv[1024]; // 最大 4K-8K的包
 
-        size_t head_offset  = sizeof(size_t) * 6;
-        size_t head_len     = sizeof(size_t) * 2;
-        size_t data_seq[16] = {0};
+        size_t head_offset   = sizeof(size_t) * 6;
+        size_t head_len      = sizeof(size_t) * 2;
+        size_t data_seq[256] = {0};
         // bool dump_flag = true;
 
         while (true) {
