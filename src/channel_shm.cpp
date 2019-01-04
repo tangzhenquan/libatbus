@@ -152,8 +152,8 @@ namespace atbus {
                 if (data) *data = (void *)shm_record.buffer;
                 if (real_size) *real_size = len;
 
-                shm_record.size = len;
-                shm_record.reference_count = 1;
+                shm_record.size             = len;
+                shm_record.reference_count  = 1;
                 shm_mapped_records[shm_key] = shm_record;
                 return EN_ATBUS_ERR_SUCCESS;
             }
@@ -177,8 +177,8 @@ namespace atbus {
 
             if (NULL == shm_record.buffer) return EN_ATBUS_ERR_SHM_GET_FAILED;
 
-            shm_record.size = len;
-            shm_record.reference_count = 1;
+            shm_record.size             = len;
+            shm_record.reference_count  = 1;
             shm_mapped_records[shm_key] = shm_record;
 
             if (data) *data = (void *)shm_record.buffer;
@@ -187,7 +187,7 @@ namespace atbus {
 #else
             // len 长度对齐到分页大小
             size_t page_size = ::sysconf(_SC_PAGESIZE);
-            len = (len + page_size - 1) & (~(page_size - 1));
+            len              = (len + page_size - 1) & (~(page_size - 1));
 
             int shmflag = 0666;
             if (create) shmflag |= IPC_CREAT;
@@ -223,8 +223,8 @@ namespace atbus {
 
 
             // 获取地址
-            shm_record.buffer = shmat(shm_record.shm_id, NULL, 0);
-            shm_record.reference_count = 1;
+            shm_record.buffer           = shmat(shm_record.shm_id, NULL, 0);
+            shm_record.reference_count  = 1;
             shm_mapped_records[shm_key] = shm_record;
 
             if (data) *data = shm_record.buffer;
@@ -325,6 +325,13 @@ namespace atbus {
             switcher.shm = channel;
             mem_show_channel(switcher.mem, out, need_node_status, need_node_data);
         }
+
+        void shm_stats_get_error(shm_channel *channel, shm_stats_block_error &out) {
+            shm_channel_switcher switcher;
+            switcher.shm = channel;
+            mem_stats_get_error(switcher.mem, out);
+        }
+
     } // namespace channel
 } // namespace atbus
 

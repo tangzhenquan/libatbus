@@ -43,6 +43,8 @@ namespace atbus {
         extern std::pair<size_t, size_t> mem_last_action();
         extern void mem_show_channel(mem_channel *channel, std::ostream &out, bool need_node_status, size_t need_node_data);
 
+        extern void mem_stats_get_error(mem_channel *channel, mem_stats_block_error &out);
+
 #ifdef ATBUS_CHANNEL_SHM
         // shared memory channel
         extern int shm_configure_set_write_timeout(shm_channel *channel, uint64_t ms);
@@ -57,6 +59,8 @@ namespace atbus {
         extern int shm_recv(shm_channel *channel, void *buf, size_t len, size_t *recv_size);
         extern std::pair<size_t, size_t> shm_last_action();
         extern void shm_show_channel(shm_channel *channel, std::ostream &out, bool need_node_status, size_t need_node_data);
+
+        extern void shm_stats_get_error(shm_channel *channel, shm_stats_block_error &out);
 #endif
 
         // stream channel(tcp,pipe(unix socket) and etc. udp is not a stream)
