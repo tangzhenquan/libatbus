@@ -21,6 +21,9 @@
 #include <type_traits>
 #endif
 
+#include "lock/atomic_int_type.h"
+#include "lock/spin_lock.h"
+
 #include "algorithm/murmur_hash.h"
 #include "common/string_oprs.h"
 #include "config/compile_optimize.h"
@@ -30,10 +33,7 @@
 
 #include "detail/libatbus_channel_types.h"
 
-#include "lock/atomic_int_type.h"
-#include "lock/spin_lock.h"
 #include "std/thread.h"
-
 
 #define MEM_CHANNEL_NAME "ATBUSMEM"
 
