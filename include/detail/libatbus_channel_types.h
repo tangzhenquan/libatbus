@@ -20,11 +20,12 @@
 #include <string>
 #include <utility>
 
+#include "libatbus_adapter_libuv.h"
+
 #include "lock/seq_alloc.h"
 #include "std/smart_ptr.h"
 
 #include "buffer.h"
-#include "libatbus_adapter_libuv.h"
 #include "libatbus_config.h"
 
 #if defined(__ANDROID__)

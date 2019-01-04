@@ -21,6 +21,8 @@
 #include <type_traits>
 #endif
 
+#include "detail/libatbus_adapter_libuv.h"
+
 #include "lock/atomic_int_type.h"
 #include "lock/spin_lock.h"
 
@@ -28,7 +30,6 @@
 #include "common/string_oprs.h"
 #include "config/compile_optimize.h"
 
-#include "detail/libatbus_config.h"
 #include "detail/libatbus_error.h"
 
 #include "detail/libatbus_channel_types.h"
