@@ -576,14 +576,14 @@ namespace atbus {
 
             // 设置首node header，数据写完标记
             {
-                // 设置屏障，强制内存刷入
-                UTIL_LOCK_ATOMIC_THREAD_FENCE(util::lock::memory_order_acquire);
+                // 设置屏障，先保证数据区和head区内存已被刷入
+                UTIL_LOCK_ATOMIC_THREAD_FENCE(util::lock::memory_order_acq_rel);
 
                 volatile mem_node_head *first_node_head = mem_get_node_head(channel, write_cur, NULL, NULL);
                 first_node_head->flag                   = set_flag(first_node_head->flag, MF_WRITEN);
 
-                // 设置屏障，强制内存刷入
-                UTIL_LOCK_ATOMIC_THREAD_FENCE(util::lock::memory_order_release);
+                // 设置屏障，保证head内存同步，然后复查操作序号，writen标记延迟同步没关系
+                UTIL_LOCK_ATOMIC_THREAD_FENCE(util::lock::memory_order_acquire);
                 // 再检查一次，以防memcpy时发生写冲突
                 if (opr_seq != first_node_head->operation_seq) {
                     ++channel->write_check_sequence_failed_count;
@@ -781,6 +781,9 @@ namespace atbus {
                     break;
                 }
 
+                // 设置屏障，保证这个执行前数据区和head区内存已被刷入
+                UTIL_LOCK_ATOMIC_THREAD_FENCE(util::lock::memory_order_acquire);
+
                 channel->first_failed_writing_time = 0;
 
                 // 接收数据 - 无回绕
@@ -809,9 +812,8 @@ namespace atbus {
 
             // 设置游标
             if (ori_read_cur != read_end_cur) {
-                // 设置屏障，保证这个执行前内存已被刷入
-                UTIL_LOCK_ATOMIC_THREAD_FENCE(util::lock::memory_order_release);
                 channel->atomic_read_cur.store(read_end_cur);
+                // 不再访问数据区和head区了，所以不再需要memory barrier了
             }
 
             // 用于调试的节点编号信息
