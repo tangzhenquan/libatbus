@@ -83,8 +83,11 @@ int main () {
         
         // 设置接收到消息后的回调函数
         bool recved = false;
-        node2->set_on_recv_handle([&recved](const atbus::node& n, const atbus::endpoint* ep, const atbus::connection* conn, int status, const void* buffer, size_t len){
-            std::cout<< reinterpret_cast<const char*>(buffer)<< std::endl;
+        node2->set_on_recv_handle([&recved](const atbus::node& n, const atbus::endpoint* ep, const atbus::connection* conn, const atbus::protocol::msg &m, const void* buffer, size_t len){
+            char* msgContent = new char[len + 1]();
+            memcpy_s(msgContent, len, buffer, len);
+            std::cout << msgContent << std::endl;
+            delete[] msgContent;
             recved = true;
             return 0;
         });
