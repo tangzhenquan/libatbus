@@ -215,10 +215,20 @@ namespace atbus {
             // Unix sock也必须共享Host
             if (0 == UTIL_STRFUNC_STRNCASE_CMP("unix", address_.scheme.c_str(), 4)) {
                 if (false == util::file_system::is_abs_path(address_.host.c_str())) {
-                    address_.host = util::file_system::get_abs_path(address_.host.c_str());
+                    std::string abs_host_path = util::file_system::get_abs_path(address_.host.c_str());
+                    size_t max_addr_size      = ::atbus::channel::io_stream_get_max_unix_socket_length();
+                    if (max_addr_size > 0 && abs_host_path.size() <= max_addr_size) {
+                        address_.host = abs_host_path;
+                    }
                 }
 
                 flags_.set(flag_t::ACCESS_SHARE_HOST, true);
+            }
+
+            if (util::file_system::is_exist(address_.host.c_str())) {
+                if (false == util::file_system::remove(address_.host.c_str())) {
+                    ATBUS_FUNC_NODE_ERROR(*owner_, get_binding(), this, EN_ATBUS_ERR_PIPE_REMOVE_FAILED, 0);
+                }
             }
 
             detail::connection_async_data *async_data = new detail::connection_async_data(owner_);
