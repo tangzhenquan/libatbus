@@ -21,14 +21,19 @@
 #include <type_traits>
 #endif
 
+#include "detail/libatbus_adapter_libuv.h"
+
+#include "lock/atomic_int_type.h"
+#include "lock/spin_lock.h"
+
 #include "algorithm/murmur_hash.h"
 #include "common/string_oprs.h"
 #include "config/compile_optimize.h"
 
-
-#include "detail/libatbus_config.h"
 #include "detail/libatbus_error.h"
-#include "lock/atomic_int_type.h"
+
+#include "detail/libatbus_channel_types.h"
+
 #include "std/thread.h"
 
 #define MEM_CHANNEL_NAME "ATBUSMEM"
@@ -62,7 +67,7 @@ namespace atbus {
         typedef ATBUS_MACRO_DATA_ALIGN_TYPE data_align_type;
 
         // 配置数据结构
-        typedef struct {
+        struct mem_conf {
             size_t protect_node_count;
             size_t protect_memory_size;
             uint64_t conf_send_timeout_ms;
@@ -70,10 +75,10 @@ namespace atbus {
             size_t write_retry_times;
             // TODO 接收端校验号(用于保证只有一个接收者)
             volatile util::lock::atomic_int_type<size_t> atomic_recver_identify;
-        } mem_conf;
+        };
 
         // 通道头
-        typedef struct {
+        struct mem_channel {
             char node_magic[8]; // 魔术串，用于标识数据类型
 
             // 数据节点
@@ -109,7 +114,7 @@ namespace atbus {
             size_t read_check_block_size_failed_count; // 读到的数据块长度检查错误数量
             size_t read_check_node_size_failed_count;  // 读到的数据节点和长度检查错误数量
             size_t read_check_hash_failed_count;       // 读到的数据节点和长度检查错误数量
-        } mem_channel;
+        };
 
 #if (defined(__cplusplus) && __cplusplus >= 201103L) || (defined(_MSC_VER) && _MSC_VER >= 1800)
         static_assert(std::is_standard_layout<mem_channel>::value, "mem_channel must be a standard layout");
@@ -122,7 +127,11 @@ namespace atbus {
         } mem_channel_head_align;
 
 
-        // 数据节点头
+        /**
+         * @brief 数据节点头
+         * @note 暂时忽略伪共享造成的cache line失效问题。否则head的内存浪费太大了
+         * @see https://en.wikipedia.org/wiki/False_sharing
+         */
         typedef struct {
             uint32_t flag;
             uint32_t operation_seq;
@@ -490,6 +499,7 @@ namespace atbus {
             // 游标操作
             size_t read_cur = 0;
             size_t new_write_cur, write_cur = channel->atomic_write_cur.load();
+            unsigned char retry_times = 0;
 
             while (true) {
                 read_cur = channel->atomic_read_cur.load();
@@ -505,13 +515,16 @@ namespace atbus {
                 new_write_cur = mem_next_index(channel, write_cur, node_count);
 
                 // @see http://en.cppreference.com/w/cpp/atomic/atomic/compare_exchange
-                // CAS, 使用compare_exchange_weak可能低概率出现移动成功但是返回失败，然后导致有一个数据块被复写
-                // 详见 https://github.com/owt5008137/libatbus/issues/4
-                bool f = channel->atomic_write_cur.compare_exchange_strong(write_cur, new_write_cur);
+                // @see https://en.wikipedia.org/wiki/Load-link/store-conditional
+                // CAS, 使用compare_exchange_weak在MIPS、ARM等架构上可能低概率出现可以成功但是走了失败流程，这里会自动重试
+                bool f = channel->atomic_write_cur.compare_exchange_weak(write_cur, new_write_cur);
 
                 if (likely(f)) break;
 
                 // 发现冲突原子操作失败则重试
+                // 增加补偿策略(bkoff)，防止高竞争时多个进程/线程之间频繁冲突
+                ++retry_times;
+                __UTIL_LOCK_SPIN_LOCK_WAIT(retry_times);
             }
             detail::last_action_channel_begin_node_index = write_cur;
             detail::last_action_channel_end_node_index   = new_write_cur;
@@ -564,14 +577,14 @@ namespace atbus {
 
             // 设置首node header，数据写完标记
             {
-                // 设置屏障，强制内存刷入
-                UTIL_LOCK_ATOMIC_THREAD_FENCE(util::lock::memory_order_acquire);
+                // 设置屏障，先保证数据区和head区内存已被刷入
+                UTIL_LOCK_ATOMIC_THREAD_FENCE(util::lock::memory_order_acq_rel);
 
                 volatile mem_node_head *first_node_head = mem_get_node_head(channel, write_cur, NULL, NULL);
                 first_node_head->flag                   = set_flag(first_node_head->flag, MF_WRITEN);
 
-                // 设置屏障，强制内存刷入
-                UTIL_LOCK_ATOMIC_THREAD_FENCE(util::lock::memory_order_release);
+                // 设置屏障，保证head内存同步，然后复查操作序号，writen标记延迟同步没关系
+                UTIL_LOCK_ATOMIC_THREAD_FENCE(util::lock::memory_order_acquire);
                 // 再检查一次，以防memcpy时发生写冲突
                 if (opr_seq != first_node_head->operation_seq) {
                     ++channel->write_check_sequence_failed_count;
@@ -769,6 +782,9 @@ namespace atbus {
                     break;
                 }
 
+                // 设置屏障，保证这个执行前数据区和head区内存已被刷入
+                UTIL_LOCK_ATOMIC_THREAD_FENCE(util::lock::memory_order_acquire);
+
                 channel->first_failed_writing_time = 0;
 
                 // 接收数据 - 无回绕
@@ -797,9 +813,8 @@ namespace atbus {
 
             // 设置游标
             if (ori_read_cur != read_end_cur) {
-                // 设置屏障，保证这个执行前内存已被刷入
-                UTIL_LOCK_ATOMIC_THREAD_FENCE(util::lock::memory_order_release);
                 channel->atomic_read_cur.store(read_end_cur);
+                // 不再访问数据区和head区了，所以不再需要memory barrier了
             }
 
             // 用于调试的节点编号信息
@@ -898,5 +913,23 @@ namespace atbus {
                     << std::endl;
             }
         }
+
+        void mem_stats_get_error(mem_channel *channel, mem_stats_block_error &out) {
+            memset(&out, 0, sizeof(out));
+            if (NULL == channel) {
+                return;
+            }
+
+            out.write_check_sequence_failed_count = channel->write_check_sequence_failed_count;
+            out.write_retry_count                 = channel->write_retry_count;
+
+            out.read_bad_node_count                = channel->read_bad_node_count;
+            out.read_bad_block_count               = channel->read_bad_block_count;
+            out.read_write_timeout_count           = channel->read_write_timeout_count;
+            out.read_check_block_size_failed_count = channel->read_check_block_size_failed_count;
+            out.read_check_node_size_failed_count  = channel->read_check_node_size_failed_count;
+            out.read_check_hash_failed_count       = channel->read_check_hash_failed_count;
+        }
+
     } // namespace channel
 } // namespace atbus
