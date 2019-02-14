@@ -63,6 +63,8 @@ typedef enum {
     EN_ATBUS_ERR_EV_RUN               = -605, // 底层API事件循环失败
     EN_ATBUS_ERR_NO_LISTEN            = -606, // 尚未监听（绑定）
     EN_ATBUS_ERR_CLOSING              = -607, // 正在关闭或已关闭
+
+    EN_ATBUS_ERR_MIN = -999,
 } ATBUS_ERROR_TYPE;
 
 #endif
