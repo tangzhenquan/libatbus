@@ -6,7 +6,7 @@ endif()
 
 set (3RD_PARTY_LIBUV_PKG_DIR "${3RD_PARTY_LIBUV_BASE_DIR}/pkg")
 
-set (3RD_PARTY_LIBUV_DEFAULT_VERSION "1.24.0")
+set (3RD_PARTY_LIBUV_DEFAULT_VERSION "1.26.0")
 set (3RD_PARTY_LIBUV_ROOT_DIR "${CMAKE_CURRENT_LIST_DIR}/prebuilt/${PLATFORM_BUILD_PLATFORM_NAME}")
 
 if(NOT EXISTS ${3RD_PARTY_LIBUV_PKG_DIR})
@@ -42,4 +42,8 @@ include_directories(${3RD_PARTY_LIBUV_INC_DIR})
 if (MINGW)
     EchoWithColor(COLOR GREEN "-- MinGW: custom add lib ws2_32,psapi,userenv,iphlpapi ")
     list(APPEND 3RD_PARTY_LIBUV_LINK_NAME ws2_32 psapi userenv iphlpapi)
+elseif (WIN32)
+    EchoWithColor(COLOR GREEN "-- Win32: custom add lib psapi,userenv,iphlpapi ")
+    list(APPEND 3RD_PARTY_LIBUV_LINK_NAME psapi userenv iphlpapi)
 endif()
+

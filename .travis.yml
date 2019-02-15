@@ -5,10 +5,10 @@ env:
     - LANG="zh_CN.UTF-8"
     - MSGPACK_PREFIX=$HOME/prebuilt/msgpack-3.1.1 ;
     - MSGPACK_VERSION=3.1.1 ;
-    - LIBUV_PREFIX=$HOME/prebuilt/libuv-1.24.0 ;
-    - LIBUV_VERSION=1.24.0
+    - LIBUV_PREFIX=$HOME/prebuilt/libuv-1.26.0 ;
+    - LIBUV_VERSION=1.26.0
     - CMAKE_PREFIX=$HOME/prebuilt/cmake ;
-    - CMAKE_LINUX_URL=https://cmake.org/files/v3.13/cmake-3.13.1-Linux-x86_64.sh ;
+    - CMAKE_LINUX_URL=https://github.com/Kitware/CMake/releases/download/v3.13.4/cmake-3.13.4-Linux-x86_64.sh ;
 matrix:
   include:
     - os: osx
