@@ -7,7 +7,7 @@ endif()
 set (3RD_PARTY_LIBUV_DEFAULT_VERSION "v1.26.0")
 
 if (EXISTS "${3RD_PARTY_LIBUV_BASE_DIR}/prebuilt")
-    set (Libuv_ROOT "${3RD_PARTY_LIBUV_BASE_DIR}/prebuilt")
+    set (Libuv_ROOT "${3RD_PARTY_LIBUV_BASE_DIR}/prebuilt/${PLATFORM_BUILD_PLATFORM_NAME}")
 endif ()
 
 find_package(Libuv)
