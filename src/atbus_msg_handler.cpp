@@ -536,7 +536,7 @@ namespace atbus {
             do {
                 // 如果是父节点回的错误注册包，且未被激活过，则要关闭进程
                 if (conn->get_address().address == n.get_conf().father_address) {
-                    if (!n.check(node::flag_t::EN_FT_ACTIVED)) {
+                    if (!n.check_flag(node::flag_t::EN_FT_ACTIVED)) {
                         ATBUS_FUNC_NODE_DEBUG(n, ep, conn, &m, "node register to parent node failed, shutdown");
                         ATBUS_FUNC_NODE_FATAL_SHUTDOWN(n, ep, conn, m.head.ret, errcode);
                         break;

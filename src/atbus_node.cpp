@@ -875,7 +875,7 @@ namespace atbus {
                 add_ping_timer(ep);
 
                 if ((state_t::LOST_PARENT == get_state() || state_t::CONNECTING_PARENT == get_state()) &&
-                    check(flag_t::EN_FT_PARENT_REG_DONE)) {
+                    check_flag(flag_t::EN_FT_PARENT_REG_DONE)) {
                     on_actived();
                 }
 
@@ -1382,7 +1382,7 @@ namespace atbus {
         int ret = 0;
 
         // recursive call will be ignored
-        if (check(flag_t::EN_FT_RECV_SELF_MSG) || check(flag_t::EN_FT_IN_CALLBACK)) {
+        if (check_flag(flag_t::EN_FT_RECV_SELF_MSG) || check_flag(flag_t::EN_FT_IN_CALLBACK)) {
             return ret;
         }
         flag_guard_t fgd(this, flag_t::EN_FT_RECV_SELF_MSG);

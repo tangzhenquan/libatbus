@@ -28,9 +28,11 @@
 #include "detail/libatbus_channel_export.h"
 #include "detail/libatbus_config.h"
 #include "detail/libatbus_error.h"
-#include "detail/libatbus_protocol.h"
 
 namespace atbus {
+    namespace protocol {
+        struct msg;
+    }
 
     class node;
     class endpoint;

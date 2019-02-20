@@ -365,7 +365,7 @@ namespace atbus {
         inline bus_id_t get_id() const { return self_ ? self_->get_id() : 0; }
         inline const conf_t &get_conf() const { return conf_; }
 
-        inline bool check(flag_t::type f) const { return flags_.test(f); }
+        inline bool check_flag(flag_t::type f) const { return flags_.test(f); }
         inline state_t::type get_state() const { return state_; }
 
         ptr_t get_watcher();
