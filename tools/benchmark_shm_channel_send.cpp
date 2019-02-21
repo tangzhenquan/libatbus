@@ -69,12 +69,12 @@ int main(int argc, char *argv[]) {
 
     srand(static_cast<unsigned>(time(NULL)));
 
-    size_t sum_send_len = 0;
+    size_t sum_send_len   = 0;
     size_t sum_send_times = 0;
-    size_t sum_send_full = 0;
-    size_t sum_send_err = 0;
-    char sum_seq = (char)rand() + 1;
-    int pid = test_get_pid();
+    size_t sum_send_full  = 0;
+    size_t sum_send_err   = 0;
+    char sum_seq          = (char)rand() + 1;
+    int pid               = test_get_pid();
 
     if (!sum_seq) {
         ++sum_seq;
@@ -127,14 +127,14 @@ int main(int argc, char *argv[]) {
 
 
     // 检查状态
-    int secs = 0;
+    int secs            = 0;
     char unit_desc[][4] = {"B", "KB", "MB", "GB"};
-    size_t unit_devi[] = {1UL, 1UL << 10, 1UL << 20, 1UL << 30};
-    size_t unit_index = 0;
+    size_t unit_devi[]  = {1UL, 1UL << 10, 1UL << 20, 1UL << 30};
+    size_t unit_index   = 0;
 
     while (true) {
         ++secs;
-        std::chrono::seconds dura(60);
+        // std::chrono::seconds dura(60);
         std::this_thread::sleep_for(std::chrono::milliseconds(60000));
 
         while (sum_send_len / unit_devi[unit_index] > 1024 && unit_index < sizeof(unit_devi) / sizeof(size_t) - 1)
