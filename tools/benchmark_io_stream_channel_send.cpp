@@ -72,11 +72,11 @@ static void sended_callback(atbus::channel::io_stream_channel *channel,       //
     send_data(const_cast<atbus::channel::io_stream_connection *>(connection));
 }
 
-static void closed_callback(EXPLICIT_UNUSED_ATTR atbus::channel::io_stream_channel *channel, // 事件触发的channel
-                            atbus::channel::io_stream_connection *connection,                // 事件触发的连接
-                            int /*status*/,                                                  // libuv传入的转态码
-                            void *,                                                          // 额外参数(不同事件不同含义)
-                            size_t                                                           // 额外参数长度
+static void closed_callback(EXPLICIT_UNUSED_ATTR atbus::channel::io_stream_channel *channel,       // 事件触发的channel
+                            EXPLICIT_UNUSED_ATTR atbus::channel::io_stream_connection *connection, // 事件触发的连接
+                            int /*status*/,                                                        // libuv传入的转态码
+                            void *,                                                                // 额外参数(不同事件不同含义)
+                            size_t                                                                 // 额外参数长度
 ) {
     assert(channel);
     assert(connection);

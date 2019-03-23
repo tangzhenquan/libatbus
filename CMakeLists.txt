@@ -49,14 +49,15 @@ endif()
 
 if (COMPILER_STRICT_EXTRA_CFLAGS)
     add_definitions(${COMPILER_STRICT_EXTRA_CFLAGS})
-    # TODO 先临时关闭下VC下的int类型转换warning，后面再修订
-    if (MSVC)
-        add_definitions(/wd4244)
-    endif ()
 endif ()
 
 if (COMPILER_STRICT_CFLAGS)
     add_definitions(${COMPILER_STRICT_CFLAGS})
+
+    # TODO 先临时关闭下VC下的int类型转换warning，后面再修订
+    if (MSVC)
+        add_definitions(/wd4244 /wd4267)
+    endif ()
 endif ()
 
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/src")
