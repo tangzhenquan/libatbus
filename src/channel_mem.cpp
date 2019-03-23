@@ -601,7 +601,7 @@ namespace atbus {
             int ret               = 0;
             size_t left_try_times = channel->conf.write_retry_times;
             while (left_try_times-- > 0) {
-                int ret = mem_send_real(channel, buf, len);
+                ret = mem_send_real(channel, buf, len);
 
                 // 原子操作序列冲突，重试
                 if (EN_ATBUS_ERR_NODE_BAD_BLOCK_CSEQ_ID == ret || EN_ATBUS_ERR_NODE_BAD_BLOCK_WSEQ_ID == ret) {
