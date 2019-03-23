@@ -1243,7 +1243,7 @@ namespace atbus {
         }
     }
 
-    int node::on_error(const char *file_path, size_t line, const endpoint *ep, const connection *conn, int status, int errcode) {
+    int node::on_error(const char * /*file_path*/, size_t /*line*/, const endpoint *ep, const connection *conn, int status, int errcode) {
         if (NULL == ep && NULL != conn) {
             ep = conn->get_binding();
         }

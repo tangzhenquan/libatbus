@@ -313,7 +313,7 @@ namespace atbus {
         }
 
 
-        static void io_stream_on_recv_alloc_fn(uv_handle_t *handle, size_t suggested_size, uv_buf_t *buf) {
+        static void io_stream_on_recv_alloc_fn(uv_handle_t *handle, size_t /*suggested_size*/, uv_buf_t *buf) {
             assert(handle && handle->data);
             if (NULL == handle || NULL == handle->data) {
                 return;
@@ -359,7 +359,7 @@ namespace atbus {
             buf->len  = swrite;
         }
 
-        static void io_stream_on_recv_read_fn(uv_stream_t *stream, ssize_t nread, const uv_buf_t *buf) {
+        static void io_stream_on_recv_read_fn(uv_stream_t *stream, ssize_t nread, const uv_buf_t * /*buf*/) {
             io_stream_connection *conn_raw_ptr = reinterpret_cast<io_stream_connection *>(stream->data);
             assert(conn_raw_ptr);
             io_stream_channel *channel = conn_raw_ptr->channel;

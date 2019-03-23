@@ -178,7 +178,7 @@ namespace atbus {
             return s + sizeof(size_t) - pl;
         }
 
-        size_t buffer_block::head_size(size_t s) { return padding_size(sizeof(buffer_block)); }
+        size_t buffer_block::head_size(size_t) { return padding_size(sizeof(buffer_block)); }
 
         size_t buffer_block::full_size(size_t s) { return head_size(s) + padding_size(s); }
 

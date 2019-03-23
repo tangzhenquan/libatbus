@@ -421,7 +421,7 @@ namespace atbus {
         }
 
 
-        int mem_attach(void *buf, size_t len, mem_channel **channel, const mem_conf *conf) {
+        int mem_attach(void *buf, size_t len, mem_channel **channel, const mem_conf * /*conf*/) {
             // 缓冲区最小长度为数据头+空洞node的长度
             if (len < sizeof(mem_channel_head_align) + mem_block::node_data_size + mem_block::node_head_size)
                 return EN_ATBUS_ERR_CHANNEL_SIZE_TOO_SMALL;

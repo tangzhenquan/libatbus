@@ -450,7 +450,7 @@ namespace atbus {
     }
 
     void connection::iostream_on_listen_cb(channel::io_stream_channel *channel, channel::io_stream_connection *connection, int status,
-                                           void *buffer, size_t s) {
+                                           void *buffer, size_t) {
         detail::connection_async_data *async_data = reinterpret_cast<detail::connection_async_data *>(buffer);
         assert(NULL != async_data);
         if (NULL == async_data) {
@@ -482,7 +482,7 @@ namespace atbus {
     }
 
     void connection::iostream_on_connected_cb(channel::io_stream_channel *channel, channel::io_stream_connection *connection, int status,
-                                              void *buffer, size_t s) {
+                                              void *buffer, size_t) {
         detail::connection_async_data *async_data = reinterpret_cast<detail::connection_async_data *>(buffer);
         assert(NULL != async_data);
         if (NULL == async_data) {
@@ -562,8 +562,8 @@ namespace atbus {
         }
     }
 
-    void connection::iostream_on_accepted(channel::io_stream_channel *channel, channel::io_stream_connection *conn_ios, int status,
-                                          void *buffer, size_t s) {
+    void connection::iostream_on_accepted(channel::io_stream_channel *channel, channel::io_stream_connection *conn_ios, int /*status*/,
+                                          void * /*buffer*/, size_t) {
         // 连接成功加入点对点传输池
         // 加入超时检测
         node *n = reinterpret_cast<node *>(channel->data);
@@ -592,11 +592,11 @@ namespace atbus {
         n->on_new_connection(conn.get());
     }
 
-    void connection::iostream_on_connected(channel::io_stream_channel *channel, channel::io_stream_connection *conn_ios, int status,
-                                           void *buffer, size_t s) {}
+    void connection::iostream_on_connected(channel::io_stream_channel *, channel::io_stream_connection *, int /*status*/, void * /*buffer*/,
+                                           size_t) {}
 
-    void connection::iostream_on_disconnected(channel::io_stream_channel *channel, channel::io_stream_connection *conn_ios, int status,
-                                              void *buffer, size_t s) {
+    void connection::iostream_on_disconnected(channel::io_stream_channel *, channel::io_stream_connection *conn_ios, int /*status*/,
+                                              void * /*buffer*/, size_t) {
         connection *conn = reinterpret_cast<connection *>(conn_ios->data);
 
         // 主动关闭时会先释放connection，这时候connection已经被释放，不需要再重置
@@ -609,7 +609,7 @@ namespace atbus {
     }
 
     void connection::iostream_on_written(channel::io_stream_channel *channel, channel::io_stream_connection *conn_ios, int status,
-                                         void *buffer, size_t s) {
+                                         void * /*buffer*/, size_t s) {
         node *n = reinterpret_cast<node *>(channel->data);
         assert(NULL != n);
         if (NULL == n) {
@@ -642,7 +642,7 @@ namespace atbus {
         }
     }
 
-    int connection::shm_proc_fn(node &n, connection &conn, time_t sec, time_t usec) {
+    int connection::shm_proc_fn(node &n, connection &conn, time_t /*sec*/, time_t /*usec*/) {
         int ret                             = 0;
         size_t left_times                   = n.get_conf().loop_times;
         detail::buffer_block *static_buffer = n.get_temp_static_buffer();
@@ -683,7 +683,7 @@ namespace atbus {
         return ret;
     }
 
-    int connection::shm_free_fn(node &n, connection &conn) { return channel::shm_close(conn.conn_data_.shared.shm.shm_key); }
+    int connection::shm_free_fn(node &, connection &conn) { return channel::shm_close(conn.conn_data_.shared.shm.shm_key); }
 
     int connection::shm_push_fn(connection &conn, const void *buffer, size_t s) {
         int ret = channel::shm_send(conn.conn_data_.shared.shm.channel, buffer, s);
@@ -698,7 +698,7 @@ namespace atbus {
         return ret;
     }
 
-    int connection::mem_proc_fn(node &n, connection &conn, time_t sec, time_t usec) {
+    int connection::mem_proc_fn(node &n, connection &conn, time_t /*sec*/, time_t /*usec*/) {
         int ret                             = 0;
         size_t left_times                   = n.get_conf().loop_times;
         detail::buffer_block *static_buffer = n.get_temp_static_buffer();
@@ -739,7 +739,7 @@ namespace atbus {
         return ret;
     }
 
-    int connection::mem_free_fn(node &n, connection &conn) { return 0; }
+    int connection::mem_free_fn(node &, connection &) { return 0; }
 
     int connection::mem_push_fn(connection &conn, const void *buffer, size_t s) {
         int ret = channel::mem_send(conn.conn_data_.shared.mem.channel, buffer, s);
@@ -753,7 +753,7 @@ namespace atbus {
         return ret;
     }
 
-    int connection::ios_free_fn(node &n, connection &conn) {
+    int connection::ios_free_fn(node &, connection &conn) {
         int ret = channel::io_stream_disconnect(conn.conn_data_.shared.ios_fd.channel, conn.conn_data_.shared.ios_fd.conn, NULL);
         // 释放后移除关联关系
         conn.conn_data_.shared.ios_fd.conn->data = NULL;

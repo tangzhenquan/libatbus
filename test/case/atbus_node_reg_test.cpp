@@ -6,7 +6,7 @@
 
 #include <common/file_system.h>
 #include <common/string_oprs.h>
-
+#include <std/explicit_declare.h>
 
 #ifdef max
 #undef max
@@ -26,7 +26,8 @@
 #include <stdarg.h>
 
 static void node_reg_test_on_debug(const char *file_path, size_t line, const atbus::node &n, const atbus::endpoint *ep,
-                                   const atbus::connection *conn, const atbus::protocol::msg *m, const char *fmt, ...) {
+                                   const atbus::connection *conn, EXPLICIT_UNUSED_ATTR const atbus::protocol::msg *m, const char *fmt,
+                                   ...) {
     size_t offset = 0;
     for (size_t i = 0; file_path[i]; ++i) {
         if ('/' == file_path[i] || '\\' == file_path[i]) {
@@ -52,7 +53,7 @@ static void node_reg_test_on_debug(const char *file_path, size_t line, const atb
 #ifdef _MSC_VER
 
     static char *APPVEYOR = getenv("APPVEYOR");
-    static char *CI = getenv("CI");
+    static char *CI       = getenv("CI");
 
     // appveyor ci open msg content
     if (APPVEYOR && APPVEYOR[0] && CI && CI[0] && NULL != m) {
@@ -94,9 +95,9 @@ static node_reg_test_recv_msg_record_t recv_msg_history;
 
 static int node_reg_test_recv_msg_test_record_fn(const atbus::node &n, const atbus::endpoint *ep, const atbus::connection *conn,
                                                  const atbus::protocol::msg &m, const void *buffer, size_t len) {
-    recv_msg_history.n = &n;
-    recv_msg_history.ep = ep;
-    recv_msg_history.conn = conn;
+    recv_msg_history.n      = &n;
+    recv_msg_history.ep     = ep;
+    recv_msg_history.conn   = conn;
     recv_msg_history.status = m.head.ret;
     ++recv_msg_history.count;
 
@@ -151,8 +152,8 @@ CASE_TEST(atbus_node_reg, reset_and_send_tcp) {
     {
         atbus::node::ptr_t node1 = atbus::node::create();
         atbus::node::ptr_t node2 = atbus::node::create();
-        node1->on_debug = node_reg_test_on_debug;
-        node2->on_debug = node_reg_test_on_debug;
+        node1->on_debug          = node_reg_test_on_debug;
+        node2->on_debug          = node_reg_test_on_debug;
         node1->set_on_error_handle(node_reg_test_on_error);
         node2->set_on_error_handle(node_reg_test_on_error);
 
@@ -253,8 +254,8 @@ CASE_TEST(atbus_node_reg, destruct) {
     {
         atbus::node::ptr_t node1 = atbus::node::create();
         atbus::node::ptr_t node2 = atbus::node::create();
-        node1->on_debug = node_reg_test_on_debug;
-        node2->on_debug = node_reg_test_on_debug;
+        node1->on_debug          = node_reg_test_on_debug;
+        node2->on_debug          = node_reg_test_on_debug;
         node1->set_on_error_handle(node_reg_test_on_error);
         node2->set_on_error_handle(node_reg_test_on_error);
 
@@ -317,12 +318,12 @@ CASE_TEST(atbus_node_reg, reg_pc_success) {
 
     int check_ep_rm = recv_msg_history.remove_endpoint_count;
     {
-        int old_register_count = recv_msg_history.register_count;
+        int old_register_count  = recv_msg_history.register_count;
         int old_available_count = recv_msg_history.availavle_count;
 
         atbus::node::ptr_t node_parent = atbus::node::create();
-        atbus::node::ptr_t node_child = atbus::node::create();
-        node_parent->on_debug = node_reg_test_on_debug;
+        atbus::node::ptr_t node_child  = atbus::node::create();
+        node_parent->on_debug          = node_reg_test_on_debug;
         node_parent->set_on_error_handle(node_reg_test_on_error);
         node_parent->set_on_register_handle(node_reg_test_on_register_fn);
         node_parent->set_on_available_handle(node_reg_test_on_available_fn);
@@ -336,7 +337,7 @@ CASE_TEST(atbus_node_reg, reg_pc_success) {
 
         node_parent->init(0x12345678, &conf);
 
-        conf.children_mask = 8;
+        conf.children_mask  = 8;
         conf.father_address = "ipv4://127.0.0.1:16387";
         node_child->init(0x12346789, &conf);
 
@@ -378,7 +379,7 @@ CASE_TEST(atbus_node_reg, reg_pc_success) {
 
         // API - test
         {
-            atbus::endpoint *test_ep = NULL;
+            atbus::endpoint *test_ep     = NULL;
             atbus::connection *test_conn = NULL;
             node_parent->get_remote_channel(node_child->get_id(), &atbus::endpoint::get_data_connection, &test_ep, &test_conn);
             CASE_EXPECT_NE(NULL, test_ep);
@@ -387,7 +388,7 @@ CASE_TEST(atbus_node_reg, reg_pc_success) {
 
         // API - test
         {
-            atbus::endpoint *test_ep = NULL;
+            atbus::endpoint *test_ep     = NULL;
             atbus::connection *test_conn = NULL;
             node_child->get_remote_channel(node_parent->get_id(), &atbus::endpoint::get_data_connection, &test_ep, &test_conn);
             CASE_EXPECT_NE(NULL, test_ep);
@@ -421,8 +422,8 @@ CASE_TEST(atbus_node_reg, reg_bro_success) {
     {
         atbus::node::ptr_t node_1 = atbus::node::create();
         atbus::node::ptr_t node_2 = atbus::node::create();
-        node_1->on_debug = node_reg_test_on_debug;
-        node_2->on_debug = node_reg_test_on_debug;
+        node_1->on_debug          = node_reg_test_on_debug;
+        node_2->on_debug          = node_reg_test_on_debug;
         node_1->set_on_error_handle(node_reg_test_on_error);
         node_2->set_on_error_handle(node_reg_test_on_error);
 
@@ -461,7 +462,7 @@ CASE_TEST(atbus_node_reg, reg_bro_success) {
 
         // API - test
         {
-            atbus::endpoint *test_ep = NULL;
+            atbus::endpoint *test_ep     = NULL;
             atbus::connection *test_conn = NULL;
             node_1->get_remote_channel(node_2->get_id(), &atbus::endpoint::get_data_connection, &test_ep, &test_conn);
             CASE_EXPECT_NE(NULL, test_ep);
@@ -470,7 +471,7 @@ CASE_TEST(atbus_node_reg, reg_bro_success) {
 
         // API - test
         {
-            atbus::endpoint *test_ep = NULL;
+            atbus::endpoint *test_ep     = NULL;
             atbus::connection *test_conn = NULL;
             node_2->get_remote_channel(node_1->get_id(), &atbus::endpoint::get_data_connection, &test_ep, &test_conn);
             CASE_EXPECT_NE(NULL, test_ep);
@@ -489,7 +490,7 @@ CASE_TEST(atbus_node_reg, reg_bro_success) {
 
 
 static int g_node_test_on_shutdown_check_reason = 0;
-static int node_test_on_shutdown(const atbus::node &n, int reason) {
+static int node_test_on_shutdown(const atbus::node &, int reason) {
     if (0 == g_node_test_on_shutdown_check_reason) {
         ++g_node_test_on_shutdown_check_reason;
     } else {
@@ -513,19 +514,19 @@ CASE_TEST(atbus_node_reg, conflict) {
 
     // 只有发生冲突才会注册不成功，否则会无限重试注册父节点，直到其上线
     {
-        atbus::node::ptr_t node_parent = atbus::node::create();
-        atbus::node::ptr_t node_child = atbus::node::create();
+        atbus::node::ptr_t node_parent     = atbus::node::create();
+        atbus::node::ptr_t node_child      = atbus::node::create();
         atbus::node::ptr_t node_child_fail = atbus::node::create();
-        node_parent->on_debug = node_reg_test_on_debug;
-        node_child->on_debug = node_reg_test_on_debug;
-        node_child_fail->on_debug = node_reg_test_on_debug;
+        node_parent->on_debug              = node_reg_test_on_debug;
+        node_child->on_debug               = node_reg_test_on_debug;
+        node_child_fail->on_debug          = node_reg_test_on_debug;
         node_parent->set_on_error_handle(node_reg_test_on_error);
         node_child->set_on_error_handle(node_reg_test_on_error);
         node_child_fail->set_on_error_handle(node_reg_test_on_error);
 
         node_parent->init(0x12345678, &conf);
 
-        conf.children_mask = 8;
+        conf.children_mask  = 8;
         conf.father_address = "ipv4://127.0.0.1:16387";
         node_child->init(0x12346789, &conf);
         // 子域冲突，注册失败
@@ -584,16 +585,16 @@ CASE_TEST(atbus_node_reg, reconnect_father_failed) {
     // 只有发生冲突才会注册不成功，否则会无限重试注册父节点，直到其上线
     {
         atbus::node::ptr_t node_parent = atbus::node::create();
-        atbus::node::ptr_t node_child = atbus::node::create();
-        node_parent->on_debug = node_reg_test_on_debug;
-        node_child->on_debug = node_reg_test_on_debug;
+        atbus::node::ptr_t node_child  = atbus::node::create();
+        node_parent->on_debug          = node_reg_test_on_debug;
+        node_child->on_debug           = node_reg_test_on_debug;
         node_parent->set_on_error_handle(node_reg_test_on_error);
         CASE_EXPECT_TRUE(!!node_parent->get_on_error_handle());
         node_child->set_on_error_handle(node_reg_test_on_error);
 
         node_parent->init(0x12345678, &conf);
 
-        conf.children_mask = 8;
+        conf.children_mask  = 8;
         conf.father_address = "ipv4://127.0.0.1:16387";
         node_child->init(0x12346789, &conf);
 
@@ -641,7 +642,7 @@ CASE_TEST(atbus_node_reg, reconnect_father_failed) {
 
         // 父节点断线重连测试
         // 子节点断线后重新注册测试
-        conf.children_mask = 16;
+        conf.children_mask  = 16;
         conf.father_address = "";
         node_parent->init(0x12345678, &conf);
         CASE_EXPECT_EQ(EN_ATBUS_ERR_SUCCESS, node_parent->listen("ipv4://127.0.0.1:16387"));
@@ -690,13 +691,13 @@ CASE_TEST(atbus_node_reg, mem_and_send) {
     conf.ev_loop = &ev_loop;
 
     const size_t memory_chan_len = conf.recv_buffer_size;
-    char *memory_chan_buf = reinterpret_cast<char *>(malloc(memory_chan_len));
+    char *memory_chan_buf        = reinterpret_cast<char *>(malloc(memory_chan_len));
 
     {
         atbus::node::ptr_t node1 = atbus::node::create();
         atbus::node::ptr_t node2 = atbus::node::create();
-        node1->on_debug = node_reg_test_on_debug;
-        node2->on_debug = node_reg_test_on_debug;
+        node1->on_debug          = node_reg_test_on_debug;
+        node2->on_debug          = node_reg_test_on_debug;
         node1->set_on_error_handle(node_reg_test_on_error);
         node2->set_on_error_handle(node_reg_test_on_error);
 
@@ -750,7 +751,7 @@ CASE_TEST(atbus_node_reg, mem_and_send) {
 
         // API - test - 数据通道优先应该是内存通道
         {
-            atbus::endpoint *test_ep = NULL;
+            atbus::endpoint *test_ep     = NULL;
             atbus::connection *test_conn = NULL;
             node1->get_remote_channel(node2->get_id(), &atbus::endpoint::get_data_connection, &test_ep, &test_conn);
             CASE_EXPECT_NE(NULL, test_ep);
@@ -863,8 +864,8 @@ CASE_TEST(atbus_node_reg, shm_and_send) {
     {
         atbus::node::ptr_t node1 = atbus::node::create();
         atbus::node::ptr_t node2 = atbus::node::create();
-        node1->on_debug = node_reg_test_on_debug;
-        node2->on_debug = node_reg_test_on_debug;
+        node1->on_debug          = node_reg_test_on_debug;
+        node2->on_debug          = node_reg_test_on_debug;
         node1->set_on_error_handle(node_reg_test_on_error);
         node2->set_on_error_handle(node_reg_test_on_error);
 
@@ -916,7 +917,7 @@ CASE_TEST(atbus_node_reg, shm_and_send) {
 
         // API - test - 数据通道优先应该是共享内存通道
         {
-            atbus::endpoint *test_ep = NULL;
+            atbus::endpoint *test_ep     = NULL;
             atbus::connection *test_conn = NULL;
             node1->get_remote_channel(node2->get_id(), &atbus::endpoint::get_data_connection, &test_ep, &test_conn);
             CASE_EXPECT_NE(NULL, test_ep);

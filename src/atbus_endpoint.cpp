@@ -27,12 +27,12 @@ namespace atbus {
             return ret;
         }
 
-        ret->id_ = id;
+        ret->id_            = id;
         ret->children_mask_ = children_mask;
-        ret->pid_ = pid;
-        ret->hostname_ = hn;
+        ret->pid_           = pid;
+        ret->hostname_      = hn;
 
-        ret->owner_ = owner;
+        ret->owner_   = owner;
         ret->watcher_ = ret;
         return ret;
     }
@@ -104,7 +104,7 @@ namespace atbus {
         return (id & c_mask) != (id_ & c_mask) && (0 == father_mask || (id & f_mask) == (id_ & f_mask));
     }
 
-    bool endpoint::is_parent_node(bus_id_t id, bus_id_t father_id, uint32_t father_mask) {
+    bool endpoint::is_parent_node(bus_id_t id, bus_id_t father_id, uint32_t /*father_mask*/) {
         // bus_id_t mask = ~((1 << father_mask) - 1);
         return id == father_id;
     }
@@ -345,7 +345,7 @@ namespace atbus {
     uint32_t endpoint::get_stat_ping() const { return stat_.unfinished_ping; }
 
     void endpoint::set_stat_ping_delay(time_t pd, time_t pong_tm) {
-        stat_.ping_delay = pd;
+        stat_.ping_delay     = pd;
         stat_.last_pong_time = pong_tm;
     }
 

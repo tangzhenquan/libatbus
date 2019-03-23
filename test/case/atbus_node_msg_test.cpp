@@ -25,7 +25,7 @@
 #include <stdarg.h>
 
 static void node_msg_test_on_debug(const char *file_path, size_t line, const atbus::node &n, const atbus::endpoint *ep,
-                                   const atbus::connection *conn, const atbus::protocol::msg *m, const char *fmt, ...) {
+                                   const atbus::connection *conn, const atbus::protocol::msg *, const char *fmt, ...) {
     size_t offset = 0;
     for (size_t i = 0; file_path[i]; ++i) {
         if ('/' == file_path[i] || '\\' == file_path[i]) {
@@ -135,7 +135,7 @@ static int node_msg_test_send_data_failed_fn(const atbus::node &n, const atbus::
     return 0;
 }
 
-static int node_msg_test_remove_endpoint_fn(const atbus::node &n, atbus::endpoint *ep, int) {
+static int node_msg_test_remove_endpoint_fn(const atbus::node &, atbus::endpoint *, int) {
     ++recv_msg_history.remove_endpoint_count;
     return 0;
 }
@@ -397,8 +397,8 @@ CASE_TEST(atbus_node_msg, reset_and_send) {
     unit_test_setup_exit(&ev_loop);
 }
 
-static int node_msg_test_recv_and_send_msg_on_failed_fn(const atbus::node &n, const atbus::endpoint *ep, const atbus::connection *conn,
-                                                        const atbus::protocol::msg *m) {
+static int node_msg_test_recv_and_send_msg_on_failed_fn(const atbus::node &, const atbus::endpoint *, const atbus::connection *,
+                                                        const atbus::protocol::msg *) {
     ++recv_msg_history.count;
     return 0;
 }

@@ -46,6 +46,15 @@ include_macro_recurse(${CMAKE_CURRENT_LIST_DIR})
 if ( "${CMAKE_CURRENT_LIST_DIR}/3rd_party/atframe_utils/repo" STREQUAL ${3RD_PARTY_ATFRAME_UTILS_PKG_DIR})
     add_subdirectory(${3RD_PARTY_ATFRAME_UTILS_PKG_DIR})
 endif()
+
+if (COMPILER_STRICT_EXTRA_CFLAGS)
+    add_definitions(${COMPILER_STRICT_EXTRA_CFLAGS})
+endif ()
+
+if (COMPILER_STRICT_CFLAGS)
+    add_definitions(${COMPILER_STRICT_CFLAGS})
+endif ()
+
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/src")
 
 if (PROJECT_ENABLE_SAMPLE)
