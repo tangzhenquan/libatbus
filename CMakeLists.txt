@@ -1,5 +1,5 @@
 ﻿cmake_minimum_required(VERSION 3.7.0)
-if (CMAKE_VERSION VERSION_GREATER_EQUAL "3.13")
+if (CMAKE_VERSION VERSION_GREATER_EQUAL "3.12")
     cmake_policy(SET CMP0074 NEW)
 endif()
 
@@ -58,6 +58,11 @@ if (COMPILER_STRICT_CFLAGS)
     if (MSVC)
         add_definitions(/wd4244 /wd4267)
     endif ()
+endif ()
+
+# VS 2013的STL里会报这个warning
+if (MSVC_VERSION LESS_EQUAL 1800)
+    add_definitions(/wd4702)
 endif ()
 
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/src")
