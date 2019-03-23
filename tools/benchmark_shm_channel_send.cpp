@@ -159,7 +159,7 @@ int main(int argc, char *argv[]) {
 
 #else
 
-int main(int argc, char *argv[]) {
+int main() {
     std::cerr << "this benckmark code require your compiler support lambda and c++11/thread" << std::endl;
     return 0;
 }

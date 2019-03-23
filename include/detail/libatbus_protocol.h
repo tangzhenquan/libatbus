@@ -7,6 +7,11 @@
 #include <ostream>
 #include <stdint.h>
 
+#if defined(_MSC_VER)
+#pragma warning(push)
+#pragma warning(disable : 4702)
+#endif
+
 #include <msgpack.hpp>
 
 enum ATBUS_PROTOCOL_CMD {
@@ -643,5 +648,9 @@ namespace msgpack {
         } // namespace adaptor
     }     // MSGPACK_API_VERSION_NAMESPACE(MSGPACK_DEFAULT_API_NS)
 } // namespace msgpack
+
+#if defined(_MSC_VER)
+#pragma warning(pop)
+#endif
 
 #endif // LIBATBUS_PROTOCOL_DESC_H_
