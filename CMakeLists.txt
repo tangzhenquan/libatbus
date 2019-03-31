@@ -46,7 +46,7 @@ include_macro_recurse(${CMAKE_CURRENT_LIST_DIR})
 if(TARGET ${3RD_PARTY_ATFRAME_UTILS_LINK_NAME})
     message(STATUS "${3RD_PARTY_ATFRAME_UTILS_LINK_NAME} already exist, use it directly.")
 else()
-    add_subdirectory(${3RD_PARTY_ATFRAME_UTILS_PKG_DIR})
+    add_subdirectory(${3RD_PARTY_ATFRAME_UTILS_PKG_DIR} ${CMAKE_BINARY_DIR})
 endif()
 
 if (COMPILER_STRICT_EXTRA_CFLAGS)
