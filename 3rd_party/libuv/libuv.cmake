@@ -52,11 +52,11 @@ set (3RD_PARTY_LIBUV_LINK_NAME ${Libuv_LIBRARIES})
 include_directories(${3RD_PARTY_LIBUV_INC_DIR})
 
 # mingw
+unset(3RD_PARTY_LIBUV_LINK_DEPS)
 if (MINGW)
-    EchoWithColor(COLOR GREEN "-- MinGW: custom add lib ws2_32,psapi,userenv,iphlpapi ")
-    list(APPEND 3RD_PARTY_LIBUV_LINK_NAME ws2_32 psapi userenv iphlpapi)
+    EchoWithColor(COLOR GREEN "-- MinGW: custom add lib advapi32 iphlpapi psapi shell32 user32 userenv ws2_32.")
+    list(APPEND 3RD_PARTY_LIBUV_LINK_DEPS advapi32 iphlpapi psapi shell32 user32 userenv ws2_32)
 elseif (WIN32)
-    EchoWithColor(COLOR GREEN "-- Win32: custom add lib psapi,userenv,iphlpapi ")
-    list(APPEND 3RD_PARTY_LIBUV_LINK_NAME psapi userenv iphlpapi)
+    EchoWithColor(COLOR GREEN "-- Win32: custom add lib advapi32 iphlpapi psapi shell32 user32 userenv ws2_32")
+    list(APPEND 3RD_PARTY_LIBUV_LINK_DEPS advapi32 iphlpapi psapi shell32 user32 userenv ws2_32)
 endif()
-
