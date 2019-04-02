@@ -21,11 +21,6 @@ source_group_by_dir(PROJECT_TEST_SRC_LIST)
 # ============ test - coroutine test frame ============
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/test")
 
-find_package(Threads)
-if (CMAKE_USE_PTHREADS_INIT)
-    list(APPEND COMPILER_OPTION_EXTERN_CXX_LIBS pthread)
-endif ()
-
 add_compiler_define(_CRT_SECURE_NO_WARNINGS=1)
 
 add_executable(atbus_unit_test ${PROJECT_TEST_SRC_LIST})
