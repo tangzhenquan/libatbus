@@ -231,7 +231,9 @@ namespace atbus {
         typedef struct {
             typedef union {
                 conn_data_mem mem;
+#ifdef ATBUS_CHANNEL_SHM
                 conn_data_shm shm;
+#endif
                 conn_data_ios ios_fd;
             } shared_t;
             typedef int (*proc_fn_t)(node &n, connection &conn, time_t sec, time_t usec);
