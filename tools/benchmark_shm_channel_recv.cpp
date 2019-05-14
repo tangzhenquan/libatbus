@@ -16,7 +16,7 @@
 
 #include "common/string_oprs.h"
 
-#if defined(UTIL_CONFIG_COMPILER_CXX_LAMBDAS) && UTIL_CONFIG_COMPILER_CXX_LAMBDAS
+#if defined(UTIL_CONFIG_COMPILER_CXX_LAMBDAS) && UTIL_CONFIG_COMPILER_CXX_LAMBDAS && defined(ATBUS_CHANNEL_SHM)
 
 static inline char *get_pid_cur(int pid) {
     static std::vector<std::pair<int, char> > res;

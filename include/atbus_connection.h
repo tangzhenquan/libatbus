@@ -179,11 +179,13 @@ namespace atbus {
         static void iostream_on_written(channel::io_stream_channel *channel, channel::io_stream_connection *connection, int status,
                                         void *buffer, size_t s);
 
+#ifdef ATBUS_CHANNEL_SHM
         static int shm_proc_fn(node &n, connection &conn, time_t sec, time_t usec);
 
         static int shm_free_fn(node &n, connection &conn);
 
         static int shm_push_fn(connection &conn, const void *buffer, size_t s);
+#endif
 
         static int mem_proc_fn(node &n, connection &conn, time_t sec, time_t usec);
 
@@ -213,11 +215,13 @@ namespace atbus {
             size_t len;
         } conn_data_mem;
 
+#ifdef ATBUS_CHANNEL_SHM
         typedef struct {
             channel::shm_channel *channel;
             key_t shm_key;
             size_t len;
         } conn_data_shm;
+#endif
 
         typedef struct {
             channel::io_stream_channel *channel;

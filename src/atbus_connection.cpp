@@ -182,6 +182,7 @@ namespace atbus {
             owner_->on_new_connection(this);
             return res;
         } else if (0 == UTIL_STRFUNC_STRNCASE_CMP("shm", address_.scheme.c_str(), 3)) {
+#ifdef ATBUS_CHANNEL_SHM
             channel::shm_channel *shm_chann = NULL;
             key_t shm_key;
             util::string::str2int(shm_key, address_.host.c_str());
@@ -210,6 +211,9 @@ namespace atbus {
 
             owner_->on_new_connection(this);
             return res;
+#else
+            return EN_ATBUS_ERR_CHANNEL_NOT_SUPPORT;
+#endif
         } else {
             // Unix sock的listen的地址应该转为绝对地址，方便跨组连接时可以不依赖相对目录
             // Unix sock也必须共享Host
@@ -244,11 +248,12 @@ namespace atbus {
             if (res < 0) {
                 ATBUS_FUNC_NODE_ERROR(*owner_, get_binding(), this, res, owner_->get_iostream_channel()->error_code);
                 delete async_data;
-                return res;
             }
+
+            return res;
         }
 
-        return EN_ATBUS_ERR_SUCCESS;
+        return EN_ATBUS_ERR_CHANNEL_NOT_SUPPORT;
     }
 
     int connection::connect(const char *addr_str) {
@@ -304,6 +309,7 @@ namespace atbus {
             owner_->on_new_connection(this);
             return res;
         } else if (0 == UTIL_STRFUNC_STRNCASE_CMP("shm", address_.scheme.c_str(), 3)) {
+#ifdef ATBUS_CHANNEL_SHM
             channel::shm_channel *shm_chann = NULL;
             key_t shm_key;
             util::string::str2int(shm_key, address_.host.c_str());
@@ -341,6 +347,9 @@ namespace atbus {
 
             owner_->on_new_connection(this);
             return res;
+#else
+            return EN_ATBUS_ERR_CHANNEL_NOT_SUPPORT;
+#endif
         } else {
             // redirect loopback address to local address
             if (0 == UTIL_STRFUNC_STRNCASE_CMP("ipv4", address_.scheme.c_str(), 4) && "0.0.0.0" == address_.host) {
@@ -364,11 +373,12 @@ namespace atbus {
             if (res < 0) {
                 ATBUS_FUNC_NODE_ERROR(*owner_, get_binding(), this, res, owner_->get_iostream_channel()->error_code);
                 delete async_data;
-                return res;
             }
+
+            return res;
         }
 
-        return EN_ATBUS_ERR_SUCCESS;
+        return EN_ATBUS_ERR_CHANNEL_NOT_SUPPORT;
     }
 
     int connection::disconnect() {
@@ -642,6 +652,7 @@ namespace atbus {
         }
     }
 
+#ifdef ATBUS_CHANNEL_SHM
     int connection::shm_proc_fn(node &n, connection &conn, time_t /*sec*/, time_t /*usec*/) {
         int ret                             = 0;
         size_t left_times                   = n.get_conf().loop_times;
@@ -697,6 +708,7 @@ namespace atbus {
 
         return ret;
     }
+#endif
 
     int connection::mem_proc_fn(node &n, connection &conn, time_t /*sec*/, time_t /*usec*/) {
         int ret                             = 0;
