@@ -109,7 +109,7 @@ install:
           
       fi
       
-    - if [ "$TRAVIS_OS_NAME" == "osx" ] ; then brew upgrade cmake; brew install --HEAD libuv; fi
+    - if [ "$TRAVIS_OS_NAME" == "osx" ] ; then brew upgrade cmake; brew install libuv; fi
 
 before_script:
   - REPO_DIR=$PWD;

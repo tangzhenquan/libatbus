@@ -42,9 +42,24 @@ EchoWithColor(COLOR GREEN "-- Build Type: ${CMAKE_BUILD_TYPE}")
 ## 导入所有 macro 定义
 include_macro_recurse(${CMAKE_CURRENT_LIST_DIR})
 
+# ================ multi thread ================
+find_package(Threads)
+if (CMAKE_USE_PTHREADS_INIT)
+    add_definitions(-D_POSIX_MT_)
+    list(APPEND COMPILER_OPTION_EXTERN_CXX_LIBS pthread)
+    if (THREADS_PREFER_PTHREAD_FLAG)
+        add_definitions(${THREADS_PREFER_PTHREAD_FLAG})
+    endif ()
+endif ()
+
 ## 导入工程项目
-if ( "${CMAKE_CURRENT_LIST_DIR}/3rd_party/atframe_utils/repo" STREQUAL ${3RD_PARTY_ATFRAME_UTILS_PKG_DIR})
-    add_subdirectory(${3RD_PARTY_ATFRAME_UTILS_PKG_DIR})
+if(TARGET ${3RD_PARTY_ATFRAME_UTILS_LINK_NAME})
+    message(STATUS "${3RD_PARTY_ATFRAME_UTILS_LINK_NAME} already exist, use it directly.")
+else()
+    if (NOT EXISTS "${CMAKE_BINARY_DIR}/deps/${3RD_PARTY_ATFRAME_UTILS_LINK_NAME}")
+        file(MAKE_DIRECTORY "${CMAKE_BINARY_DIR}/deps/${3RD_PARTY_ATFRAME_UTILS_LINK_NAME}")
+    endif ()
+    add_subdirectory(${3RD_PARTY_ATFRAME_UTILS_PKG_DIR} "${CMAKE_BINARY_DIR}/deps/${3RD_PARTY_ATFRAME_UTILS_LINK_NAME}")
 endif()
 
 if (COMPILER_STRICT_EXTRA_CFLAGS)
