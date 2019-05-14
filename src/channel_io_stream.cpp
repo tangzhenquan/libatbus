@@ -1176,7 +1176,7 @@ namespace atbus {
                 return EN_ATBUS_ERR_SUCCESS;
             }
 
-            return EN_ATBUS_ERR_SCHEME;
+            return EN_ATBUS_ERR_CHANNEL_NOT_SUPPORT;
         }
 
         static void io_stream_all_connected_cb(uv_connect_t *req, int status) {
@@ -1434,7 +1434,7 @@ namespace atbus {
                 return EN_ATBUS_ERR_SUCCESS;
             }
 
-            return EN_ATBUS_ERR_SUCCESS;
+            return EN_ATBUS_ERR_CHANNEL_NOT_SUPPORT;
         }
 
         static int io_stream_disconnect_run(io_stream_connection *connection) {

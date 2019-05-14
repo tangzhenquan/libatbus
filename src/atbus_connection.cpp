@@ -252,8 +252,6 @@ namespace atbus {
 
             return res;
         }
-
-        return EN_ATBUS_ERR_CHANNEL_NOT_SUPPORT;
     }
 
     int connection::connect(const char *addr_str) {
@@ -377,8 +375,6 @@ namespace atbus {
 
             return res;
         }
-
-        return EN_ATBUS_ERR_CHANNEL_NOT_SUPPORT;
     }
 
     int connection::disconnect() {
