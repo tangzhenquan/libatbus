@@ -20,13 +20,15 @@ file(GLOB_RECURSE PROJECT_LIB_SRC_LIST
 source_group_by_dir(PROJECT_LIB_SRC_LIST)
 
 
-# ================ multi thread ================
-if ( NOT MSVC )
-    add_definitions(-D_POSIX_MT_)
-endif()
-
 # ============ libatbus - src ============
-add_library(${PROJECT_LIB_LINK} ${PROJECT_LIB_SRC_LIST})
+add_library(${PROJECT_LIB_LINK} STATIC ${PROJECT_LIB_SRC_LIST})
+set_target_properties(${PROJECT_LIB_LINK} PROPERTIES 
+    C_VISIBILITY_PRESET "default"
+    CXX_VISIBILITY_PRESET "default"
+)
+if (MSVC)
+    set_property(TARGET ${PROJECT_LIB_LINK} PROPERTY FOLDER "atframework")
+endif ()
 
 install(TARGETS ${PROJECT_LIB_LINK}
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}

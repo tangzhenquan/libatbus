@@ -25,7 +25,11 @@ foreach(TOOLS_SRC_FILE IN LISTS TOOLS_SRC_LIST)
         ${3RD_PARTY_ATFRAME_UTILS_LINK_NAME}
         ${3RD_PARTY_LIBUV_LINK_DEPS}
         ${COMPILER_OPTION_EXTERN_CXX_LIBS}
-	)
+    )
+    
+    if (MSVC)
+        set_property(TARGET "${TOOLS_SRC_BIN_NAME}" PROPERTY FOLDER "atframework/tools")
+    endif ()
 
 	install(TARGETS "${TOOLS_SRC_BIN_NAME}"
         RUNTIME DESTINATION tools

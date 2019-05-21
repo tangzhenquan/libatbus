@@ -33,4 +33,8 @@ target_link_libraries(atbus_unit_test
     ${COMPILER_OPTION_EXTERN_CXX_LIBS}
 )
 
+if (MSVC)
+    set_property(TARGET atbus_unit_test PROPERTY FOLDER "atframework/test")
+endif ()
+
 add_test(test atbus_unit_test)

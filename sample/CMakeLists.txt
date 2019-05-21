@@ -27,4 +27,8 @@ foreach(SAMPLE_SRC_FILE IN LISTS SAMPLE_SRC_LIST)
         ${3RD_PARTY_LIBUV_LINK_DEPS}
         ${COMPILER_OPTION_EXTERN_CXX_LIBS}
     )
+
+    if (MSVC)
+        set_property(TARGET ${SAMPLE_SRC_BIN_NAME} PROPERTY FOLDER "atframework/sample")
+    endif ()
 endforeach()
