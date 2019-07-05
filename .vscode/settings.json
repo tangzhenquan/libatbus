@@ -1,0 +1,13 @@
+{
+    "cmake.configureArgs": [
+        "-DPROJECT_ENABLE_UNITTEST=YES",
+        "-DPROJECT_ENABLE_SAMPLE=YES",
+        "-DPROJECT_ENABLE_TOOLS=YES",
+    ],
+    "cmake.configureEnvironment": {
+        "CPRINTF_MODE": "none"
+    },
+    "cmake.buildEnvironment": {
+        "CPRINTF_MODE": "none"
+    }
+}

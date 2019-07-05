@@ -12,6 +12,6 @@
 
 #pragma once
 
-#include "detail/libatbus_protocol.h"
+#include "detail/libatbus_protocol_generated.h"
 
 #endif /* LIBATBUS_PROTOCOL_H */

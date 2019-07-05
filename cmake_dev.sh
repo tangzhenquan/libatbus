@@ -5,12 +5,25 @@ SYS_NAME="$(basename $SYS_NAME)";
 CC=gcc;
 CXX=g++;
 CCACHE="$(which ccache)";
+DISTCC="";
+if [ ! -z "$DISTCC_HOSTS" ]; then
+    DISTCC="$(which distcc 2>/dev/null)";
+fi
+
+
+NINJA_BIN="$(which ninja 2>&1)";
+if [ $? -ne 0 ]; then
+    NINJA_BIN="$(which ninja-build 2>&1)";
+    if [ $? -ne 0 ]; then
+        NINJA_BIN="";
+    fi
+fi
 
 CMAKE_OPTIONS="";
 CMAKE_CLANG_TIDY="";
 CMAKE_CLANG_ANALYZER=0;
 CMAKE_CLANG_ANALYZER_PATH="";
-BUILD_DIR=$(echo "build_$SYS_NAME" | tr '[:upper:]' '[:lower:]');
+BUILD_DIR=$(echo "build_jobs_$SYS_NAME" | tr '[:upper:]' '[:lower:]');
 CMAKE_BUILD_TYPE=Debug;
 
 if [ ! -z "$MSYSTEM" ]; then
@@ -19,10 +32,13 @@ else
     CHECK_MSYS="";
 fi
 
-while getopts "ab:c:e:hlm:o:tus-" OPTION; do
+while getopts "ab:c:d:e:hlm:o:tus-" OPTION; do
     case $OPTION in
         a)
             echo "Ready to check ccc-analyzer and c++-analyzer, please do not use -c to change the compiler when using clang-analyzer.";
+            export CCC_CC="$CC" ;
+            export CCC_CXX="$CXX" ;
+
             CC=$(which ccc-analyzer);
             CXX=$(which c++-analyzer);
             if [ 0 -ne $? ]; then
@@ -60,9 +76,20 @@ while getopts "ab:c:e:hlm:o:tus-" OPTION; do
             CMAKE_BUILD_TYPE="$OPTARG";
         ;;
         c)
-            CC="$OPTARG";
-            CXX="${CC/%clang/clang++}";
-            CXX="${CXX/%gcc/g++}";
+            if [ $CMAKE_CLANG_ANALYZER -ne 0 ]; then
+                CCC_CC="$OPTARG";
+                CCC_CXX="${CCC_CC/%clang/clang++}";
+                CCC_CXX="${CCC_CXX/%gcc/g++}";
+                export CCC_CC;
+                export CCC_CXX;
+            else
+                CC="$OPTARG";
+                CXX="${CC/%clang/clang++}";
+                CXX="${CXX/%gcc/g++}";
+            fi
+        ;;
+        d)
+            DISTCC="$OPTARG";
         ;;
         e)
             CCACHE="$OPTARG";
@@ -72,6 +99,7 @@ while getopts "ab:c:e:hlm:o:tus-" OPTION; do
             echo "options:";
             echo "-a                            using clang-analyzer.";
             echo "-c <compiler>                 compiler toolchains(gcc, clang or others).";
+            echo "-d <distcc path>              try to use specify distcc to speed up building.";
             echo "-e <ccache path>              try to use specify ccache to speed up building.";
             echo "-h                            help message.";
             echo "-m [mbedtls root]             set root of mbedtls.";
@@ -123,14 +151,18 @@ SCRIPT_DIR="$(cd $(dirname $0) && pwd)";
 mkdir -p "$SCRIPT_DIR/$BUILD_DIR";
 cd "$SCRIPT_DIR/$BUILD_DIR";
 
-if [ ! -z "$CCACHE" ] && [ "$CCACHE" != "disable" ] && [ "$CCACHE" != "disabled" ] && [ "$CCACHE" != "no" ] && [ "$CCACHE" != "false" ] && [ -e "$CCACHE" ]; then
+if [ ! -z "$DISTCC" ] && [ "$DISTCC" != "disable" ] && [ "$DISTCC" != "disabled" ] && [ "$DISTCC" != "no" ] && [ "$DISTCC" != "false" ] && [ -e "$DISTCC" ]; then
+    CMAKE_OPTIONS="$CMAKE_OPTIONS -DCMAKE_C_COMPILER_LAUNCHER=$DISTCC -DCMAKE_CXX_COMPILER_LAUNCHER=$DISTCC -DCMAKE_C_COMPILER=$CC -DCMAKE_CXX_COMPILER=$CXX";
+elif [ ! -z "$CCACHE" ] && [ "$CCACHE" != "disable" ] && [ "$CCACHE" != "disabled" ] && [ "$CCACHE" != "no" ] && [ "$CCACHE" != "false" ] && [ -e "$CCACHE" ]; then
     #CMAKE_OPTIONS="$CMAKE_OPTIONS -DCMAKE_C_COMPILER=$CCACHE -DCMAKE_CXX_COMPILER=$CCACHE -DCMAKE_C_COMPILER_ARG1=$CC -DCMAKE_CXX_COMPILER_ARG1=$CXX";
     CMAKE_OPTIONS="$CMAKE_OPTIONS -DCMAKE_C_COMPILER_LAUNCHER=$CCACHE -DCMAKE_CXX_COMPILER_LAUNCHER=$CCACHE -DCMAKE_C_COMPILER=$CC -DCMAKE_CXX_COMPILER=$CXX";
 else
     CMAKE_OPTIONS="$CMAKE_OPTIONS -DCMAKE_C_COMPILER=$CC -DCMAKE_CXX_COMPILER=$CXX";
 fi
 
-if [ "$CHECK_MSYS" == "mingw" ]; then
+if [ "x$NINJA_BIN" != "x" ]; then
+    cmake .. -G Ninja -DCMAKE_BUILD_TYPE=$CMAKE_BUILD_TYPE $CMAKE_OPTIONS "$@";
+elif [ "$CHECK_MSYS" == "mingw" ]; then
     cmake .. -G "MSYS Makefiles" -DCMAKE_BUILD_TYPE=$CMAKE_BUILD_TYPE $CMAKE_OPTIONS "$@";
 else
     cmake .. -DCMAKE_BUILD_TYPE=$CMAKE_BUILD_TYPE $CMAKE_OPTIONS "$@";
@@ -155,7 +187,7 @@ if [ 1 -eq $CMAKE_CLANG_ANALYZER ]; then
     if [ -z "$CMAKE_CLANG_ANALYZER_PATH" ]; then
         echo "cd '$SCRIPT_DIR/$BUILD_DIR' && scan-build -o report --html-title='atsf4g-co static analysis' $CMAKE_CLANG_ANALYZER_OPTIONS make -j4";
     else
-        echo "cd '$SCRIPT_DIR/$BUILD_DIR' && env PATH=\"\$PATH:$CMAKE_CLANG_ANALYZER_PATH\" scan-build -o report --html-title='libmt_core static analysis' $CMAKE_CLANG_ANALYZER_OPTIONS make -j4";
+        echo "cd '$SCRIPT_DIR/$BUILD_DIR' && env PATH=\"\$PATH:$CMAKE_CLANG_ANALYZER_PATH\" scan-build -o report --html-title='libatbus static analysis' $CMAKE_CLANG_ANALYZER_OPTIONS make -j4";
     fi
     echo "Now, you can run those code above to get a static analysis report";
     echo "You can get help and binary of clang-analyzer and scan-build at http://clang-analyzer.llvm.org/scan-build.html"

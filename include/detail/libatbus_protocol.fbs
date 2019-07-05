@@ -1,0 +1,89 @@
+
+namespace atbus.protocol;
+
+// --gen-mutable --gen-name-strings --no-includes --no-prefix --natural-utf8 --allow-non-utf8
+
+enum ATBUS_PROTOCOL_CONST : byte { ATBUS_PROTOCOL_VERSION = 2 }
+
+enum ATBUS_FORWARD_DATA_FLAG_TYPE : uint32 { ATBUS_FORWARD_DATA_FLAG_REQUIRE_RSP = 1 }
+
+table custom_command_argv {
+    arg: [ubyte]    (id: 0);
+}
+
+table custom_command_data {
+    from    : uint64                (id: 0);
+    commands: [custom_command_argv] (id: 1);
+}
+
+table forward_data {
+    from    : uint64   (id: 0);
+    to      : uint64   (id: 1);
+    router  : [uint64] (id: 2);
+    content : [ubyte]  (id: 3);
+    flags   : uint32   (id: 4);
+}
+
+table channel_data {
+    address: string (id: 0); // ID: 0
+}
+
+table node_data {
+    bus_id              : uint64        (id: 0); // ID: 0
+    overwrite           : bool          (id: 1); // ID: 1
+    flags               : bool          (id: 2); // ID: 2
+    children_id_mask    : uint64        (id: 3); // ID: 3
+    children_id_prefix  : uint64        (id: 4); // ID: 4(0 for using bus_id)
+    children            : [node_data]   (id: 5); // ID: 5
+}
+
+table node_tree {
+    nodes: [node_data] (id: 0);
+}
+
+table ping_data {
+    time_point: int64 (id: 0); // ID: 0
+}
+
+table register_data {
+    bus_id              : uint64            (id: 0); // ID: 0
+    pid                 : int32             (id: 1); // ID: 1
+    hostname            : string            (id: 2); // ID: 2
+    channels            : [channel_data]    (id: 3); // ID: 3
+    children_id_mask    : uint32            (id: 4); // ID: 4
+    children_id_prefix  : uint64            (id: 5); // ID: 5(0 for using bus_id)
+    flags               : uint32            (id: 6); // ID: 6
+}
+
+table connection_data {
+    address: channel_data (id: 0); // ID: 0
+}
+
+union msg_body {
+    // invalid_body        : string              (id: 0);
+    custom_command_req  : custom_command_data = 1,
+    custom_command_rsp  : custom_command_data = 2,
+    data_transform_req  : forward_data        = 3,
+    data_transform_rsp  : forward_data        = 4,
+    node_sync           : node_tree           = 6,
+    node_register_req   : register_data       = 7,
+    node_register_rsp   : register_data       = 8,
+    node_connect_sync   : connection_data     = 10,
+    node_ping_req       : ping_data           = 11,
+    node_pong_rsp       : ping_data           = 12,
+}
+
+table msg_head {
+    version     : int32     (id: 0);
+    type        : int32     (id: 1);
+    ret         : int32     (id: 2);
+    sequence    : uint64    (id: 3);
+    src_bus_id  : uint64    (id: 4);
+}
+
+table msg {
+    head: msg_head  (id: 0);
+    body: msg_body  (id: 2); // id: 1 is implicitly added for body case by flatc
+}
+
+root_type msg;
