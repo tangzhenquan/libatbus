@@ -7,13 +7,13 @@
 #include "atbus_msg_handler.h"
 #include "atbus_node.h"
 
-#include "detail/libatbus_protocol.h"
+#include "libatbus_protocol.h"
 
 namespace atbus {
 
     namespace detail {
-        const char *get_cmd_name(ATBUS_PROTOCOL_CMD cmd) {
-            static std::string fn_names[ATBUS_CMD_MAX];
+        const char *get_cmd_name(::atbus::protocol::msg_body cmd) {
+            static std::string fn_names[::atbus::protocol::msg_body_MAX + 1];
 
 #define ATBUS_CMD_REG_NAME(x) fn_names[x] = #x
 
@@ -53,7 +53,7 @@ namespace atbus {
         }
     } // namespace detail
 
-    int msg_handler::dispatch_msg(node &n, connection *conn, protocol::msg *m, int status, int errcode) {
+    int msg_handler::dispatch_msg(node &n, connection *conn, const ::atbus::protocol::msg *m, int status, int errcode) {
         static handler_fn_t fns[ATBUS_CMD_MAX] = {NULL};
         if (NULL == fns[ATBUS_CMD_DATA_TRANSFORM_REQ]) {
             fns[ATBUS_CMD_DATA_TRANSFORM_REQ] = msg_handler::on_recv_data_transfer_req;
@@ -91,7 +91,7 @@ namespace atbus {
     }
 
     int msg_handler::send_ping(node &n, connection &conn, uint32_t seq) {
-        protocol::msg m;
+        ::atbus::protocol::msg m;
         m.init(n.get_id(), ATBUS_CMD_NODE_PING, 0, 0, seq);
         protocol::ping_data *ping = m.body.make_body(m.body.ping);
         if (NULL == ping) {
@@ -109,7 +109,7 @@ namespace atbus {
             return EN_ATBUS_ERR_PARAMS;
         }
 
-        protocol::msg m;
+        ::atbus::protocol::msg m;
         m.init(n.get_id(), static_cast<ATBUS_PROTOCOL_CMD>(msg_id), 0, ret_code, 0 == seq ? n.alloc_msg_seq() : seq);
 
         protocol::reg_data *reg = m.body.make_body(m.body.reg);
@@ -132,7 +132,7 @@ namespace atbus {
         return send_msg(n, conn, m);
     }
 
-    int msg_handler::send_transfer_rsp(node &n, protocol::msg &m, int32_t ret_code) {
+    int msg_handler::send_transfer_rsp(node &n, const ::atbus::protocol::msg &m, int32_t ret_code) {
         m.init(n.get_id(), ATBUS_CMD_DATA_TRANSFORM_RSP, m.head.type, ret_code, m.head.sequence);
         node::bus_id_t to_id = m.body.forward->to;
         m.body.forward->to   = m.body.forward->from;
@@ -146,7 +146,7 @@ namespace atbus {
         return ret;
     }
 
-    int msg_handler::send_msg(node &n, connection &conn, const protocol::msg &m) {
+    int msg_handler::send_msg(node &n, connection &conn, const ::atbus::protocol::msg &m) {
         std::stringstream ss;
         msgpack::pack(ss, m);
         std::string packed_buffer = ss.str();
@@ -163,7 +163,8 @@ namespace atbus {
         ;
     }
 
-    int msg_handler::on_recv_data_transfer_req(node &n, connection *conn, protocol::msg &m, int /*status*/, int /*errcode*/) {
+    int msg_handler::on_recv_data_transfer_req(node &n, connection *conn, const ::atbus::protocol::msg &m, int /*status*/,
+                                               int /*errcode*/) {
         if (NULL == m.body.forward || NULL == conn) {
             ATBUS_FUNC_NODE_ERROR(n, NULL == conn ? NULL : conn->get_binding(), conn, EN_ATBUS_ERR_BAD_DATA, 0);
             return EN_ATBUS_ERR_BAD_DATA;
@@ -196,7 +197,7 @@ namespace atbus {
             // 如果来源和目标消息都来自于子节点，则通知建立直连
             if (NULL != to_ep && to_ep->get_flag(endpoint::flag_t::HAS_LISTEN_FD) && n.is_child_node(direct_from_bus_id) &&
                 n.is_child_node(to_ep->get_id())) {
-                protocol::msg conn_syn_m;
+                ::atbus::protocol::msg conn_syn_m;
                 conn_syn_m.init(n.get_id(), ATBUS_CMD_NODE_CONN_SYN, 0, 0, n.alloc_msg_seq());
                 protocol::conn_data *new_conn = conn_syn_m.body.make_body(conn_syn_m.body.conn);
                 if (NULL == new_conn) {
@@ -254,7 +255,8 @@ namespace atbus {
         return res;
     }
 
-    int msg_handler::on_recv_data_transfer_rsp(node &n, connection *conn, protocol::msg &m, int /*status*/, int /*errcode*/) {
+    int msg_handler::on_recv_data_transfer_rsp(node &n, connection *conn, const ::atbus::protocol::msg &m, int /*status*/,
+                                               int /*errcode*/) {
         if (NULL == m.body.forward || NULL == conn) {
             ATBUS_FUNC_NODE_ERROR(n, NULL == conn ? NULL : conn->get_binding(), conn, EN_ATBUS_ERR_BAD_DATA, 0);
             return EN_ATBUS_ERR_BAD_DATA;
@@ -287,7 +289,7 @@ namespace atbus {
         return ret;
     }
 
-    int msg_handler::on_recv_custom_cmd_req(node &n, connection *conn, protocol::msg &m, int /*status*/, int /*errcode*/) {
+    int msg_handler::on_recv_custom_cmd_req(node &n, connection *conn, const ::atbus::protocol::msg &m, int /*status*/, int /*errcode*/) {
         if (NULL == m.body.custom) {
             ATBUS_FUNC_NODE_ERROR(n, NULL == conn ? NULL : conn->get_binding(), conn, EN_ATBUS_ERR_BAD_DATA, 0);
             return EN_ATBUS_ERR_BAD_DATA;
@@ -303,7 +305,7 @@ namespace atbus {
         int ret = n.on_custom_cmd(NULL == conn ? NULL : conn->get_binding(), conn, m.body.custom->from, cmd_args, rsp_data);
         // shm & mem ignore response from other node
         if ((NULL != conn && conn->is_running() && conn->check_flag(connection::flag_t::REG_FD)) || n.get_id() == m.body.custom->from) {
-            atbus::protocol::msg rsp_msg;
+            atbus:: ::atbus::protocol::msg rsp_msg;
             rsp_msg.init(n.get_id(), ATBUS_CMD_CUSTOM_CMD_RSP, 0, ret, m.head.sequence);
 
             if (NULL == rsp_msg.body.make_body(rsp_msg.body.custom)) {
@@ -331,7 +333,7 @@ namespace atbus {
         return ret;
     }
 
-    int msg_handler::on_recv_custom_cmd_rsp(node &n, connection *conn, protocol::msg &m, int /*status*/, int /*errcode*/) {
+    int msg_handler::on_recv_custom_cmd_rsp(node &n, connection *conn, const ::atbus::protocol::msg &m, int /*status*/, int /*errcode*/) {
         if (NULL == m.body.custom) {
             ATBUS_FUNC_NODE_ERROR(n, NULL == conn ? NULL : conn->get_binding(), conn, EN_ATBUS_ERR_BAD_DATA, 0);
             return EN_ATBUS_ERR_BAD_DATA;
@@ -346,15 +348,15 @@ namespace atbus {
         return n.on_custom_rsp(NULL == conn ? NULL : conn->get_binding(), conn, m.body.custom->from, cmd_args, m.head.sequence);
     }
 
-    int msg_handler::on_recv_node_sync_req(node &, connection *, protocol::msg &, int /*status*/, int /*errcode*/) {
+    int msg_handler::on_recv_node_sync_req(node &, connection *, const ::atbus::protocol::msg &, int /*status*/, int /*errcode*/) {
         return EN_ATBUS_ERR_SUCCESS;
     }
 
-    int msg_handler::on_recv_node_sync_rsp(node &, connection *, protocol::msg &, int /*status*/, int /*errcode*/) {
+    int msg_handler::on_recv_node_sync_rsp(node &, connection *, const ::atbus::protocol::msg &, int /*status*/, int /*errcode*/) {
         return EN_ATBUS_ERR_SUCCESS;
     }
 
-    int msg_handler::on_recv_node_reg_req(node &n, connection *conn, protocol::msg &m, int /*status*/, int errcode) {
+    int msg_handler::on_recv_node_reg_req(node &n, connection *conn, const ::atbus::protocol::msg &m, int /*status*/, int errcode) {
         endpoint *ep     = NULL;
         int32_t res      = EN_ATBUS_ERR_SUCCESS;
         int32_t rsp_code = EN_ATBUS_ERR_SUCCESS;
@@ -520,7 +522,7 @@ namespace atbus {
         }
     }
 
-    int msg_handler::on_recv_node_reg_rsp(node &n, connection *conn, protocol::msg &m, int /*status*/, int errcode) {
+    int msg_handler::on_recv_node_reg_rsp(node &n, connection *conn, const ::atbus::protocol::msg &m, int /*status*/, int errcode) {
         if (NULL == conn) {
             return EN_ATBUS_ERR_BAD_DATA;
         }
@@ -567,7 +569,7 @@ namespace atbus {
         return EN_ATBUS_ERR_SUCCESS;
     }
 
-    int msg_handler::on_recv_node_conn_syn(node &n, connection *conn, protocol::msg &m, int /*status*/, int /*errcode*/) {
+    int msg_handler::on_recv_node_conn_syn(node &n, connection *conn, const ::atbus::protocol::msg &m, int /*status*/, int /*errcode*/) {
         if (NULL == m.body.conn || NULL == conn) {
             ATBUS_FUNC_NODE_ERROR(n, NULL == conn ? NULL : conn->get_binding(), conn, EN_ATBUS_ERR_BAD_DATA, 0);
             return EN_ATBUS_ERR_BAD_DATA;
@@ -581,7 +583,7 @@ namespace atbus {
         return EN_ATBUS_ERR_SUCCESS;
     }
 
-    int msg_handler::on_recv_node_ping(node &n, connection *conn, protocol::msg &m, int /*status*/, int /*errcode*/) {
+    int msg_handler::on_recv_node_ping(node &n, connection *conn, const ::atbus::protocol::msg &m, int /*status*/, int /*errcode*/) {
         // 复制sequence
         m.init(n.get_id(), ATBUS_CMD_NODE_PONG, 0, 0, m.head.sequence);
 
@@ -599,7 +601,7 @@ namespace atbus {
         return EN_ATBUS_ERR_SUCCESS;
     }
 
-    int msg_handler::on_recv_node_pong(node &n, connection *conn, protocol::msg &m, int /*status*/, int /*errcode*/) {
+    int msg_handler::on_recv_node_pong(node &n, connection *conn, const ::atbus::protocol::msg &m, int /*status*/, int /*errcode*/) {
 
         if (NULL == m.body.ping) {
             return EN_ATBUS_ERR_BAD_DATA;

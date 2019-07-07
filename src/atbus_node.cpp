@@ -35,7 +35,7 @@
 #include "atbus_msg_handler.h"
 #include "atbus_node.h"
 
-#include "detail/libatbus_protocol.h"
+#include "libatbus_protocol.h"
 
 namespace atbus {
     node::flag_guard_t::flag_guard_t(const node *o, flag_t::type f) : owner(const_cast<node *>(o)), flag(f), holder(false) {
@@ -573,10 +573,10 @@ namespace atbus {
             return EN_ATBUS_ERR_BUFF_LIMIT;
         }
 
-        atbus::protocol::msg m;
+        ::atbus::msg_t m;
         if (tid == get_id()) {
             // 发送给自己的数据直接回调数据接口
-            m.init(tid, ATBUS_CMD_DATA_TRANSFORM_REQ, type, 0, alloc_msg_seq());
+            m.init(tid, ::atbus::protocol::msg_body_data_transform_req, type, 0, alloc_msg_seq());
 
             // fake body
             protocol::forward_data data;
@@ -586,7 +586,7 @@ namespace atbus {
             m.body.forward->content.ptr  = buffer;
             m.body.forward->content.size = s;
             if (require_rsp) {
-                m.body.forward->set_flag(atbus::protocol::forward_data::FLAG_REQUIRE_RSP);
+                m.body.forward->set_flag(atbus::protocol::ATBUS_FORWARD_DATA_FLAG_TYPE_REQUIRE_RSP);
             }
 
             int ret = send_data_msg(tid, m);
@@ -597,7 +597,7 @@ namespace atbus {
             return ret;
         }
 
-        m.init(get_id(), ATBUS_CMD_DATA_TRANSFORM_REQ, type, 0, alloc_msg_seq());
+        m.init(get_id(), ::atbus::protocol::msg_body_data_transform_req, type, 0, alloc_msg_seq());
 
         if (NULL == m.body.make_body(m.body.forward)) {
             return EN_ATBUS_ERR_MALLOC;
@@ -608,15 +608,15 @@ namespace atbus {
         m.body.forward->content.ptr  = buffer;
         m.body.forward->content.size = s;
         if (require_rsp) {
-            m.body.forward->set_flag(atbus::protocol::forward_data::FLAG_REQUIRE_RSP);
+            m.body.forward->set_flag(atbus::protocol::ATBUS_FORWARD_DATA_FLAG_TYPE_REQUIRE_RSP);
         }
 
         return send_data_msg(tid, m);
     }
 
-    int node::send_data_msg(bus_id_t tid, atbus::protocol::msg &mb) { return send_data_msg(tid, mb, NULL, NULL); }
+    int node::send_data_msg(bus_id_t tid, ::atbus::msg_t &mb) { return send_data_msg(tid, mb, NULL, NULL); }
 
-    int node::send_data_msg(bus_id_t tid, atbus::protocol::msg &mb, endpoint **ep_out, connection **conn_out) {
+    int node::send_data_msg(bus_id_t tid, ::atbus::msg_t &mb, endpoint **ep_out, connection **conn_out) {
         return send_msg(tid, mb, &endpoint::get_data_connection, ep_out, conn_out);
     }
 
@@ -634,9 +634,9 @@ namespace atbus {
             return EN_ATBUS_ERR_BUFF_LIMIT;
         }
 
-        atbus::protocol::msg m;
+        ::atbus::msg_t m;
         uint64_t msg_seq = alloc_msg_seq();
-        m.init(get_id(), ATBUS_CMD_CUSTOM_CMD_REQ, 0, 0, msg_seq);
+        m.init(get_id(), ::atbus::protocol::msg_body_custom_command_req, 0, 0, msg_seq);
 
         if (NULL == m.body.make_body(m.body.custom)) {
             return EN_ATBUS_ERR_MALLOC;
@@ -661,20 +661,20 @@ namespace atbus {
         return ret;
     }
 
-    int node::send_ctrl_msg(bus_id_t tid, atbus::protocol::msg &mb) { return send_ctrl_msg(tid, mb, NULL, NULL); }
+    int node::send_ctrl_msg(bus_id_t tid, ::atbus::msg_t &mb) { return send_ctrl_msg(tid, mb, NULL, NULL); }
 
-    int node::send_ctrl_msg(bus_id_t tid, atbus::protocol::msg &mb, endpoint **ep_out, connection **conn_out) {
+    int node::send_ctrl_msg(bus_id_t tid, ::atbus::msg_t &mb, endpoint **ep_out, connection **conn_out) {
         return send_msg(tid, mb, &endpoint::get_ctrl_connection, ep_out, conn_out);
     }
 
-    int node::send_msg(bus_id_t tid, atbus::protocol::msg &m, endpoint::get_connection_fn_t fn, endpoint **ep_out, connection **conn_out) {
+    int node::send_msg(bus_id_t tid, ::atbus::msg_t &m, endpoint::get_connection_fn_t fn, endpoint **ep_out, connection **conn_out) {
         if (state_t::CREATED == state_) {
             return EN_ATBUS_ERR_NOT_INITED;
         }
 
         if (tid == get_id()) {
-            if (!((ATBUS_CMD_DATA_TRANSFORM_REQ == m.head.cmd && m.body.forward) ||
-                  (ATBUS_CMD_CUSTOM_CMD_REQ == m.head.cmd && m.body.custom))) {
+            if (!((::atbus::protocol::msg_body_data_transform_req == m.head.cmd && m.body.forward) ||
+                  (::atbus::protocol::msg_body_custom_command_req == m.head.cmd && m.body.custom))) {
                 ATBUS_FUNC_NODE_ERROR(*this, get_self_endpoint(), NULL, EN_ATBUS_ERR_ATNODE_INVALID_ID, 0);
             }
 
@@ -1182,7 +1182,7 @@ namespace atbus {
 
     time_t node::get_timer_usec() const { return event_timer_.usec; }
 
-    void node::on_recv(connection *conn, protocol::msg *m, int status, int errcode) {
+    void node::on_recv(connection *conn, const ::atbus::msg_t *m, int status, int errcode) {
         if (status < 0 || errcode < 0) {
             ATBUS_FUNC_NODE_ERROR(*this, NULL, conn, status, errcode);
 
@@ -1216,7 +1216,7 @@ namespace atbus {
             endpoint *ep = conn->get_binding();
             if (NULL != ep) {
                 // 如果消息为回发转发消息失败，并且回发成功，则是为正确流程，不能标记错误
-                if (m->head.cmd != ATBUS_CMD_DATA_TRANSFORM_RSP && m->head.ret < 0) {
+                if (m->head.cmd != ::atbus::protocol::msg_body_data_transform_rsp && m->head.ret < 0) {
                     add_endpoint_fault(*ep);
                 } else {
                     ep->clear_stat_fault();
@@ -1225,7 +1225,7 @@ namespace atbus {
         }
     }
 
-    void node::on_recv_data(const endpoint *ep, connection *conn, const protocol::msg &m, const void *buffer, size_t s) const {
+    void node::on_recv_data(const endpoint *ep, connection *conn, const ::atbus::msg_t &m, const void *buffer, size_t s) const {
         if (NULL == ep && NULL != conn) {
             ep = conn->get_binding();
         }
@@ -1236,7 +1236,7 @@ namespace atbus {
         }
     }
 
-    void node::on_send_data_failed(const endpoint *ep, const connection *conn, const protocol::msg *m) {
+    void node::on_send_data_failed(const endpoint *ep, const connection *conn, const ::atbus::msg_t *m) {
         if (event_msg_.on_send_data_failed) {
             flag_guard_t fgd(this, flag_t::EN_FT_IN_CALLBACK);
             event_msg_.on_send_data_failed(std::cref(*this), ep, conn, m);
@@ -1285,7 +1285,7 @@ namespace atbus {
         // 如果ID有效，且是IO流连接，则发送注册协议
         // ID为0则是临时节点，不需要注册
         if (get_id() && conn->check_flag(connection::flag_t::REG_FD) && false == conn->check_flag(connection::flag_t::LISTEN_FD)) {
-            int ret = msg_handler::send_reg(ATBUS_CMD_NODE_REG_REQ, *this, *conn, 0, 0);
+            int ret = msg_handler::send_reg(::atbus::protocol::msg_body_node_register_req, *this, *conn, 0, 0);
             if (ret < 0) {
                 ATBUS_FUNC_NODE_ERROR(*this, NULL, conn, ret, 0);
                 conn->reset();
@@ -1396,7 +1396,7 @@ namespace atbus {
         typedef std::vector<unsigned char> bin_data_block_t;
         while (loop_left-- > 0 && !self_data_msgs_.empty()) {
             bin_data_block_t &bin_data = self_data_msgs_.front();
-            atbus::protocol::msg m;
+            ::atbus::msg_t m;
             // copy head
             memcpy(&m.head, &bin_data[0], msg_head_len);
 
@@ -1413,8 +1413,8 @@ namespace atbus {
             ++ret;
 
             // fake response
-            if (NULL != m.body.forward && m.body.forward->check_flag(atbus::protocol::forward_data::FLAG_REQUIRE_RSP)) {
-                m.init(get_id(), ATBUS_CMD_DATA_TRANSFORM_RSP, m.head.type, 0, m.head.sequence);
+            if (NULL != m.body.forward && m.body.forward->check_flag(atbus::protocol::ATBUS_FORWARD_DATA_FLAG_TYPE_REQUIRE_RSP)) {
+                m.init(get_id(), ::atbus::protocol::msg_body_data_transform_rsp, m.head.type, 0, m.head.sequence);
                 on_send_data_failed(get_self_endpoint(), NULL, &m);
             }
 
@@ -1427,7 +1427,7 @@ namespace atbus {
 
         while (loop_left-- > 0 && !self_cmd_msgs_.empty()) {
             std::vector<bin_data_block_t> &bin_datas = self_cmd_msgs_.front();
-            atbus::protocol::msg m;
+            ::atbus::msg_t m;
             // fake body
             protocol::custom_command_data data;
             m.body.custom       = &data;

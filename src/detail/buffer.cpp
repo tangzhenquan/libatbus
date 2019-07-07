@@ -7,6 +7,7 @@
 #include <cstring>
 
 #include "detail/buffer.h"
+#include "detail/libatbus_config.h"
 #include "detail/libatbus_error.h"
 
 #if (defined(__cplusplus) && __cplusplus >= 201103L) || (defined(_MSC_VER) && _MSC_VER >= 1900)
@@ -170,12 +171,12 @@ namespace atbus {
         }
 
         size_t buffer_block::padding_size(size_t s) {
-            size_t pl = s % sizeof(size_t);
+            size_t pl = s % ATBUS_MACRO_DATA_ALIGN_SIZE;
             if (0 == pl) {
                 return s;
             }
 
-            return s + sizeof(size_t) - pl;
+            return s + ATBUS_MACRO_DATA_ALIGN_SIZE - pl;
         }
 
         size_t buffer_block::head_size(size_t) { return padding_size(sizeof(buffer_block)); }

@@ -91,10 +91,12 @@ namespace atbus {
 
         struct evt_msg_t {
             // 接收消息事件回调 => 参数列表: 发起节点，来源对端，来源连接，消息体，数据地址，数据长度
-            typedef std::function<int(const node &, const endpoint *, const connection *, const protocol::msg &, const void *, size_t)>
+            typedef std::function<int(const node &, const endpoint *, const connection *, const ::atbus::protocol::msg &, const void *,
+                                      size_t)>
                 on_recv_msg_fn_t;
             // 发送或消息失败事件回调 => 参数列表: 发起节点，来源对端，来源连接，消息体
-            typedef std::function<int(const node &, const endpoint *, const connection *, const protocol::msg *m)> on_send_data_failed_fn_t;
+            typedef std::function<int(const node &, const endpoint *, const connection *, const ::atbus::protocol::msg *m)>
+                on_send_data_failed_fn_t;
             // 错误回调 => 参数列表: 发起节点，来源对端，来源连接，状态码（通常来自libuv），错误码
             typedef std::function<int(const node &, const endpoint *, const connection *, int, int)> on_error_fn_t;
             // 新对端注册事件回调 => 参数列表: 发起节点，来源对端，来源连接，返回码（通常来自libuv）
@@ -248,7 +250,7 @@ namespace atbus {
          * @param mb 消息构建器
          * @return 0或错误码
          */
-        int send_data_msg(bus_id_t tid, atbus::protocol::msg &mb);
+        int send_data_msg(bus_id_t tid, ::atbus::protocol::msg &mb);
 
         /**
          * @brief 发送数据消息
@@ -258,7 +260,7 @@ namespace atbus {
          * @param conn_out 如果发送成功，导出发送连接
          * @return 0或错误码
          */
-        int send_data_msg(bus_id_t tid, atbus::protocol::msg &mb, endpoint **ep_out, connection **conn_out);
+        int send_data_msg(bus_id_t tid, ::atbus::protocol::msg &mb, endpoint **ep_out, connection **conn_out);
 
         /**
          * @brief 发送自定义命令消息
@@ -277,7 +279,7 @@ namespace atbus {
          * @param mb 消息构建器
          * @return 0或错误码
          */
-        int send_ctrl_msg(bus_id_t tid, atbus::protocol::msg &mb);
+        int send_ctrl_msg(bus_id_t tid, ::atbus::protocol::msg &mb);
 
 
         /**
@@ -288,7 +290,7 @@ namespace atbus {
          * @param conn_out 如果发送成功，导出发送连接
          * @return 0或错误码
          */
-        int send_ctrl_msg(bus_id_t tid, atbus::protocol::msg &mb, endpoint **ep_out, connection **conn_out);
+        int send_ctrl_msg(bus_id_t tid, ::atbus::protocol::msg &mb, endpoint **ep_out, connection **conn_out);
 
         /**
          * @brief 发送消息
@@ -299,7 +301,7 @@ namespace atbus {
          * @param conn_out 如果发送成功，导出发送连接
          * @return 0或错误码
          */
-        int send_msg(bus_id_t tid, atbus::protocol::msg &mb, endpoint::get_connection_fn_t fn, endpoint **ep_out, connection **conn_out);
+        int send_msg(bus_id_t tid, ::atbus::protocol::msg &mb, endpoint::get_connection_fn_t fn, endpoint **ep_out, connection **conn_out);
 
         /**
          * @brief 获取远程发送目标信息
@@ -395,11 +397,11 @@ namespace atbus {
 
         time_t get_timer_usec() const;
 
-        void on_recv(connection *conn, protocol::msg *m, int status, int errcode);
+        void on_recv(connection *conn, const ::atbus::protocol::msg *m, int status, int errcode);
 
-        void on_recv_data(const endpoint *ep, connection *conn, const protocol::msg &m, const void *buffer, size_t s) const;
+        void on_recv_data(const endpoint *ep, connection *conn, const ::atbus::protocol::msg &m, const void *buffer, size_t s) const;
 
-        void on_send_data_failed(const endpoint *, const connection *, const protocol::msg *m);
+        void on_send_data_failed(const endpoint *, const connection *, const ::atbus::protocol::msg *m);
 
         int on_error(const char *file_path, size_t line, const endpoint *, const connection *, int, int);
         int on_disconnect(const connection *);
@@ -579,8 +581,8 @@ namespace atbus {
 
         // 调试辅助函数
     public:
-        void (*on_debug)(const char *file_path, size_t line, const node &, const endpoint *, const connection *, const protocol::msg *,
-                         const char *fmt, ...);
+        void (*on_debug)(const char *file_path, size_t line, const node &, const endpoint *, const connection *,
+                         const ::atbus::protocol::msg *, const char *fmt, ...);
     };
 } // namespace atbus
 

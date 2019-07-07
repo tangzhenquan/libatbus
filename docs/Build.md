@@ -5,23 +5,25 @@
 ------
 
 + 支持c++0x或c++11的编译器(为了代码尽量简洁,特别是少做无意义的平台兼容，依赖部分 C11和C++11的功能，所以不支持过低版本的编译器)
+
 > + GCC: 4.4 及以上（建议gcc 4.8.1及以上）
 > + Clang: 3.0 及以上 （建议 clang 3.4及以上）
 > + VC: 10 及以上 （建议VC 12及以上）
 
-+ [cmake](https://cmake.org/download/) 3.7.0 以上
-+ [msgpack](https://github.com/msgpack/msgpack-c)
++ [cmake](https://cmake.org/download/) 3.13.0 以上
++ [flatbuffers](https://github.com/google/flatbuffers)
+
 > 用于协议打解包,仅使用头文件
 
 + [libuv](http://libuv.org/)（用于网络通道）
+
 > 用于协议打解包,仅使用头文件
-> 
+>
 > 手动编译libuv则需要额外的软件集，基本有: gcc/clang/msvc, autoconf, automake, make, pthread, m4
 
 + [atframe_utils](https://github.com/atframework/atframe_utils)（基础公共代码，检测到不存在会自动下载）
 + (可选)[python](http://python.org/) （周边工具集）
 + (可选)tar, curl, wget: 如果使用内置的脚本自动构建依赖的库，则这些是必要的工具
-
 
 环境准备(开发环境最小依赖)
 ------
@@ -29,7 +31,7 @@
 1. [cmake](https://cmake.org/download/)
 2. [visual studio](https://www.visualstudio.com)
 3. [libuv](http://dist.libuv.org/dist)
-4. 执行 mkdir build && cd build && cmake .. -G "Visual Studio 15 2017 Win64" -DLIBUV_ROOT=[libuv安装目录] -DMSGPACK_ROOT=[msgpack的include目录所在位置]
+4. 执行 mkdir build && cd build && cmake .. -G "Visual Studio 15 2017 Win64" -DLIBUV_ROOT=[libuv安装目录] -DFlatbuffers_ROOT=[flatbuffers的安装目录]
 5. 编译打开Visual Studio编译或 cmake --build . --config RelWithDebInfo
 
 详情可参考 [Appceyor CI](../appveyor.yml) 脚本
@@ -87,6 +89,7 @@ bash cmake-Linux-x86_64.sh --skip-license --prefix=/usr ;
 详情可参考 [Travis CI](../.travis.yml) 脚本
 
 ### OSX
+
 1. 安装 [brew](http://brew.sh/)
 2. 安装 xcode
 3. sudo brew install gcc gdb autoconf automake make curl wget tar m4 cmake git
@@ -95,12 +98,14 @@ bash cmake-Linux-x86_64.sh --skip-license --prefix=/usr ;
 
 编译和构建
 ------
+
 ### 编译选项
+
 除了cmake标准编译选项外，libatbus还提供一些额外选项
 
 + CMAKE_BUILD_TYPE (默认: Debug): 构建类型，目前**默认是Debug**方式构建。生产环境建议使用**-DCMAKE_BUILD_TYPE=RelWithDebInfo**(相当于gcc -O2 -g -ggdb -DNDEBUG)
 + LIBUV_ROOT: 手动指定libuv的安装目录
-+ MSGPACK_ROOT: 手动指定msgpack的安装目录，也可以不安装直接指向msgpack的源码目录
++ Flatbuffers_ROOT: 手动指定flatbuffers的安装目录，需要符合cmake的find_package规则，使用flatbuffers官方提供的config文件，且必须编译lib和flatc
 + CMAKE_MSVC_RUNTIME （默认: MD）: 使用MSVC编译时默认使用MD/MDd运行时，如果需要尽可能一处依赖并使用MT请把这个值设为MT
 + PROJECT_ENABLE_SAMPLE (默认: NO): 是否编译Sample代码
 + PROJECT_ENABLE_UNITTEST (默认: NO): 是否编译单元测试代码
@@ -108,7 +113,7 @@ bash cmake-Linux-x86_64.sh --skip-license --prefix=/usr ;
 + ============= 以上选项根据实际环境配置，以下选项不建议修改 =============
 + ATBUS_MACRO_BUSID_TYPE (默认: uint64_t): busid的类型，建议不要设置成大于64位，否则需要修改protocol目录内的busid类型，并且重新生成协议文件
 + ATBUS_MACRO_DATA_NODE_SIZE (默认: 128): atbus的内存通道node大小（必须是2的倍数）
-+ ATBUS_MACRO_DATA_ALIGN_TYPE (默认: uint64_t): atbus的内存内存块对齐类型（用于优化memcpy和校验）
++ ATBUS_MACRO_DATA_ALIGN_SIZE (默认: 16): atbus的内存内存块对齐大小，大多数某些架构要求对齐到16
 + ATBUS_MACRO_DATA_SMALL_SIZE (默认: 3072): 流通道小数据块大小（用于优化减少内存拷贝）
 + ATBUS_MACRO_HUGETLB_SIZE (默认: 4194304): 大页表分页大小（用于优化共享内存分页,此功能暂时关闭，所以并不生效）
 + ATBUS_MACRO_MSG_LIMIT (默认: 65536): 默认消息体大小限制
@@ -147,6 +152,7 @@ cmake --build . --target install(或者make构建系统的make install) 仅会�
 
 附加说明
 ------
+
 ### 目录结构说明
 
 + 3rd_party: 外部组件（不一定是依赖项）

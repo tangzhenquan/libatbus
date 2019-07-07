@@ -15,6 +15,7 @@
 #include <bitset>
 #include <ctime>
 #include <list>
+#include <vector>
 
 #ifdef _MSC_VER
 #include <WinSock2.h>
@@ -197,7 +198,7 @@ namespace atbus {
 
         static int ios_push_fn(connection &conn, const void *buffer, size_t s);
 
-        static bool unpack(void *res, connection &conn, atbus::protocol::msg &m, void *buffer, size_t s);
+        static bool unpack(connection &conn, const ::atbus::protocol::msg *&m, std::vector<unsigned char> &in);
 
     private:
         state_t::type state_;

@@ -14,4 +14,8 @@
 
 #include "detail/libatbus_protocol_generated.h"
 
+namespace atbus {
+    typedef ::atbus::protocol::msg msg_t;
+} // namespace atbus
+
 #endif /* LIBATBUS_PROTOCOL_H */

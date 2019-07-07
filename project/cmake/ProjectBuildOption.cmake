@@ -4,7 +4,7 @@
 # atbus 选项
 set(ATBUS_MACRO_BUSID_TYPE "uint64_t" CACHE STRING "busid type")
 set(ATBUS_MACRO_DATA_NODE_SIZE 128 CACHE STRING "node size of (shared) memory channel(must be power of 2)")
-set(ATBUS_MACRO_DATA_ALIGN_TYPE "uint64_t" CACHE STRING "memory align type(used to check the hash of data and memory padding)")
+set(ATBUS_MACRO_DATA_ALIGN_SIZE 16 CACHE STRING "memory align size, most architecture require to padding to 16")
 set(ATBUS_MACRO_DATA_MAX_PROTECT_SIZE 16384 CACHE STRING "max protected node size for mem/shm channel")
 
 # for now, other component in io_stream_connection cost 472 bytes, make_shared will also cost some memory.

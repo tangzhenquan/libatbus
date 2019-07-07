@@ -16,7 +16,7 @@
 #include "atbus_connection.h"
 #include "atbus_node.h"
 
-#include "detail/libatbus_protocol.h"
+#include "libatbus_protocol.h"
 
 namespace atbus {
     namespace detail {
@@ -557,14 +557,15 @@ namespace atbus {
         conn->stat_.pull_size += s;
 
         // unpack
-        msgpack::unpacked result;
-        protocol::msg m;
-        if (false == unpack(&result, *conn, m, buffer, s)) {
+        std::vector<unsigned char> msg_buffer;
+        msg_buffer.assign(static_cast<const unsigned char *>(buffer), static_cast<const unsigned char *>(buffer) + s);
+        const protocol::msg *m;
+        if (false == unpack(*conn, m, msg_buffer)) {
             return;
         }
 
         if (NULL != _this) {
-            _this->on_recv(conn, &m, status, channel->error_code);
+            _this->on_recv(conn, m, status, channel->error_code);
         }
     }
 
@@ -676,13 +677,15 @@ namespace atbus {
                 conn.stat_.pull_size += recv_len;
 
                 // unpack
-                msgpack::unpacked result;
-                protocol::msg m;
-                if (false == unpack(&result, conn, m, static_buffer->data(), recv_len)) {
+                std::vector<unsigned char> msg_buffer;
+                msg_buffer.assign(static_cast<const unsigned char *>(static_buffer->data()),
+                                  static_cast<const unsigned char *>(static_buffer->data()) + recv_len);
+                const protocol::msg *m;
+                if (false == unpack(conn, m, msg_buffer)) {
                     continue;
                 }
 
-                n.on_recv(&conn, &m, res, res);
+                n.on_recv(&conn, m, res, res);
                 ++ret;
             }
         }
@@ -733,13 +736,15 @@ namespace atbus {
                 conn.stat_.pull_size += recv_len;
 
                 // unpack
-                msgpack::unpacked result;
-                protocol::msg m;
-                if (false == unpack(&result, conn, m, static_buffer->data(), recv_len)) {
+                std::vector<unsigned char> msg_buffer;
+                msg_buffer.assign(static_cast<const unsigned char *>(static_buffer->data()),
+                                  static_cast<const unsigned char *>(static_buffer->data()) + recv_len);
+                const protocol::msg *m;
+                if (false == unpack(conn, m, msg_buffer)) {
                     continue;
                 }
 
-                n.on_recv(&conn, &m, res, res);
+                n.on_recv(&conn, m, res, res);
                 ++ret;
             }
         }
@@ -778,17 +783,21 @@ namespace atbus {
         return ret;
     }
 
-    bool connection::unpack(void *res, connection &conn, atbus::protocol::msg &m, void *buffer, size_t s) {
+    bool connection::unpack(connection &conn, const ::atbus::msg_t *&m, std::vector<unsigned char> &in) {
         try {
-            msgpack::unpacked *result = reinterpret_cast<msgpack::unpacked *>(res);
-            msgpack::unpack(*result, reinterpret_cast<const char *>(buffer), s);
-            msgpack::object obj = result->get();
-            if (obj.is_nil()) {
+            ::flatbuffers::Verifier msg_verify(reinterpret_cast<const uint8_t *>(&in[0]), in.size());
+            // verify
+            if (false == ::atbus::protocol::VerifymsgBuffer(msg_verify)) {
                 ATBUS_FUNC_NODE_ERROR(*conn.owner_, conn.binding_, &conn, EN_ATBUS_ERR_UNPACK, EN_ATBUS_ERR_UNPACK);
                 return false;
             }
 
-            obj.convert(m);
+            // unpack
+            m = ::atbus::protocol::Getmsg(&in[0]);
+            if (NULL == m) {
+                ATBUS_FUNC_NODE_ERROR(*conn.owner_, conn.binding_, &conn, EN_ATBUS_ERR_UNPACK, EN_ATBUS_ERR_UNPACK);
+                return false;
+            }
         } catch (...) {
             ATBUS_FUNC_NODE_ERROR(*conn.owner_, conn.binding_, &conn, EN_ATBUS_ERR_UNPACK, EN_ATBUS_ERR_UNPACK);
             return false;

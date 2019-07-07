@@ -37,6 +37,12 @@
 #include "std/thread.h"
 
 #define MEM_CHANNEL_NAME "ATBUSMEM"
+#define MEM_CHANNEL_VERSION 2
+
+#if (defined(__cplusplus) && __cplusplus >= 201103L) || (defined(_MSC_VER) && _MSC_VER >= 1800)
+// 对齐单位的大小必须是2的N次方
+static_assert(0 == (ATBUS_MACRO_DATA_ALIGN_SIZE & (ATBUS_MACRO_DATA_ALIGN_SIZE - 1)), "data align size must be 2^N");
+#endif
 
 namespace atbus {
     namespace channel {
@@ -64,10 +70,15 @@ namespace atbus {
             };
         } // namespace detail
 
-        typedef ATBUS_MACRO_DATA_ALIGN_TYPE data_align_type;
+#ifdef _MSC_VER
+        __pragma(pack(push, 1))
+#define ATBUS_MACRO_PACK_ATTR
+#else
+#define ATBUS_MACRO_PACK_ATTR __attribute__((packed))
+#endif
 
-        // 配置数据结构
-        struct mem_conf {
+            // 配置数据结构
+            struct mem_conf {
             size_t protect_node_count;
             size_t protect_memory_size;
             uint64_t conf_send_timeout_ms;
@@ -75,11 +86,14 @@ namespace atbus {
             size_t write_retry_times;
             // TODO 接收端校验号(用于保证只有一个接收者)
             volatile util::lock::atomic_int_type<size_t> atomic_recver_identify;
-        };
+        } ATBUS_MACRO_PACK_ATTR;
 
         // 通道头
         struct mem_channel {
-            char node_magic[8]; // 魔术串，用于标识数据类型
+            char node_magic[16]; // 魔术串，用于标识数据类型
+            uint16_t channel_version;
+            uint16_t channel_align_size;
+            uint16_t channel_host_size;
 
             // 数据节点
             size_t node_size;
@@ -114,10 +128,14 @@ namespace atbus {
             size_t read_check_block_size_failed_count; // 读到的数据块长度检查错误数量
             size_t read_check_node_size_failed_count;  // 读到的数据节点和长度检查错误数量
             size_t read_check_hash_failed_count;       // 读到的数据节点和长度检查错误数量
-        };
+        } ATBUS_MACRO_PACK_ATTR;
+
+#ifdef _MSC_VER
+        __pragma(pack(pop))
+#endif
 
 #if (defined(__cplusplus) && __cplusplus >= 201103L) || (defined(_MSC_VER) && _MSC_VER >= 1800)
-        static_assert(std::is_standard_layout<mem_channel>::value, "mem_channel must be a standard layout");
+            static_assert(std::is_standard_layout<mem_channel>::value, "mem_channel must be a standard layout");
 #endif
 
         // 对齐头
@@ -140,7 +158,7 @@ namespace atbus {
         // 数据头
         typedef struct {
             size_t buffer_size;
-            data_align_type fast_check;
+            uint64_t fast_check;
         } mem_block_head;
 
 
@@ -161,13 +179,13 @@ namespace atbus {
 
         /**
          * @brief 内存通道常量
-         * @note 为了压缩内存占用空间，这里使用手动对齐，不直接用 #pragma pack(sizoef(long))
+         * @note 为了压缩内存占用空间，这里使用手动对齐，不直接用 #pragma pack(sizoef(max_align_t))
          */
         struct mem_block {
             enum size_def {
                 channel_head_size = sizeof(mem_channel_head_align),
-                block_head_size   = ((sizeof(mem_block_head) - 1) / sizeof(data_align_type) + 1) * sizeof(data_align_type),
-                node_head_size    = ((sizeof(mem_node_head) - 1) / sizeof(data_align_type) + 1) * sizeof(data_align_type),
+                block_head_size   = (sizeof(mem_block_head) + ATBUS_MACRO_DATA_ALIGN_SIZE - 1) / ATBUS_MACRO_DATA_ALIGN_SIZE,
+                node_head_size    = (sizeof(mem_node_head) + ATBUS_MACRO_DATA_ALIGN_SIZE - 1) / ATBUS_MACRO_DATA_ALIGN_SIZE,
 
                 node_data_size      = ATBUS_MACRO_DATA_NODE_SIZE,
                 node_head_data_size = node_data_size - block_head_size,
@@ -385,16 +403,15 @@ namespace atbus {
          * @param len 数据长度
          * @note Hash 快速校验
          */
-        static inline data_align_type mem_fast_check(const void *src, size_t len) {
-            return static_cast<data_align_type>(detail::hash_factor<sizeof(data_align_type) >= sizeof(uint64_t)>::hash(0, src, len));
+        static inline uint64_t mem_fast_check(const void *src, size_t len) {
+            return static_cast<uint64_t>(detail::hash_factor<true>::hash(0, src, len));
+            // return static_cast<uint64_t>(detail::hash_factor<sizeof(uint64_t) >= sizeof(uint64_t)>::hash(0, src, len));
         }
 
-        // 对齐单位的大小必须是2的N次方
-        static_assert(0 == (sizeof(data_align_type) & (sizeof(data_align_type) - 1)), "data align size must be 2^N");
         // 节点大小必须是2的N次
         static_assert(0 == ((mem_block::node_data_size - 1) & mem_block::node_data_size), "node size must be 2^N");
         // 节点大小必须是对齐单位的2的N次方倍
-        static_assert(0 == (mem_block::node_data_size & (mem_block::node_data_size - sizeof(data_align_type))),
+        static_assert(0 == (mem_block::node_data_size & (mem_block::node_data_size - sizeof(uint64_t))),
                       "node size must be [data align size] * 2^N");
 
 
@@ -431,6 +448,19 @@ namespace atbus {
 
             if (0 != UTIL_STRFUNC_STRNCASE_CMP(MEM_CHANNEL_NAME, head->channel.node_magic, strlen(MEM_CHANNEL_NAME))) {
                 return EN_ATBUS_ERR_CHANNEL_BUFFER_INVALID;
+            }
+
+            // check channel version
+            if (MEM_CHANNEL_VERSION != head->channel.channel_version) {
+                return EN_ATBUS_ERR_CHANNEL_UNSUPPORTED_VERSION;
+            }
+
+            if (ATBUS_MACRO_DATA_ALIGN_SIZE != head->channel.channel_align_size) {
+                return EN_ATBUS_ERR_CHANNEL_ALIGN_SIZE_MISMATCH;
+            }
+
+            if (sizeof(size_t) != head->channel.channel_host_size) {
+                return EN_ATBUS_ERR_CHANNEL_ARCH_SIZE_T_MISMATCH;
             }
 
             return EN_ATBUS_ERR_SUCCESS;
@@ -475,10 +505,14 @@ namespace atbus {
 #ifdef UTIL_STRFUNC_C11_SUPPORT
             static_assert(sizeof(head->channel.node_magic) >= (sizeof(MEM_CHANNEL_NAME) - 1), "magic text size error");
 
-            memcpy_s(head->channel.node_magic, sizeof(head->channel.node_magic), MEM_CHANNEL_NAME, sizeof(MEM_CHANNEL_NAME) - 1);
+            memcpy_s(head->channel.node_magic, sizeof(head->channel.node_magic), MEM_CHANNEL_NAME, strlen(MEM_CHANNEL_NAME));
 #else
-            memcpy(head->channel.node_magic, MEM_CHANNEL_NAME, sizeof(head->channel.node_magic));
+            memcpy(head->channel.node_magic, MEM_CHANNEL_NAME, strlen(MEM_CHANNEL_NAME));
 #endif
+            head->channel.channel_version    = MEM_CHANNEL_VERSION;
+            head->channel.channel_align_size = ATBUS_MACRO_DATA_ALIGN_SIZE;
+            head->channel.channel_host_size  = static_cast<uint16_t>(sizeof(size_t));
+
             return EN_ATBUS_ERR_SUCCESS;
         }
 
@@ -799,7 +833,7 @@ namespace atbus {
                     mem_get_node_head(channel, 0, &buffer_start, NULL);
                     memcpy((char *)buf + buffer_len, buffer_start, block_head->buffer_size - buffer_len);
                 }
-                data_align_type fast_check = mem_fast_check(buf, block_head->buffer_size);
+                uint64_t fast_check = mem_fast_check(buf, block_head->buffer_size);
 
                 if (recv_size) *recv_size = block_head->buffer_size;
 

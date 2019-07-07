@@ -57,7 +57,7 @@
 #endif
 #endif
 
-#define ATBUS_MACRO_TLS_MERGE_BUFFER_LEN (ATBUS_MACRO_MSG_LIMIT - sizeof(ATBUS_MACRO_DATA_ALIGN_TYPE) - sizeof(uv_write_t))
+#define ATBUS_MACRO_TLS_MERGE_BUFFER_LEN (ATBUS_MACRO_MSG_LIMIT - ATBUS_MACRO_DATA_ALIGN_SIZE - sizeof(uv_write_t))
 
 #if !(defined(THREAD_TLS_USE_PTHREAD) && THREAD_TLS_USE_PTHREAD) && defined(UTIL_CONFIG_THREAD_LOCAL)
 namespace atbus {

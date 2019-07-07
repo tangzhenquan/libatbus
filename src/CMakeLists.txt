@@ -17,13 +17,14 @@ file(GLOB_RECURSE PROJECT_LIB_SRC_LIST
     ${PROJECT_LIBATBUS_ROOT_SRC_DIR}/*.cc
     ${PROJECT_LIBATBUS_ROOT_SRC_DIR}/*.cxx
 )
-list(APPEND PROJECT_LIB_SRC_LIST "${PROJECT_LIBATBUS_ROOT_INC_DIR}/detail/libatbus_protocol_generated.h")
-list(REMOVE_DUPLICATES PROJECT_LIB_SRC_LIST)
 source_group_by_dir(PROJECT_LIB_SRC_LIST)
 
 
 # ============ libatbus - src ============
 add_library(${PROJECT_LIB_LINK} STATIC ${PROJECT_LIB_SRC_LIST})
+
+add_dependencies(${PROJECT_LIB_LINK} atbus_generate_protocol)
+
 set_target_properties(${PROJECT_LIB_LINK} PROPERTIES 
     C_VISIBILITY_PRESET "default"
     CXX_VISIBILITY_PRESET "default"

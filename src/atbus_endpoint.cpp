@@ -13,8 +13,7 @@
 #include "atbus_endpoint.h"
 #include "atbus_node.h"
 
-
-#include "detail/libatbus_protocol.h"
+#include "libatbus_protocol.h"
 
 namespace atbus {
     endpoint::ptr_t endpoint::create(node *owner, bus_id_t id, uint32_t children_mask, int32_t pid, const std::string &hn) {

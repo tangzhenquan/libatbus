@@ -3,12 +3,10 @@ language: cpp
 env:
   global:
     - LANG="zh_CN.UTF-8"
-    - MSGPACK_PREFIX=$HOME/prebuilt/msgpack-3.1.1 ;
-    - MSGPACK_VERSION=3.1.1 ;
-    - LIBUV_PREFIX=$HOME/prebuilt/libuv-1.28.0 ;
-    - LIBUV_VERSION=1.28.0
+    - LIBUV_PREFIX=$HOME/prebuilt/libuv-1.30.1 ;
+    - LIBUV_VERSION=1.30.1
     - CMAKE_PREFIX=$HOME/prebuilt/cmake ;
-    - CMAKE_LINUX_URL=https://github.com/Kitware/CMake/releases/download/v3.13.4/cmake-3.13.4-Linux-x86_64.sh ;
+    - CMAKE_LINUX_URL=https://github.com/Kitware/CMake/releases/download/v3.14.5/cmake-3.14.5-Linux-x86_64.sh ;
 matrix:
   include:
     - os: osx
@@ -20,7 +18,7 @@ matrix:
     - os: linux
       dist: xenial
       sudo: required
-      env: USE_CC=gcc-4.4 USE_CXX=g++-4.4 CMAKE_BIN=$CMAKE_PREFIX/bin/cmake CTEST_BIN=$CMAKE_PREFIX/bin/ctest # MSGPACK_VERSION=1.4.2
+      env: USE_CC=gcc-4.4 USE_CXX=g++-4.4 CMAKE_BIN=$CMAKE_PREFIX/bin/cmake CTEST_BIN=$CMAKE_PREFIX/bin/ctest
       addons:
         apt:
           sources:
@@ -71,10 +69,9 @@ matrix:
       # COVERALLS_REPO_TOKEN is set in travis-ci
       script:
         - REPO_DIR=$PWD;
-        - USE_MSGPACK_ROOT=$MSGPACK_PREFIX ;
         - if [ -e "$REPO_DIR/build" ]; then rm -rf "$REPO_DIR/build"; fi
         - mkdir -p $REPO_DIR/build && cd $REPO_DIR/build ;
-        - $CMAKE_BIN .. "-DCMAKE_C_FLAGS=$GCOV_FLAGS" "-DCMAKE_CXX_FLAGS=$GCOV_FLAGS" "-DCMAKE_EXE_LINKER_FLAGS=$GCOV_FLAGS" -DCMAKE_BUILD_TYPE=Debug -DPROJECT_ENABLE_UNITTEST=ON -DPROJECT_ENABLE_SAMPLE=ON -DPROJECT_ENABLE_TOOLS=ON -DLIBUV_ROOT=$LIBUV_PREFIX -DMSGPACK_ROOT=$USE_MSGPACK_ROOT ;
+        - $CMAKE_BIN .. "-DCMAKE_C_FLAGS=$GCOV_FLAGS" "-DCMAKE_CXX_FLAGS=$GCOV_FLAGS" "-DCMAKE_EXE_LINKER_FLAGS=$GCOV_FLAGS" -DCMAKE_BUILD_TYPE=Debug -DPROJECT_ENABLE_UNITTEST=ON -DPROJECT_ENABLE_SAMPLE=ON -DPROJECT_ENABLE_TOOLS=ON -DLIBUV_ROOT=$LIBUV_PREFIX ;
         - $CMAKE_BIN --build .
       after_success:
         - $CTEST_BIN . -V
@@ -114,13 +111,6 @@ install:
 before_script:
   - REPO_DIR=$PWD;
   - cd /tmp
-  - if [ ! -e "$MSGPACK_PREFIX/include/msgpack.hpp" ]; then
-        mkdir -p "$MSGPACK_PREFIX" ;
-        wget -c "https://github.com/msgpack/msgpack-c/releases/download/cpp-$MSGPACK_VERSION/msgpack-$MSGPACK_VERSION.tar.gz" -O msgpack-$MSGPACK_VERSION.tar.gz;
-        tar -xvf msgpack-$MSGPACK_VERSION.tar.gz;
-        cp -rf msgpack-$MSGPACK_VERSION/include $MSGPACK_PREFIX/ ;
-        rm -rf msgpack-$MSGPACK_VERSION msgpack-$MSGPACK_VERSION.tar.gz ;
-    fi
   - if [ ! -e "$LIBUV_PREFIX/include/uv.h" ] || [ ! -e "$LIBUV_PREFIX/lib/libuv.so" ] ; then
         if [ "$TRAVIS_OS_NAME" == "linux" ] ; then
           mkdir -p "$LIBUV_PREFIX";
@@ -139,13 +129,12 @@ before_script:
 script:
   - REPO_DIR=$PWD;
   - mkdir -p $REPO_DIR/build && cd $REPO_DIR/build ;
-  - USE_MSGPACK_ROOT=$MSGPACK_PREFIX ;
   - if [ "$TRAVIS_OS_NAME" == "linux" ] ; then
-      $CMAKE_BIN .. -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_C_COMPILER=$USE_CC -DCMAKE_CXX_COMPILER=$USE_CXX -DPROJECT_ENABLE_UNITTEST=ON -DPROJECT_ENABLE_SAMPLE=ON -DPROJECT_ENABLE_TOOLS=ON -DLIBUV_ROOT=$LIBUV_PREFIX -DMSGPACK_ROOT=$USE_MSGPACK_ROOT ;
+      $CMAKE_BIN .. -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_C_COMPILER=$USE_CC -DCMAKE_CXX_COMPILER=$USE_CXX -DPROJECT_ENABLE_UNITTEST=ON -DPROJECT_ENABLE_SAMPLE=ON -DPROJECT_ENABLE_TOOLS=ON -DLIBUV_ROOT=$LIBUV_PREFIX ;
     else
-      $CMAKE_BIN .. -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_C_COMPILER=$USE_CC -DCMAKE_CXX_COMPILER=$USE_CXX -DPROJECT_ENABLE_UNITTEST=ON -DPROJECT_ENABLE_SAMPLE=ON -DPROJECT_ENABLE_TOOLS=ON -DMSGPACK_ROOT=$USE_MSGPACK_ROOT ;
+      $CMAKE_BIN .. -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_C_COMPILER=$USE_CC -DCMAKE_CXX_COMPILER=$USE_CXX -DPROJECT_ENABLE_UNITTEST=ON -DPROJECT_ENABLE_SAMPLE=ON -DPROJECT_ENABLE_TOOLS=ON ;
     fi
-  # - $CMAKE_BIN .. -DCMAKE_C_COMPILER=$USE_CC -DCMAKE_CXX_COMPILER=$USE_CXX -DPROJECT_ENABLE_UNITTEST=ON -DPROJECT_ENABLE_SAMPLE=ON -DPROJECT_ENABLE_TOOLS=ON -DLIBUV_ROOT=$LIBUV_PREFIX -DMSGPACK_ROOT=$USE_MSGPACK_ROOT ;
+  # - $CMAKE_BIN .. -DCMAKE_C_COMPILER=$USE_CC -DCMAKE_CXX_COMPILER=$USE_CXX -DPROJECT_ENABLE_UNITTEST=ON -DPROJECT_ENABLE_SAMPLE=ON -DPROJECT_ENABLE_TOOLS=ON -DLIBUV_ROOT=$LIBUV_PREFIX ;
   - $CMAKE_BIN --build .
 
 after_success:
