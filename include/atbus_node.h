@@ -34,11 +34,16 @@
 
 #include "atbus_endpoint.h"
 
+namespace flatbuffers {
+    class FlatBufferBuilder;
+}
+
 namespace atbus {
 
     class node UTIL_CONFIG_FINAL : public util::design_pattern::noncopyable {
     public:
         typedef std::shared_ptr<node> ptr_t;
+        typedef ::flatbuffers::FlatBufferBuilder &msg_builder_ref_t;
 
         typedef ATBUS_MACRO_BUSID_TYPE bus_id_t;
         struct conf_flag_t {
@@ -245,24 +250,6 @@ namespace atbus {
         int send_data(bus_id_t tid, int type, const void *buffer, size_t s, bool require_rsp = false);
 
         /**
-         * @brief 发送数据消息
-         * @param tid 发送目标ID
-         * @param mb 消息构建器
-         * @return 0或错误码
-         */
-        int send_data_msg(bus_id_t tid, ::atbus::protocol::msg &mb);
-
-        /**
-         * @brief 发送数据消息
-         * @param tid 发送目标ID
-         * @param mb 消息构建器
-         * @param ep_out 如果发送成功，导出发送目标
-         * @param conn_out 如果发送成功，导出发送连接
-         * @return 0或错误码
-         */
-        int send_data_msg(bus_id_t tid, ::atbus::protocol::msg &mb, endpoint **ep_out, connection **conn_out);
-
-        /**
          * @brief 发送自定义命令消息
          * @param tid 发送目标ID
          * @param arr_buf 自定义消息内容数组
@@ -272,36 +259,6 @@ namespace atbus {
          * @return 0或错误码
          */
         int send_custom_cmd(bus_id_t tid, const void *arr_buf[], size_t arr_size[], size_t arr_count, uint64_t *seq = NULL);
-
-        /**
-         * @brief 发送控制消息
-         * @param tid 发送目标ID
-         * @param mb 消息构建器
-         * @return 0或错误码
-         */
-        int send_ctrl_msg(bus_id_t tid, ::atbus::protocol::msg &mb);
-
-
-        /**
-         * @brief 发送控制消息
-         * @param tid 发送目标ID
-         * @param mb 消息构建器
-         * @param ep_out 如果发送成功，导出发送目标
-         * @param conn_out 如果发送成功，导出发送连接
-         * @return 0或错误码
-         */
-        int send_ctrl_msg(bus_id_t tid, ::atbus::protocol::msg &mb, endpoint **ep_out, connection **conn_out);
-
-        /**
-         * @brief 发送消息
-         * @param tid 发送目标ID
-         * @param mb 消息构建器
-         * @param fn 获取有效连接的接口，用以区分数据通道和控制通道
-         * @param ep_out 如果发送成功，导出发送目标
-         * @param conn_out 如果发送成功，导出发送连接
-         * @return 0或错误码
-         */
-        int send_msg(bus_id_t tid, ::atbus::protocol::msg &mb, endpoint::get_connection_fn_t fn, endpoint **ep_out, connection **conn_out);
 
         /**
          * @brief 获取远程发送目标信息
@@ -361,6 +318,54 @@ namespace atbus {
         adapter::loop_t *get_evloop();
 
     private:
+        /**
+         * @brief 发送数据消息
+         * @param tid 发送目标ID
+         * @param msg_builder 消息构建器
+         * @return 0或错误码
+         */
+        int send_data_msg(bus_id_t tid, msg_builder_ref_t mb);
+
+        /**
+         * @brief 发送数据消息
+         * @param tid 发送目标ID
+         * @param msg_builder 消息构建器
+         * @param ep_out 如果发送成功，导出发送目标
+         * @param conn_out 如果发送成功，导出发送连接
+         * @return 0或错误码
+         */
+        int send_data_msg(bus_id_t tid, msg_builder_ref_t mb, endpoint **ep_out, connection **conn_out);
+
+        /**
+         * @brief 发送控制消息
+         * @param tid 发送目标ID
+         * @param msg_builder 消息构建器
+         * @return 0或错误码
+         */
+        int send_ctrl_msg(bus_id_t tid, msg_builder_ref_t mb);
+
+        /**
+         * @brief 发送控制消息
+         * @param tid 发送目标ID
+         * @param msg_builder 消息构建器
+         * @param ep_out 如果发送成功，导出发送目标
+         * @param conn_out 如果发送成功，导出发送连接
+         * @return 0或错误码
+         */
+        int send_ctrl_msg(bus_id_t tid, msg_builder_ref_t mb, endpoint **ep_out, connection **conn_out);
+
+        /**
+         * @brief 发送消息
+         * @param tid 发送目标ID
+         * @param msg_builder 消息构建器
+         * @param fn 获取有效连接的接口，用以区分数据通道和控制通道
+         * @param ep_out 如果发送成功，导出发送目标
+         * @param conn_out 如果发送成功，导出发送连接
+         * @return 0或错误码
+         */
+        int send_msg(bus_id_t tid, msg_builder_ref_t msg_builder, endpoint::get_connection_fn_t fn, endpoint **ep_out,
+                     connection **conn_out);
+
         channel::io_stream_conf *get_iostream_conf();
 
     public:

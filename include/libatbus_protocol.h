@@ -18,4 +18,6 @@ namespace atbus {
     typedef ::atbus::protocol::msg msg_t;
 } // namespace atbus
 
+#define ATBUS_MACRO_RESERVED_SIZE 64
+
 #endif /* LIBATBUS_PROTOCOL_H */

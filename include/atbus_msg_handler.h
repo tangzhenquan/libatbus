@@ -16,6 +16,10 @@
 #include <ctime>
 #include <list>
 
+namespace flatbuffers {
+    class FlatBufferBuilder;
+}
+
 namespace atbus {
     namespace protocol {
         struct msg;
@@ -34,9 +38,9 @@ namespace atbus {
 
         static int send_reg(int32_t msg_id, node &n, connection &conn, int32_t ret_code, uint32_t seq);
 
-        static int send_transfer_rsp(node &n, const ::atbus::protocol::msg &, int32_t ret_code);
+        static int send_transfer_rsp(node &n, ::flatbuffers::FlatBufferBuilder &, int32_t ret_code);
 
-        static int send_msg(node &n, connection &conn, const ::atbus::protocol::msg &m);
+        static int send_msg(node &n, connection &conn, ::flatbuffers::FlatBufferBuilder &mb);
 
 
         // ========================= 接收handle =========================
