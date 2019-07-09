@@ -588,6 +588,7 @@ namespace atbus {
     public:
         void (*on_debug)(const char *file_path, size_t line, const node &, const endpoint *, const connection *,
                          const ::atbus::protocol::msg *, const char *fmt, ...);
+        friend struct msg_handler;
     };
 } // namespace atbus
 

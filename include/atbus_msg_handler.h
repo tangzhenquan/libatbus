@@ -34,9 +34,9 @@ namespace atbus {
 
         static int dispatch_msg(node &n, connection *conn, const ::atbus::protocol::msg *, int status, int errcode);
 
-        static int send_ping(node &n, connection &conn, uint32_t seq);
+        static int send_ping(node &n, connection &conn, uint64_t seq);
 
-        static int send_reg(int32_t msg_id, node &n, connection &conn, int32_t ret_code, uint32_t seq);
+        static int send_reg(int32_t msg_id, node &n, connection &conn, int32_t ret_code, uint64_t seq);
 
         static int send_transfer_rsp(node &n, ::flatbuffers::FlatBufferBuilder &, int32_t ret_code);
 

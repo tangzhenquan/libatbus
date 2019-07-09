@@ -1179,7 +1179,7 @@ namespace atbus {
         // 如果ID有效，且是IO流连接，则发送注册协议
         // ID为0则是临时节点，不需要注册
         if (get_id() && conn->check_flag(connection::flag_t::REG_FD) && false == conn->check_flag(connection::flag_t::LISTEN_FD)) {
-            int ret = msg_handler::send_reg(::atbus::protocol::msg_body_node_register_req, *this, *conn, 0, 0);
+            int ret = msg_handler::send_reg(::atbus::protocol::msg_body_node_register_req, *this, *conn, 0, alloc_msg_seq());
             if (ret < 0) {
                 ATBUS_FUNC_NODE_ERROR(*this, NULL, conn, ret, 0);
                 conn->reset();
@@ -1369,7 +1369,7 @@ namespace atbus {
         }
 
         // 出错则增加错误计数
-        uint32_t ping_seq = msg_seq_alloc_.inc();
+        uint64_t ping_seq = alloc_msg_seq();
         int res           = msg_handler::send_ping(*this, *ctl_conn, ping_seq);
         if (res < 0) {
             add_endpoint_fault(ep);
