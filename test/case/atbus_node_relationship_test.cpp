@@ -46,7 +46,7 @@ CASE_TEST(atbus_node_rela, basic_test) {
     }
 
     {
-        CASE_EXPECT_EQ(ATBUS_CMD_DATA_TRANSFORM_REQ, m_dst.head.cmd);
+        CASE_EXPECT_EQ(ATBUS_CMD_DATA_TRANSFORM_REQ, m_dst.body_type());
         CASE_EXPECT_EQ(123, m_dst.head.type);
         CASE_EXPECT_EQ(0, m_dst.head.ret);
         CASE_EXPECT_EQ(13, m_dst.head.sequence);

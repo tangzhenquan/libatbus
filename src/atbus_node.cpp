@@ -1110,7 +1110,7 @@ namespace atbus {
             endpoint *ep = conn->get_binding();
             if (NULL != ep) {
                 // 如果消息为回发转发消息失败，并且回发成功，则是为正确流程，不能标记错误
-                if (m->head.cmd != ::atbus::protocol::msg_body_data_transform_rsp && m->head.ret < 0) {
+                if (m->body_type() != ::atbus::protocol::msg_body_data_transform_rsp && m->head.ret < 0) {
                     add_endpoint_fault(*ep);
                 } else {
                     ep->clear_stat_fault();

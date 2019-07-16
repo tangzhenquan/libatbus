@@ -77,6 +77,7 @@ namespace atbus {
         void reset();
 
         inline bus_id_t get_id() const { return id_; }
+        inline bus_id_t get_children_prefix() const { return get_id(); }
         inline uint32_t get_children_mask() const { return children_mask_; }
 
         inline int32_t get_pid() const { return pid_; };

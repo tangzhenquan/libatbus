@@ -38,10 +38,11 @@ namespace atbus {
 
         static int send_reg(int32_t msg_id, node &n, connection &conn, int32_t ret_code, uint64_t seq);
 
-        static int send_transfer_rsp(node &n, ::flatbuffers::FlatBufferBuilder &, int32_t ret_code);
+        static int send_transfer_rsp(node &n, const ::atbus::protocol::msg &, int32_t ret_code);
+
+        static int send_node_connect_sync(node &n, uint64_t direct_from_bus_id, endpoint &dst_ep);
 
         static int send_msg(node &n, connection &conn, ::flatbuffers::FlatBufferBuilder &mb);
-
 
         // ========================= 接收handle =========================
         static int on_recv_data_transfer_req(node &n, connection *conn, const ::atbus::protocol::msg &, int status, int errcode);

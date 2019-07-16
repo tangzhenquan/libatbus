@@ -10,7 +10,6 @@
     "cmake.buildEnvironment": {
         "CPRINTF_MODE": "none"
     },
-    "C_Cpp.default.configurationProvider": "vector-of-bool.cmake-tools",
     "files.associations": {
         "*.ejs": "html",
         "array": "cpp",
