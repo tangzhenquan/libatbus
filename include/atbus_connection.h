@@ -76,6 +76,8 @@ namespace atbus {
 
             size_t pull_times;
             size_t pull_size;
+
+            size_t fault_count;
         };
 
     private:
@@ -128,6 +130,12 @@ namespace atbus {
          *       如果非要发送内存数据的话，一定要memcpy，不能直接类型转换，除非手动设置了地址对齐规则
          */
         int push(const void *buffer, size_t s);
+
+        /** 增加错误计数 **/
+        size_t add_stat_fault();
+
+        /** 清空错误计数 **/
+        void clear_stat_fault();
 
         /**
          * @brief 获取连接的地址

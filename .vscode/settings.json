@@ -61,6 +61,7 @@
         "typeinfo": "cpp",
         "__config": "cpp",
         "__nullptr": "cpp",
-        "algorithm": "cpp"
+        "algorithm": "cpp",
+        "cstdarg": "cpp"
     }
 }

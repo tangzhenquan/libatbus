@@ -25,8 +25,10 @@
 
 #include "design_pattern/noncopyable.h"
 #include "lock/seq_alloc.h"
+#include "random/random_generator.h"
 #include "std/functional.h"
 #include "std/smart_ptr.h"
+
 
 #include "detail/libatbus_channel_export.h"
 #include "detail/libatbus_config.h"
@@ -70,7 +72,7 @@ namespace atbus {
             };
         };
 
-        typedef struct {
+        struct conf_t {
             adapter::loop_t *ev_loop;
             uint32_t children_mask;                      /** 子节点掩码 **/
             std::bitset<conf_flag_t::EN_CONF_MAX> flags; /** 开关配置 **/
@@ -80,17 +82,19 @@ namespace atbus {
 
             // ===== 连接配置 =====
             int backlog;
-            time_t first_idle_timeout; /** 第一个包允许的空闲时间，秒 **/
-            time_t ping_interval;      /** ping包间隔，秒 **/
-            time_t retry_interval;     /** 重试包间隔，秒 **/
-            size_t fault_tolerant;     /** 容错次数，次 **/
+            time_t first_idle_timeout;      /** 第一个包允许的空闲时间，秒 **/
+            time_t ping_interval;           /** ping包间隔，秒 **/
+            time_t retry_interval;          /** 重试包间隔，秒 **/
+            size_t fault_tolerant;          /** 容错次数，次 **/
+            size_t access_token_max_number; /** 最大access token数量，请不要设置的太大，验证次数最大可能是N^2 **/
+            std::vector<std::vector<unsigned char> > access_tokens; /** access token列表 **/
 
             // ===== 缓冲区配置 =====
-            size_t msg_size;           /** 数据包大小 **/
+            size_t msg_size;           /** max message size **/
             size_t recv_buffer_size;   /** 接收缓冲区，和数据包大小有关 **/
             size_t send_buffer_size;   /** 发送缓冲区限制 **/
             size_t send_buffer_number; /** 发送缓冲区静态Buffer数量限制，0则为动态缓冲区 **/
-        } conf_t;
+        };
 
         typedef std::map<bus_id_t, endpoint::ptr_t> endpoint_collection_t;
 
@@ -300,6 +304,25 @@ namespace atbus {
          */
         bool is_endpoint_available(bus_id_t tid) const;
 
+        /**
+         * @brief 生成用于access token验证的hash值
+         * @param idx 第几个accesstoken
+         * @param salt 生成的随机盐
+         * @param hashval1 生成的hash值1
+         * @param hashval2 生成的hash值2
+         * @return idx无效返回false
+         */
+        bool generate_access_hash(size_t idx, uint32_t &salt, uint64_t &hashval1, uint64_t &hashval2);
+
+        /**
+         * @brief 检查access token的有效性
+         * @param salt 盐
+         * @param hashval1 hash值1
+         * @param hashval2 hash值2
+         * @return 没有检查通过的access token则返回false
+         */
+        bool check_access_hash(const uint32_t salt, const uint64_t hashval1, const uint64_t hashval2) const;
+
     public:
         channel::io_stream_channel *get_iostream_channel();
 
@@ -502,6 +525,12 @@ namespace atbus {
         bool add_endpoint_fault(endpoint &ep);
 
         /**
+         * @brief 增加错误计数，如果超出容忍值则断开连接
+         * @return 是否被移除
+         */
+        bool add_connection_fault(connection &conn);
+
+        /**
          * @brief 添加到ping列表
          */
         void add_ping_timer(endpoint::ptr_t &ep);
@@ -583,6 +612,7 @@ namespace atbus {
             stat_info_t();
         };
         stat_info_t stat_;
+        ::util::random::xoshiro256_starstar random_engine_;
 
         // 调试辅助函数
     public:

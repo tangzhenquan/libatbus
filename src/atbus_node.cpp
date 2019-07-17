@@ -27,10 +27,10 @@
 #include <std/ref.h>
 #include <stdint.h>
 
+#include <algorithm/murmur_hash.h>
 #include <common/string_oprs.h>
 
 #include "detail/buffer.h"
-
 
 #include "atbus_msg_handler.h"
 #include "atbus_node.h"
@@ -56,6 +56,7 @@ namespace atbus {
         event_timer_.usec                  = 0;
         event_timer_.node_sync_push        = 0;
         event_timer_.father_opr_time_point = 0;
+        random_engine_.init_seed(static_cast<uint64_t>(time(NULL)));
 
         flags_.reset();
     }
@@ -83,7 +84,9 @@ namespace atbus {
         conf->ping_interval      = 8; // 默认ping包间隔为8s
         conf->retry_interval     = 3;
         conf->fault_tolerant = 2; // 允许最多失败2次，第3次直接失败，默认配置里3次ping包无响应则是最多24s可以发现节点下线
-        conf->backlog = ATBUS_MACRO_CONNECTION_BACKLOG;
+        conf->backlog                 = ATBUS_MACRO_CONNECTION_BACKLOG;
+        conf->access_token_max_number = 5;
+        conf->access_tokens.clear();
 
         conf->msg_size = ATBUS_MACRO_MSG_LIMIT;
 
@@ -118,6 +121,10 @@ namespace atbus {
             default_conf(&conf_);
         } else {
             conf_ = *conf;
+        }
+
+        if (conf_.access_tokens.size() > conf_.access_token_max_number) {
+            conf_.access_tokens.resize(conf_.access_token_max_number);
         }
 
         ev_loop_ = conf_.ev_loop;
@@ -581,13 +588,24 @@ namespace atbus {
             flags |= atbus::protocol::ATBUS_FORWARD_DATA_FLAG_TYPE_REQUIRE_RSP;
         }
 
+        std::vector<flatbuffers::Offset< ::atbus::protocol::access_data> > access_keys;
+        access_keys.reserve(get_conf().access_tokens.size());
+        for (size_t idx = 0; idx < get_conf().access_tokens.size(); ++i) {
+            uint32_t salt     = 0;
+            uint64_t hashval1 = 0;
+            uint64_t hashval2 = 0;
+            if (generate_access_hash(idx, salt, hashval1, hashval2)) {
+                access_keys.push_back(::atbus::protocol::Createaccess_data(fbb, salt, hashval1, hashval2));
+            }
+        }
+
         ::atbus::protocol::Createmsg(fbb,
                                      ::atbus::protocol::Createmsg_head(fbb, ::atbus::protocol::ATBUS_PROTOCOL_CONST_ATBUS_PROTOCOL_VERSION,
                                                                        type, 0, alloc_msg_seq(), self_id),
                                      ::atbus::protocol::msg_body_data_transform_req,
                                      ::atbus::protocol::Createforward_data(fbb, self_id, tid, fbb.CreateVector(&self_id, 1),
                                                                            fbb.CreateVector(reinterpret_cast<const uint8_t *>(buffer), s),
-                                                                           flags)
+                                                                           flags, fbb.CreateVector(access_keys))
                                          .Union());
 
         return send_data_msg(tid, fbb);
@@ -879,6 +897,40 @@ namespace atbus {
         return NULL != self_->get_data_connection(ep, false);
     }
 
+    bool node::generate_access_hash(size_t idx, uint32_t &salt, uint64_t &hashval1, uint64_t &hashval2) {
+        if (idx >= conf_.access_tokens.size()) {
+            salt     = 0;
+            hashval1 = 0;
+            hashval2 = 0;
+            return false;
+        }
+
+        salt            = static_cast<uint32_t>(random_engine_.random());
+        uint64_t out[2] = {0};
+        ::util::hash::murmur_hash3_x64_128(reinterpret_cast<const void *>(&conf_.access_tokens[idx][0]),
+                                           static_cast<const int>(conf_.access_tokens[idx].size()), salt, out);
+        hashval1 = out[0];
+        hashval2 = out[1];
+        return true;
+    }
+
+    bool node::check_access_hash(const uint32_t salt, const uint64_t hashval1, const uint64_t hashval2) const {
+        if (conf_.access_tokens.empty()) {
+            return true;
+        }
+
+        for (size_t i = 0; i < conf_.access_tokens.size(); ++i) {
+            uint64_t out[2] = {0};
+            ::util::hash::murmur_hash3_x64_128(reinterpret_cast<const void *>(&conf_.access_tokens[i][0]),
+                                               static_cast<const int>(conf_.access_tokens[i].size()), salt, out);
+            if (hashval1 == out[0] && hashval2 == out[1]) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     adapter::loop_t *node::get_evloop() {
         // if just created, do not alloc new event loop
         if (state_t::CREATED == state_) {
@@ -1085,6 +1137,7 @@ namespace atbus {
                 if (NULL != ep) {
                     add_endpoint_fault(*ep);
                 }
+                add_connection_fault(*conn);
             }
             return;
         }
@@ -1097,6 +1150,7 @@ namespace atbus {
                 if (NULL != ep) {
                     add_endpoint_fault(*ep);
                 }
+                add_connection_fault(*conn);
             }
 
             return;
@@ -1108,13 +1162,17 @@ namespace atbus {
 
         if (NULL != conn) {
             endpoint *ep = conn->get_binding();
-            if (NULL != ep) {
-                // 如果消息为回发转发消息失败，并且回发成功，则是为正确流程，不能标记错误
-                if (m->body_type() != ::atbus::protocol::msg_body_data_transform_rsp && m->head.ret < 0) {
+            // 如果消息为回发转发消息失败，并且回发成功，则是为正确流程，不能标记错误
+            if (m->body_type() != ::atbus::protocol::msg_body_data_transform_rsp && m->head.ret < 0) {
+                if (NULL != ep) {
                     add_endpoint_fault(*ep);
-                } else {
+                }
+                add_connection_fault(*conn);
+            } else {
+                if (NULL != ep) {
                     ep->clear_stat_fault();
                 }
+                conn->clear_stat_fault();
             }
         }
     }
@@ -1580,6 +1638,17 @@ namespace atbus {
 
         return false;
     }
+
+    bool node::add_connection_fault(connection &conn) {
+        size_t fault_count = conn.add_stat_fault();
+        if (fault_count > conf_.fault_tolerant) {
+            conn.disconnect();
+            return true;
+        }
+
+        return false;
+    }
+
 
     void node::add_ping_timer(endpoint::ptr_t &ep) {
         if (!ep) {

@@ -12,8 +12,9 @@ table custom_command_argv {
 }
 
 table custom_command_data {
-    from    : uint64                (id: 0);
-    commands: [custom_command_argv] (id: 1);
+    from        : uint64                (id: 0);
+    commands    : [custom_command_argv] (id: 1);
+    access_keys : [access_data]         (id: 2); // ID: 2
 }
 
 table forward_data {
@@ -22,6 +23,12 @@ table forward_data {
     router  : [uint64] (id: 2);
     content : [ubyte]  (id: 3);
     flags   : uint32   (id: 4);
+}
+
+table access_data {
+    token_salt : uint32  (id: 0);
+    token_hash1: uint64  (id: 1);
+    token_hash2: uint64  (id: 2);
 }
 
 table channel_data {
@@ -53,6 +60,7 @@ table register_data {
     children_id_mask    : uint32            (id: 4); // ID: 4
     children_id_prefix  : uint64            (id: 5); // ID: 5(0 for using bus_id)
     flags               : uint32            (id: 6); // ID: 6
+    access_keys         : [access_data]     (id: 7); // ID: 7
 }
 
 table connection_data {

@@ -435,6 +435,12 @@ namespace atbus {
         return conn_data_.push_fn(*this, buffer, s);
     }
 
+    /** 增加错误计数 **/
+    size_t connection::add_stat_fault() { return ++stat_.fault_count; }
+
+    /** 清空错误计数 **/
+    void connection::clear_stat_fault() { stat_.fault_count = 0; }
+
     bool connection::is_connected() const { return state_t::CONNECTED == state_; }
 
     endpoint *connection::get_binding() { return binding_; }
