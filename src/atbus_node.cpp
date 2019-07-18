@@ -590,7 +590,7 @@ namespace atbus {
 
         std::vector<flatbuffers::Offset< ::atbus::protocol::access_data> > access_keys;
         access_keys.reserve(get_conf().access_tokens.size());
-        for (size_t idx = 0; idx < get_conf().access_tokens.size(); ++i) {
+        for (size_t idx = 0; idx < get_conf().access_tokens.size(); ++idx) {
             uint32_t salt     = 0;
             uint64_t hashval1 = 0;
             uint64_t hashval2 = 0;
@@ -1767,7 +1767,7 @@ namespace atbus {
         }
 
         if (NULL == conn) {
-            return EN_ATBUS_ERR_ATNODE_NO_CONNECTION;
+        return EN_ATBUS_ERR_ATNODE_NO_CONNECTION;
         }
 
         ::flatbuffers::Verifier msg_verify(mb.GetBufferPointer(), mb.GetSize());
