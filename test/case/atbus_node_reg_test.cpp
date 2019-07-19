@@ -338,7 +338,7 @@ CASE_TEST(atbus_node_reg, reg_pc_success) {
         node_parent->init(0x12345678, &conf);
 
         conf.children_mask  = 8;
-        conf.father_address = "ipv4://127.0.0.1:16387";
+        conf.parent_address = "ipv4://127.0.0.1:16387";
         node_child->init(0x12346789, &conf);
 
         CASE_EXPECT_EQ(EN_ATBUS_ERR_SUCCESS, node_parent->listen("ipv4://127.0.0.1:16387"));
@@ -527,7 +527,7 @@ CASE_TEST(atbus_node_reg, conflict) {
         node_parent->init(0x12345678, &conf);
 
         conf.children_mask  = 8;
-        conf.father_address = "ipv4://127.0.0.1:16387";
+        conf.parent_address = "ipv4://127.0.0.1:16387";
         node_child->init(0x12346789, &conf);
         // 子域冲突，注册失败
         node_child_fail->init(0x12346780, &conf);
@@ -573,7 +573,7 @@ CASE_TEST(atbus_node_reg, conflict) {
 
 // 对父节点重连失败不会导致下线的流程测试
 // 对父节点断线重连的流程测试
-CASE_TEST(atbus_node_reg, reconnect_father_failed) {
+CASE_TEST(atbus_node_reg, reconnect_parent_failed) {
     atbus::node::conf_t conf;
     atbus::node::default_conf(&conf);
     conf.children_mask = 16;
@@ -595,7 +595,7 @@ CASE_TEST(atbus_node_reg, reconnect_father_failed) {
         node_parent->init(0x12345678, &conf);
 
         conf.children_mask  = 8;
-        conf.father_address = "ipv4://127.0.0.1:16387";
+        conf.parent_address = "ipv4://127.0.0.1:16387";
         node_child->init(0x12346789, &conf);
 
         node_child->set_on_shutdown_handle(node_test_on_shutdown);
@@ -643,7 +643,7 @@ CASE_TEST(atbus_node_reg, reconnect_father_failed) {
         // 父节点断线重连测试
         // 子节点断线后重新注册测试
         conf.children_mask  = 16;
-        conf.father_address = "";
+        conf.parent_address = "";
         node_parent->init(0x12345678, &conf);
         CASE_EXPECT_EQ(EN_ATBUS_ERR_SUCCESS, node_parent->listen("ipv4://127.0.0.1:16387"));
         CASE_EXPECT_EQ(EN_ATBUS_ERR_SUCCESS, node_parent->start());

@@ -55,7 +55,7 @@ namespace atbus {
         event_timer_.sec                   = 0;
         event_timer_.usec                  = 0;
         event_timer_.node_sync_push        = 0;
-        event_timer_.father_opr_time_point = 0;
+        event_timer_.parent_opr_time_point = 0;
         random_engine_.init_seed(static_cast<uint64_t>(time(NULL)));
 
         flags_.reset();
@@ -154,14 +154,14 @@ namespace atbus {
         event_timer_.sec = time(NULL);
 
         // 连接父节点
-        if (!conf_.father_address.empty()) {
-            if (!node_father_.node_) {
+        if (!conf_.parent_address.empty()) {
+            if (!node_parent_.node_) {
                 // 如果父节点被激活了，那么父节点操作时间必须更新到非0值，以启用这个功能
-                if (connect(conf_.father_address.c_str()) >= 0) {
-                    event_timer_.father_opr_time_point = event_timer_.sec + conf_.first_idle_timeout;
+                if (connect(conf_.parent_address.c_str()) >= 0) {
+                    event_timer_.parent_opr_time_point = event_timer_.sec + conf_.first_idle_timeout;
                     state_                             = state_t::CONNECTING_PARENT;
                 } else {
-                    event_timer_.father_opr_time_point = event_timer_.sec + conf_.retry_interval;
+                    event_timer_.parent_opr_time_point = event_timer_.sec + conf_.retry_interval;
                     state_                             = state_t::LOST_PARENT;
                 }
             }
@@ -205,8 +205,8 @@ namespace atbus {
         proc_connections_.clear();
 
         // 销毁endpoint
-        if (node_father_.node_) {
-            remove_endpoint(node_father_.node_->get_id());
+        if (node_parent_.node_) {
+            remove_endpoint(node_parent_.node_->get_id());
         }
         // endpoint 不应该游离在node以外，所以这里就应该要触发endpoint::reset
         remove_collection(node_brother_);
@@ -314,33 +314,33 @@ namespace atbus {
         }
 
         // 父节点操作
-        if (!conf_.father_address.empty() && 0 != event_timer_.father_opr_time_point && event_timer_.father_opr_time_point < sec) {
+        if (!conf_.parent_address.empty() && 0 != event_timer_.parent_opr_time_point && event_timer_.parent_opr_time_point < sec) {
             // 获取命令节点
             connection *ctl_conn = NULL;
-            if (node_father_.node_) {
-                ctl_conn = self_->get_ctrl_connection(node_father_.node_.get());
+            if (node_parent_.node_) {
+                ctl_conn = self_->get_ctrl_connection(node_parent_.node_.get());
             }
 
             // 父节点重连
             if (NULL == ctl_conn) {
-                int res = connect(conf_.father_address.c_str());
+                int res = connect(conf_.parent_address.c_str());
                 if (res < 0) {
                     ATBUS_FUNC_NODE_ERROR(*this, NULL, NULL, res, 0);
 
-                    event_timer_.father_opr_time_point = sec + conf_.retry_interval;
+                    event_timer_.parent_opr_time_point = sec + conf_.retry_interval;
                 } else {
                     // 下一次判定父节点连接超时再重新连接
-                    event_timer_.father_opr_time_point = sec + conf_.first_idle_timeout;
+                    event_timer_.parent_opr_time_point = sec + conf_.first_idle_timeout;
                     state_                             = state_t::CONNECTING_PARENT;
                 }
             } else {
-                int res = ping_endpoint(*node_father_.node_);
+                int res = ping_endpoint(*node_parent_.node_);
                 if (res < 0) {
                     ATBUS_FUNC_NODE_ERROR(*this, NULL, NULL, res, 0);
                 }
 
                 // ping包不需要重试
-                event_timer_.father_opr_time_point = sec + conf_.ping_interval;
+                event_timer_.parent_opr_time_point = sec + conf_.ping_interval;
             }
         }
 
@@ -530,9 +530,9 @@ namespace atbus {
     }
 
     int node::disconnect(bus_id_t id) {
-        if (node_father_.node_ && id == node_father_.node_->get_id()) {
+        if (node_parent_.node_ && id == node_parent_.node_->get_id()) {
             endpoint::ptr_t ep_ptr;
-            ep_ptr.swap(node_father_.node_);
+            ep_ptr.swap(node_parent_.node_);
 
             // event
             if (event_msg_.on_endpoint_removed) {
@@ -672,8 +672,8 @@ namespace atbus {
 
         do {
             // 父节点单独判定，防止父节点被判定为兄弟节点
-            if (node_father_.node_ && is_parent_node(tid)) {
-                target = node_father_.node_.get();
+            if (node_parent_.node_ && is_parent_node(tid)) {
+                target = node_parent_.node_.get();
                 conn   = (self_.get()->*fn)(target);
 
                 ASSIGN_EPCONN();
@@ -688,7 +688,7 @@ namespace atbus {
 
                     ASSIGN_EPCONN();
                     break;
-                } else if (false == get_self_endpoint()->get_flag(endpoint::flag_t::GLOBAL_ROUTER) && node_father_.node_) {
+                } else if (false == get_self_endpoint()->get_flag(endpoint::flag_t::GLOBAL_ROUTER) && node_parent_.node_) {
                     // 如果没有全量表则发给父节点
                     /*
                     //       F1
@@ -696,7 +696,7 @@ namespace atbus {
                     //    C11  C12
                     // 当C11发往C12时触发这种情况
                     */
-                    target = node_father_.node_.get();
+                    target = node_parent_.node_.get();
                     conn   = (self_.get()->*fn)(target);
 
                     ASSIGN_EPCONN();
@@ -725,8 +725,8 @@ namespace atbus {
             //    C11  C12        C21  C22
             // 当C11发往C21或C22时触发这种情况
             */
-            if (node_father_.node_ && false == get_self_endpoint()->get_flag(endpoint::flag_t::GLOBAL_ROUTER)) {
-                target = node_father_.node_.get();
+            if (node_parent_.node_ && false == get_self_endpoint()->get_flag(endpoint::flag_t::GLOBAL_ROUTER)) {
+                target = node_parent_.node_.get();
                 conn   = (self_.get()->*fn)(target);
 
                 ASSIGN_EPCONN();
@@ -745,7 +745,7 @@ namespace atbus {
 
     endpoint *node::get_endpoint(bus_id_t tid) {
         if (is_parent_node(tid)) {
-            return node_father_.node_.get();
+            return node_parent_.node_.get();
         }
 
         // 直连兄弟节点
@@ -782,12 +782,13 @@ namespace atbus {
 
         // 父节点单独判定，由于防止测试兄弟节点
         if (0 != get_id() && ep->get_children_mask() > self_->get_children_mask() && ep->is_child_node(get_id())) {
-            if (!node_father_.node_) {
-                node_father_.node_ = ep;
+            if (!node_parent_.node_) {
+                node_parent_.node_ = ep;
                 add_ping_timer(ep);
 
                 if ((state_t::LOST_PARENT == get_state() || state_t::CONNECTING_PARENT == get_state()) &&
                     check_flag(flag_t::EN_FT_PARENT_REG_DONE)) {
+                    // 这里是自己先注册到父节点，然后才完成父节点对自己的注册流程，在msg_handler::on_recv_node_reg_rsp里已经标记 EN_FT_PARENT_REG_DONE 了
                     on_actived();
                 }
 
@@ -835,13 +836,13 @@ namespace atbus {
     int node::remove_endpoint(bus_id_t tid) {
         // 父节点单独判定，由于防止测试兄弟节点
         if (is_parent_node(tid)) {
-            endpoint::ptr_t ep = node_father_.node_;
+            endpoint::ptr_t ep = node_parent_.node_;
 
-            node_father_.node_.reset();
+            node_parent_.node_.reset();
             state_ = state_t::LOST_PARENT;
 
-            // set reconnect to father into retry interval
-            event_timer_.father_opr_time_point = get_timer_sec() + conf_.retry_interval;
+            // set reconnect to parent into retry interval
+            event_timer_.parent_opr_time_point = get_timer_sec() + conf_.retry_interval;
 
             // event
             if (event_msg_.on_endpoint_removed) {
@@ -961,8 +962,8 @@ namespace atbus {
             return true;
         }
 
-        if (node_father_.node_) {
-            return self_->is_brother_node(id, node_father_.node_->get_children_mask());
+        if (node_parent_.node_) {
+            return self_->is_brother_node(id, node_parent_.node_->get_children_mask());
         } else {
             return self_->is_brother_node(id, 0);
         }
@@ -973,8 +974,8 @@ namespace atbus {
             return false;
         }
 
-        if (node_father_.node_) {
-            return self_->is_parent_node(id, node_father_.node_->get_id(), node_father_.node_->get_children_mask());
+        if (node_parent_.node_) {
+            return self_->is_parent_node(id, node_parent_.node_->get_id(), node_parent_.node_->get_children_mask());
         }
 
         return false;
@@ -1214,11 +1215,11 @@ namespace atbus {
         }
 
         // 父节点断线逻辑则重置状态
-        if (state_t::CONNECTING_PARENT == state_ && !conf_.father_address.empty() && conf_.father_address == conn->get_address().address) {
+        if (state_t::CONNECTING_PARENT == state_ && !conf_.parent_address.empty() && conf_.parent_address == conn->get_address().address) {
             state_ = state_t::LOST_PARENT;
 
-            // set reconnect to father into retry interval
-            event_timer_.father_opr_time_point = get_timer_sec() + conf_.retry_interval;
+            // set reconnect to parent into retry interval
+            event_timer_.parent_opr_time_point = get_timer_sec() + conf_.retry_interval;
 
             // if not activited, shutdown
             if (!flags_.test(flag_t::EN_FT_ACTIVED)) {
@@ -1767,7 +1768,7 @@ namespace atbus {
         }
 
         if (NULL == conn) {
-        return EN_ATBUS_ERR_ATNODE_NO_CONNECTION;
+            return EN_ATBUS_ERR_ATNODE_NO_CONNECTION;
         }
 
         ::flatbuffers::Verifier msg_verify(mb.GetBufferPointer(), mb.GetSize());

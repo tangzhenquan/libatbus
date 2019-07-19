@@ -500,7 +500,7 @@ CASE_TEST(atbus_node_msg, parent_and_child) {
         node_parent->init(0x12345678, &conf);
 
         conf.children_mask  = 8;
-        conf.father_address = "ipv4://127.0.0.1:16387";
+        conf.parent_address = "ipv4://127.0.0.1:16387";
         node_child->init(0x12346789, &conf);
 
         CASE_EXPECT_EQ(EN_ATBUS_ERR_SUCCESS, node_parent->listen("ipv4://127.0.0.1:16387"));
@@ -585,7 +585,7 @@ CASE_TEST(atbus_node_msg, transfer_and_connect) {
         node_parent->init(0x12345678, &conf);
 
         conf.children_mask  = 8;
-        conf.father_address = "ipv4://127.0.0.1:16387";
+        conf.parent_address = "ipv4://127.0.0.1:16387";
         node_child_1->init(0x12346789, &conf);
         node_child_2->init(0x12346890, &conf);
 
@@ -663,9 +663,9 @@ CASE_TEST(atbus_node_msg, transfer_only) {
         node_parent_2->init(0x12356789, &conf);
 
         conf.children_mask  = 8;
-        conf.father_address = "ipv4://127.0.0.1:16387";
+        conf.parent_address = "ipv4://127.0.0.1:16387";
         node_child_1->init(0x12346789, &conf);
-        conf.father_address = "ipv4://127.0.0.1:16388";
+        conf.parent_address = "ipv4://127.0.0.1:16388";
         node_child_2->init(0x12354678, &conf);
 
         CASE_EXPECT_EQ(EN_ATBUS_ERR_SUCCESS, node_parent_1->listen("ipv4://127.0.0.1:16387"));
@@ -779,7 +779,7 @@ CASE_TEST(atbus_node_msg, transfer_failed) {
         node_parent->init(0x12345678, &conf);
 
         conf.children_mask  = 8;
-        conf.father_address = "ipv4://127.0.0.1:16387";
+        conf.parent_address = "ipv4://127.0.0.1:16387";
         node_child_1->init(0x12346789, &conf);
 
         CASE_EXPECT_EQ(EN_ATBUS_ERR_SUCCESS, node_parent->listen("ipv4://127.0.0.1:16387"));
@@ -856,7 +856,7 @@ CASE_TEST(atbus_node_msg, transfer_failed_cross_parents) {
 
 
         conf.children_mask  = 8;
-        conf.father_address = "ipv4://127.0.0.1:16387";
+        conf.parent_address = "ipv4://127.0.0.1:16387";
         node_child_1->init(0x12346789, &conf);
 
         CASE_EXPECT_EQ(EN_ATBUS_ERR_SUCCESS, node_parent_1->listen("ipv4://127.0.0.1:16387"));

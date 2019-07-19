@@ -485,7 +485,6 @@ namespace atbus {
             std::vector<flatbuffers::Offset< ::atbus::protocol::custom_command_argv> > rsp_texts;
             rsp_texts.reserve(rsp_data.size());
             for (std::list<std::string>::iterator iter = rsp_data.begin(); iter != rsp_data.end(); ++iter) {
-                rsp_msg.body.custom->commands.push_back(cmd);
                 rsp_texts.push_back(::atbus::protocol::Createcustom_command_argv(
                     fbb, fbb.CreateVector(reinterpret_cast<const uint8_t *>((*iter).c_str()), (*iter).size())));
             }
@@ -525,7 +524,7 @@ namespace atbus {
         std::vector<std::pair<const void *, size_t> > cmd_args;
         cmd_args.reserve(cmd_data->commands()->size());
         for (::flatbuffers::uoffset_t i = 0; i < cmd_data->commands()->size(); ++i) {
-            ::atbus::protocol::custom_command_argv *arg = cmd_data->commands()->Get(i);
+            const ::atbus::protocol::custom_command_argv *arg = cmd_data->commands()->Get(i);
             if (NULL != arg) {
                 cmd_args.push_back(std::make_pair<const void *, size_t>(static_cast<const void *>(arg->arg()->data()), arg->arg()->size()));
             }
@@ -743,7 +742,7 @@ namespace atbus {
 
             do {
                 // 如果是父节点回的错误注册包，且未被激活过，则要关闭进程
-                if (conn->get_address().address == n.get_conf().father_address) {
+                if (conn->get_address().address == n.get_conf().parent_address) {
                     if (!n.check_flag(node::flag_t::EN_FT_ACTIVED)) {
                         ATBUS_FUNC_NODE_DEBUG(n, ep, conn, &m, "node register to parent node failed, shutdown");
                         ATBUS_FUNC_NODE_FATAL_SHUTDOWN(n, ep, conn, m.head()->ret(), errcode);
@@ -761,9 +760,11 @@ namespace atbus {
             // 父节点返回的rsp成功则可以上线
             // 这时候父节点的endpoint不一定初始化完毕
             if (n.is_parent_node(m.body.reg->bus_id)) {
+                // 父节点先注册完成
                 n.on_parent_reg_done();
                 n.on_actived();
             } else {
+                // 父节点还没注册完成，等父节点注册完成后再 on_actived()
                 node::bus_id_t min_c = endpoint::get_children_min_id(m.body.reg->bus_id, m.body.reg->children_id_mask);
                 node::bus_id_t max_c = endpoint::get_children_max_id(m.body.reg->bus_id, m.body.reg->children_id_mask);
                 if (n.get_id() != m.body.reg->bus_id && n.get_id() >= min_c && n.get_id() <= max_c) {

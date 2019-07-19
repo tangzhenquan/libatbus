@@ -1,23 +1,22 @@
-﻿#include <iostream>
-#include <fstream>
-#include <cstdlib>
+﻿#include <cstdlib>
 #include <cstring>
 #include <ctime>
+#include <fstream>
+#include <iostream>
+#include <limits>
 #include <map>
 #include <memory>
-#include <limits>
 #include <numeric>
 
 #include <common/string_oprs.h>
 
-#include <detail/libatbus_error.h>
-#include <atbus_node.h>
-#include <atbus_endpoint.h>
 #include "frame/test_macros.h"
+#include <atbus_endpoint.h>
+#include <atbus_node.h>
+#include <detail/libatbus_error.h>
 
 
-CASE_TEST(atbus_endpoint, get_children_min_max)
-{
+CASE_TEST(atbus_endpoint, get_children_min_max) {
     atbus::endpoint::bus_id_t tested = atbus::endpoint::get_children_max_id(0x12345678, 16);
     CASE_EXPECT_EQ(tested, 0x1234FFFF);
 
@@ -25,8 +24,7 @@ CASE_TEST(atbus_endpoint, get_children_min_max)
     CASE_EXPECT_EQ(tested, 0x12340000);
 }
 
-CASE_TEST(atbus_endpoint, is_child)
-{
+CASE_TEST(atbus_endpoint, is_child) {
     atbus::node::conf_t conf;
     atbus::node::default_conf(&conf);
     conf.children_mask = 16;
@@ -47,7 +45,7 @@ CASE_TEST(atbus_endpoint, is_child)
     }
 
     {
-        conf.children_mask = 0;
+        conf.children_mask      = 0;
         atbus::node::ptr_t node = atbus::node::create();
         node->init(0x12345678, &conf);
         // 0值判定，无子节点
@@ -56,8 +54,7 @@ CASE_TEST(atbus_endpoint, is_child)
     }
 }
 
-CASE_TEST(atbus_endpoint, is_brother)
-{
+CASE_TEST(atbus_endpoint, is_brother) {
     uint32_t fake_mask = 24;
     atbus::node::conf_t conf;
     atbus::node::default_conf(&conf);
@@ -84,8 +81,8 @@ CASE_TEST(atbus_endpoint, is_brother)
     // 父节点是兄弟节点
     */
     CASE_EXPECT_TRUE(node->get_self_endpoint()->is_brother_node(0x12000001, fake_mask));
-    
-    
+
+
     /*      [A]
     //      / \
     //     B   X
@@ -107,8 +104,7 @@ CASE_TEST(atbus_endpoint, is_brother)
     CASE_EXPECT_FALSE(node->get_self_endpoint()->is_brother_node(0x12340001, 0));
 }
 
-CASE_TEST(atbus_endpoint, is_father)
-{
+CASE_TEST(atbus_endpoint, is_parent) {
     uint32_t fake_mask = 24;
     atbus::node::conf_t conf;
     atbus::node::default_conf(&conf);
@@ -121,21 +117,20 @@ CASE_TEST(atbus_endpoint, is_father)
     CASE_EXPECT_FALSE(node->get_self_endpoint()->is_parent_node(0x12000002, 0x12000001, fake_mask));
 }
 
-CASE_TEST(atbus_endpoint, get_connection)
-{
+CASE_TEST(atbus_endpoint, get_connection) {
     atbus::node::conf_t conf;
     atbus::node::default_conf(&conf);
     conf.children_mask = 16;
     uv_loop_t ev_loop;
     uv_loop_init(&ev_loop);
 
-    conf.ev_loop = &ev_loop;
+    conf.ev_loop          = &ev_loop;
     conf.recv_buffer_size = 64 * 1024;
 
-    char* buffer = new char[conf.recv_buffer_size];
+    char *buffer = new char[conf.recv_buffer_size];
     memset(buffer, -1, sizeof(conf.recv_buffer_size)); // init it and then valgrind will now report uninitialised used
 
-    char addr[32] = { 0 };
+    char addr[32] = {0};
     UTIL_STRFUNC_SNPRINTF(addr, sizeof(addr), "mem://0x%p", buffer);
     if (addr[8] == '0' && addr[9] == 'x') {
         memset(addr, 0, sizeof(addr));
@@ -160,14 +155,13 @@ CASE_TEST(atbus_endpoint, get_connection)
 
         CASE_EXPECT_EQ(0, node->add_endpoint(ep));
 
-        atbus::connection* conn3 = node->get_self_endpoint()->get_data_connection(ep.get());
+        atbus::connection *conn3 = node->get_self_endpoint()->get_data_connection(ep.get());
         CASE_EXPECT_EQ(conn3, conn1.get());
-
     }
 
     while (UV_EBUSY == uv_loop_close(&ev_loop)) {
         uv_run(&ev_loop, UV_RUN_ONCE);
     }
 
-    delete []buffer;
+    delete[] buffer;
 }

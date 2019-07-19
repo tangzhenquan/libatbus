@@ -76,7 +76,7 @@ namespace atbus {
             adapter::loop_t *ev_loop;
             uint32_t children_mask;                      /** 子节点掩码 **/
             std::bitset<conf_flag_t::EN_CONF_MAX> flags; /** 开关配置 **/
-            std::string father_address;                  /** 父节点地址 **/
+            std::string parent_address;                  /** 父节点地址 **/
             int loop_times;                              /** 消息循环次数限制，防止某些通道繁忙把其他通道堵死 **/
             int ttl;                                     /** 消息转发跳转限制 **/
 
@@ -328,7 +328,7 @@ namespace atbus {
 
         inline const endpoint *get_self_endpoint() const { return self_ ? self_.get() : NULL; }
 
-        inline const endpoint *get_parent_endpoint() const { return node_father_.node_.get(); }
+        inline const endpoint *get_parent_endpoint() const { return node_parent_.node_.get(); }
 
         inline const endpoint_collection_t &get_children() const { return node_children_; };
 
@@ -576,7 +576,7 @@ namespace atbus {
             time_t usec;
 
             time_t node_sync_push;                                   // 节点变更推送
-            time_t father_opr_time_point;                            // 父节点操作时间（断线重连或Ping）
+            time_t parent_opr_time_point;                            // 父节点操作时间（断线重连或Ping）
             timer_desc_ls<std::weak_ptr<endpoint> >::type ping_list; // 定时ping
             timer_desc_ls<connection::ptr_t>::type connecting_list;  // 未完成连接（正在网络连接或握手）
             std::list<endpoint::ptr_t> pending_check_list_;          // 待检测列表
@@ -592,10 +592,10 @@ namespace atbus {
 
         // ============ 节点逻辑关系数据 ============
         // 父节点
-        struct father_info_t {
+        struct parent_info_t {
             endpoint::ptr_t node_;
         };
-        father_info_t node_father_;
+        parent_info_t node_parent_;
 
         // 兄弟节点
         endpoint_collection_t node_brother_;

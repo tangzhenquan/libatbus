@@ -10,6 +10,9 @@
     "cmake.buildEnvironment": {
         "CPRINTF_MODE": "none"
     },
+    "[cpp]": {
+        "editor.formatOnSave": false
+    },
     "files.associations": {
         "*.ejs": "html",
         "array": "cpp",

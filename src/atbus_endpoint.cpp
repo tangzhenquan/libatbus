@@ -89,7 +89,7 @@ namespace atbus {
         return (id & mask) == (id_ & mask);
     }
 
-    bool endpoint::is_brother_node(bus_id_t id, uint32_t father_mask) const {
+    bool endpoint::is_brother_node(bus_id_t id, uint32_t parent_mask) const {
         // id_ == 0 means a temporary node, and all other node is a brother
         if (0 == id_) {
             return true;
@@ -98,14 +98,14 @@ namespace atbus {
         // 兄弟节点的子节点也视为兄弟节点
         // 目前id是整数，直接位运算即可
         bus_id_t c_mask = ~((1 << children_mask_) - 1);
-        bus_id_t f_mask = ~((1 << father_mask) - 1);
+        bus_id_t f_mask = ~((1 << parent_mask) - 1);
         // 同一父节点下，且子节点域不同
-        return (id & c_mask) != (id_ & c_mask) && (0 == father_mask || (id & f_mask) == (id_ & f_mask));
+        return (id & c_mask) != (id_ & c_mask) && (0 == parent_mask || (id & f_mask) == (id_ & f_mask));
     }
 
-    bool endpoint::is_parent_node(bus_id_t id, bus_id_t father_id, uint32_t /*father_mask*/) {
-        // bus_id_t mask = ~((1 << father_mask) - 1);
-        return id == father_id;
+    bool endpoint::is_parent_node(bus_id_t id, bus_id_t parent_id, uint32_t /*parent_mask*/) {
+        // bus_id_t mask = ~((1 << parent_mask) - 1);
+        return id == parent_id;
     }
 
     endpoint::bus_id_t endpoint::get_children_min_id(bus_id_t id, uint32_t mask) {
