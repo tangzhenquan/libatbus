@@ -10,14 +10,18 @@
 #include <sys/mman.h>
 
 int main() {
-    // mkdir ("/dev/shm/libatbus", S_IRWXU | S_IRWXG | S_IRWXO);
-    // mkdir ("/dev/shm/libatbus/test", S_IRWXU | S_IRWXG | S_IRWXO);
     // GNU libc (>=2.19) validates the shared memory name. Specifically, the shared memory object MUST now be at the root of the shmfs mount point.
     // @see https://stackoverflow.com/questions/23145458/shm-open-fails-with-einval-when-creating-shared-memory-in-subdirectory-of-dev
     // @see https://sourceware.org/git/?p=glibc.git;a=commit;h=b20de2c3d9d751eb259c321426188eefc64fcbe9
     // @see https://sourceware.org/bugzilla/show_bug.cgi?id=16274
     // link with -lrt
-    int test_fd = shm_open("/libatbus-test-shm.bus", O_RDWR | O_CREAT, S_IRWXU | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
+    // int test_fd = shm_open("/dev/shm/libatbus-test-shm.bus", O_RDWR | O_CREAT, S_IRWXU | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
+    // glibc接口的shm_unlink不允许子目录
+#if
+
+    mkdir ("/dev/shm/libatbus", S_IRWXU | S_IRWXG | S_IRWXO);
+    mkdir ("/dev/shm/libatbus/test", S_IRWXU | S_IRWXG | S_IRWXO);
+    int test_fd = openat(AT_FDCWD, "/dev/shm/libatbus/test/shm.bus", O_RDWR | O_CREAT | O_NOFOLLOW | O_CLOEXEC, S_IRWXU | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
     if (test_fd < 0) {
         printf("shm_open failed, err: %d, %s\n", errno, strerror(errno));
         return 1;
