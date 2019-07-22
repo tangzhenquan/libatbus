@@ -88,8 +88,16 @@ static int node_msg_test_recv_msg_test_record_fn(const atbus::node &n, const atb
     recv_msg_history.conn   = conn;
     recv_msg_history.status = m.head()->ret();
     ++recv_msg_history.count;
-    if (NULL != m.body()->forward()) {
-        recv_msg_history.last_msg_router.assign(m->body()->forward()->router()->begin(), m->body()->forward()->router()->end());
+
+    const ::atbus::protocol::forward_data *fwd_data = NULL;
+    if (m.body_type() == ::atbus::protocol::msg_body_data_transform_req) {
+        fwd_data = m.body_as_data_transform_req();
+    } else if (m.body_type() == ::atbus::protocol::msg_body_data_transform_rsp) {
+        fwd_data = m.body_as_data_transform_rsp();
+    }
+
+    if (NULL != fwd_data) {
+        recv_msg_history.last_msg_router.assign(fwd_data->router()->begin(), fwd_data->router()->end());
     } else {
         recv_msg_history.last_msg_router.clear();
     }
@@ -119,14 +127,24 @@ static int node_msg_test_send_data_failed_fn(const atbus::node &n, const atbus::
     recv_msg_history.conn   = conn;
     recv_msg_history.status = NULL == m ? 0 : m->head()->ret();
     ++recv_msg_history.failed_count;
-    if (NULL != m && NULL != m->body()->forward()) {
-        recv_msg_history.last_msg_router.assign(m->body()->forward()->router()->begin(), m->body()->forward()->router()->end());
+
+    const ::atbus::protocol::forward_data *fwd_data = NULL;
+    if (NULL != m) {
+        if (m->body_type() == ::atbus::protocol::msg_body_data_transform_req) {
+            fwd_data = m->body_as_data_transform_req();
+        } else if (m->body_type() == ::atbus::protocol::msg_body_data_transform_rsp) {
+            fwd_data = m->body_as_data_transform_rsp();
+        }
+    }
+
+    if (NULL != fwd_data) {
+        recv_msg_history.last_msg_router.assign(fwd_data->router()->begin(), fwd_data->router()->end());
     } else {
         recv_msg_history.last_msg_router.clear();
     }
 
-    if (NULL != m && NULL != m->body()->forward() && NULL != m->body()->forward()->content() && m->body()->forward()->content()->size() > 0) {
-        recv_msg_history.data.assign(reinterpret_cast<const char *>(m->body()->forward()->content()->data()), m->body()->forward()->content()->size());
+    if (NULL != m && NULL != fwd_data && NULL != fwd_data->content() && fwd_data->content()->size() > 0) {
+        recv_msg_history.data.assign(reinterpret_cast<const char *>(fwd_data->content()->data()), fwd_data->content()->size());
     } else {
         recv_msg_history.data.clear();
     }

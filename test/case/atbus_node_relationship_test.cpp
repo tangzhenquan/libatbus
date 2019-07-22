@@ -30,16 +30,18 @@ CASE_TEST(atbus_node_rela, basic_test) {
         uint32_t flags   = 0;
         flags |= atbus::protocol::ATBUS_FORWARD_DATA_FLAG_TYPE_REQUIRE_RSP;
 
-        ::atbus::protocol::Createmsg(fbb,
+        fbb.Finish(::atbus::protocol::Createmsg(fbb,
                                      ::atbus::protocol::Createmsg_head(fbb, ::atbus::protocol::ATBUS_PROTOCOL_CONST_ATBUS_PROTOCOL_VERSION,
                                                                        123, 0, 9876543210, self_id),
                                      ::atbus::protocol::msg_body_data_transform_req,
                                      ::atbus::protocol::Createforward_data(fbb, 0x123456789, 0x987654321, fbb.CreateVector(&self_id, 1),
                                                                            fbb.CreateVector(reinterpret_cast<const uint8_t *>(test_buffer), sizeof(test_buffer)),
                                                                            flags)
-                                         .Union());
+                                         .Union())
 
-        packed_buffer.assign(reinterpret_cast<const unsigned char *>(fbb.GetBufferPointer(), fbb.GetSize()));
+        );
+        packed_buffer.assign(reinterpret_cast<const unsigned char *>(fbb.GetBufferPointer()), 
+            reinterpret_cast<const unsigned char *>(fbb.GetBufferPointer()) + fbb.GetSize());
         std::stringstream so;
         util::string::serialization(packed_buffer.data(), packed_buffer.size(), so);
         CASE_MSG_INFO() << "flatbuffers encoded(size=" << packed_buffer.size() << "): " << so.str() << std::endl;
@@ -58,7 +60,7 @@ CASE_TEST(atbus_node_rela, basic_test) {
 
         CASE_EXPECT_EQ(0x123456789, m->body_as_data_transform_req()->from());
         CASE_EXPECT_EQ(0x987654321, m->body_as_data_transform_req()->to());
-        CASE_EXPECT_EQ(0x12345678, m->body_as_data_transform_req()->router()->Get(0);
+        CASE_EXPECT_EQ(0x12345678, m->body_as_data_transform_req()->router()->Get(0));
         CASE_EXPECT_EQ(
             0, UTIL_STRFUNC_STRNCMP(test_buffer, reinterpret_cast<const char *>(m->body_as_data_transform_req()->content()->data()), sizeof(test_buffer)));
     }

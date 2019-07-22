@@ -97,7 +97,7 @@ static int node_reg_test_recv_msg_test_record_fn(const atbus::node &n, const atb
     recv_msg_history.n      = &n;
     recv_msg_history.ep     = ep;
     recv_msg_history.conn   = conn;
-    recv_msg_history.status = m.head.ret;
+    recv_msg_history.status = m.head()->ret();
     ++recv_msg_history.count;
 
     if (NULL != buffer && len > 0) {

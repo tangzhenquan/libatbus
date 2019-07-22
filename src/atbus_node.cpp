@@ -629,7 +629,6 @@ namespace atbus {
         ::flatbuffers::FlatBufferBuilder fbb(sum_len + ATBUS_MACRO_RESERVED_SIZE + arr_count * 16);
 
         uint64_t self_id = get_id();
-        uint32_t flags   = 0;
         uint64_t msg_seq = alloc_msg_seq();
 
         std::vector<flatbuffers::Offset< ::atbus::protocol::custom_command_argv> > argv;
@@ -1158,14 +1157,20 @@ namespace atbus {
             return;
         }
 
-        if (NULL == m) {
+        int ret_code = EN_ATBUS_ERR_BAD_DATA;
+        int body_type = 0;
+        if (NULL != m) {
+            body_type = m->body_type();
+            if (NULL != m->head()) {
+                ret_code = m->head()->ret();
+            }
             return;
         }
 
         if (NULL != conn) {
             endpoint *ep = conn->get_binding();
             // 如果消息为回发转发消息失败，并且回发成功，则是为正确流程，不能标记错误
-            if (m->body_type() != ::atbus::protocol::msg_body_data_transform_rsp && m->head.ret < 0) {
+            if (ret_code != ::atbus::protocol::msg_body_data_transform_rsp && ret_code < 0) {
                 if (NULL != ep) {
                     add_endpoint_fault(*ep);
                 }
@@ -1359,7 +1364,7 @@ namespace atbus {
 
                 // unpack
                 ::atbus::protocol::msg *m = ::atbus::protocol::GetMutablemsg(&bin_data[0]);
-                if (NULL == m) {
+                if (NULL == m || NULL == m->head()) {
                     ATBUS_FUNC_NODE_ERROR(*this, get_self_endpoint(), NULL, EN_ATBUS_ERR_UNPACK, EN_ATBUS_ERR_UNPACK);
                     break;
                 }
@@ -1396,7 +1401,7 @@ namespace atbus {
 
                 // unpack
                 const ::atbus::protocol::msg *m = ::atbus::protocol::Getmsg(&bin_datas[0]);
-                if (NULL == m) {
+                if (NULL == m || NULL == m->head()) {
                     ATBUS_FUNC_NODE_ERROR(*this, get_self_endpoint(), NULL, EN_ATBUS_ERR_UNPACK, EN_ATBUS_ERR_UNPACK);
                     break;
                 }
@@ -1715,7 +1720,7 @@ namespace atbus {
 
             // unpack
             const ::atbus::protocol::msg *m = ::atbus::protocol::Getmsg(reinterpret_cast<const void *>(mb.GetBufferPointer()));
-            if (NULL == m) {
+            if (NULL == m || NULL == m->head()) {
                 ATBUS_FUNC_NODE_ERROR(*this, get_self_endpoint(), NULL, EN_ATBUS_ERR_UNPACK, EN_ATBUS_ERR_UNPACK);
                 return EN_ATBUS_ERR_UNPACK;
             }
@@ -1732,7 +1737,6 @@ namespace atbus {
                    ::atbus::protocol::msg_body_custom_command_rsp == m->body_type());
 
             typedef std::vector<unsigned char> bin_data_block_t;
-            const size_t msg_head_len = sizeof(::atbus::protocol::msg_head);
             // self data msg
             if (::atbus::protocol::msg_body_data_transform_req == m->body_type()) {
                 self_data_msgs_.push_back(bin_data_block_t());
@@ -1781,7 +1785,7 @@ namespace atbus {
 
         // unpack
         ::atbus::protocol::msg *m = ::atbus::protocol::GetMutablemsg(reinterpret_cast<void *>(mb.GetBufferPointer()));
-        if (NULL == m) {
+        if (NULL == m || NULL == m->head()) {
             ATBUS_FUNC_NODE_ERROR(*this, ep_out ? (*ep_out) : conn->get_binding(), conn, EN_ATBUS_ERR_UNPACK, EN_ATBUS_ERR_UNPACK);
             return EN_ATBUS_ERR_UNPACK;
         }
