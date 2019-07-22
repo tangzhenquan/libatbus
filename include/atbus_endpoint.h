@@ -87,8 +87,9 @@ namespace atbus {
         bool is_child_node(bus_id_t id) const;
         bool is_brother_node(bus_id_t id, uint32_t parent_mask) const;
         static bool is_parent_node(bus_id_t id, bus_id_t parent_id, uint32_t parent_mask);
-        static bus_id_t get_children_min_id(bus_id_t id, uint32_t mask);
-        static bus_id_t get_children_max_id(bus_id_t id, uint32_t mask);
+        static bus_id_t get_children_min_id(bus_id_t children_prefix, uint32_t mask);
+        static bus_id_t get_children_max_id(bus_id_t children_prefix, uint32_t mask);
+        static bool is_child_node(bus_id_t parent_id, bus_id_t parent_children_prefix, uint32_t parent_mask, bus_id_t checked_id);
 
         bool add_connection(connection *conn, bool force_data);
 

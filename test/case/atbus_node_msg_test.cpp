@@ -15,8 +15,7 @@
 #endif
 
 #include <atbus_node.h>
-
-#include "detail/libatbus_protocol.h"
+#include <libatbus_protocol.h>
 
 #include "frame/test_macros.h"
 
@@ -87,10 +86,10 @@ static int node_msg_test_recv_msg_test_record_fn(const atbus::node &n, const atb
     recv_msg_history.n      = &n;
     recv_msg_history.ep     = ep;
     recv_msg_history.conn   = conn;
-    recv_msg_history.status = m.head.ret;
+    recv_msg_history.status = m.head()->ret();
     ++recv_msg_history.count;
-    if (NULL != m.body.forward) {
-        recv_msg_history.last_msg_router = m.body.forward->router;
+    if (NULL != m.body()->forward()) {
+        recv_msg_history.last_msg_router.assign(m->body()->forward()->router()->begin(), m->body()->forward()->router()->end());
     } else {
         recv_msg_history.last_msg_router.clear();
     }
@@ -118,16 +117,16 @@ static int node_msg_test_send_data_failed_fn(const atbus::node &n, const atbus::
     recv_msg_history.n      = &n;
     recv_msg_history.ep     = ep;
     recv_msg_history.conn   = conn;
-    recv_msg_history.status = NULL == m ? 0 : m->head.ret;
+    recv_msg_history.status = NULL == m ? 0 : m->head()->ret();
     ++recv_msg_history.failed_count;
-    if (NULL != m && NULL != m->body.forward) {
-        recv_msg_history.last_msg_router = m->body.forward->router;
+    if (NULL != m && NULL != m->body()->forward()) {
+        recv_msg_history.last_msg_router.assign(m->body()->forward()->router()->begin(), m->body()->forward()->router()->end());
     } else {
         recv_msg_history.last_msg_router.clear();
     }
 
-    if (NULL != m && NULL != m->body.forward && NULL != m->body.forward->content.ptr && m->body.forward->content.size > 0) {
-        recv_msg_history.data.assign(reinterpret_cast<const char *>(m->body.forward->content.ptr), m->body.forward->content.size);
+    if (NULL != m && NULL != m->body()->forward() && NULL != m->body()->forward()->content() && m->body()->forward()->content()->size() > 0) {
+        recv_msg_history.data.assign(reinterpret_cast<const char *>(m->body()->forward()->content()->data()), m->body()->forward()->content()->size());
     } else {
         recv_msg_history.data.clear();
     }
@@ -408,7 +407,7 @@ static int node_msg_test_recv_and_send_msg_fn(const atbus::node &n, const atbus:
     recv_msg_history.n      = &n;
     recv_msg_history.ep     = ep;
     recv_msg_history.conn   = conn;
-    recv_msg_history.status = m.head.ret;
+    recv_msg_history.status = m.head()->ret();
     ++recv_msg_history.count;
 
     std::streamsize w = std::cout.width();

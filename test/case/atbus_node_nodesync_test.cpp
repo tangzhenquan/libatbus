@@ -15,8 +15,7 @@
 #endif
 
 #include <atbus_node.h>
-
-#include "detail/libatbus_protocol.h"
+#include <libatbus_protocol.h>
 
 #include "frame/test_macros.h"
 

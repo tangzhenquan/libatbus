@@ -21,6 +21,8 @@ CHANGELOG
 4. 协议版本兼容性单元测试
 5. 内存通道版本兼容性单元测试
 6. 字符串路径共享内存测试
+7. 握手connection的backlog支持，定时器优化
+8. unit test -- no router : EN_ATBUS_ERR_ATNODE_TTL
 
 1.1.0
 ------------

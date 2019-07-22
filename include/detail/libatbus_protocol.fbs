@@ -3,9 +3,17 @@ namespace atbus.protocol;
 
 // --gen-mutable --gen-name-strings --no-includes --natural-utf8 --allow-non-utf8
 
-enum ATBUS_PROTOCOL_CONST : byte { ATBUS_PROTOCOL_VERSION = 2 }
+enum ATBUS_PROTOCOL_CONST : byte { 
+    ATBUS_PROTOCOL_VERSION         = 2,
+}
 
-enum ATBUS_FORWARD_DATA_FLAG_TYPE : uint32 { REQUIRE_RSP = 1 }
+enum ATBUS_PROTOCOL_COMPACT : byte { 
+    ATBUS_PROTOCOL_MINIMAL_VERSION = 2, // minimal protocol version supported
+}
+
+enum ATBUS_FORWARD_DATA_FLAG_TYPE : uint32 (bit_flags) { 
+    REQUIRE_RSP = 1
+}
 
 table custom_command_argv {
     arg: [ubyte]    (id: 0);

@@ -93,12 +93,12 @@ namespace atbus {
         uint64_t self_id = n.get_id();
         ::atbus::protocol::Createmsg(
             fbb,
-            ::atbus::protocol::Createmsg_head(fbb, ::atbus::protocol::ATBUS_PROTOCOL_CONST_ATBUS_PROTOCOL_VERSION, 0, 0, msg_seq, self_id),
+            ::atbus::protocol::Createmsg_head(fbb, ::atbus::protocol::ATBUS_PROTOCOL_CONST_ATBUS_PROTOCOL_VERSION, 0, ret_code, msg_seq, self_id),
             static_cast< ::atbus::protocol::msg_body>(msg_id),
             ::atbus::protocol::Createregister_data(
                 fbb, n.get_id(), n.get_pid(), fbb.CreateString(n.get_hostname().c_str(), n.get_hostname().size()),
                 fbb.CreateVector(channels), n.get_self_endpoint()->get_children_mask(), n.get_self_endpoint()->get_children_prefix(),
-                n.get_self_endpoint()->get_flags(), fbb.CreateVector(access_keys)));
+                n.get_self_endpoint()->get_flags(), fbb.CreateVector(access_keys)).Union());
 
         return send_msg(n, conn, fbb);
     }
@@ -120,15 +120,30 @@ namespace atbus {
 
         ::flatbuffers::FlatBufferBuilder fbb;
 
-        std::vector<flatbuffers::Offset< ::atbus::protocol::access_data> > access_keys;
-        access_keys.reserve(n.get_conf().access_tokens.size());
-        for (size_t idx = 0; idx < n.get_conf().access_tokens.size(); ++idx) {
-            uint32_t salt     = 0;
-            uint64_t hashval1 = 0;
-            uint64_t hashval2 = 0;
-            if (n.generate_access_hash(idx, salt, hashval1, hashval2)) {
-                access_keys.push_back(::atbus::protocol::Createaccess_data(fbb, salt, hashval1, hashval2));
-            }
+        // all transfer message must be send by a verified connect, there is no need to check access token again
+        // std::vector<flatbuffers::Offset< ::atbus::protocol::access_data> > access_keys;
+        // access_keys.reserve(n.get_conf().access_tokens.size());
+        // for (size_t idx = 0; idx < n.get_conf().access_tokens.size(); ++idx) {
+        //     uint32_t salt     = 0;
+        //     uint64_t hashval1 = 0;
+        //     uint64_t hashval2 = 0;
+        //     if (n.generate_access_hash(idx, salt, hashval1, hashval2)) {
+        //         access_keys.push_back(::atbus::protocol::Createaccess_data(fbb, salt, hashval1, hashval2));
+        //     }
+        // }
+
+        const uint8_t* fwd_content_ptr = NULL;
+        size_t fwd_content_size = 0;
+        if (NULL != fwd_data->content()) {
+            fwd_content_ptr = fwd_data->content()->data();
+            fwd_content_size = fwd_data->content()->size();
+        }
+
+        const uint64_t* router_ptr = NULL;
+        size_t router_size = 0;
+        if (NULL != fwd_data->router()) {
+            router_ptr = fwd_data->router()->data();
+            router_size = fwd_data->router()->size();
         }
 
         uint64_t self_id = n.get_id();
@@ -138,9 +153,9 @@ namespace atbus {
                                               ret_code, m.head()->sequence(), self_id),
             ::atbus::protocol::msg_body_data_transform_rsp,
             ::atbus::protocol::Createforward_data(fbb, fwd_data->to(), fwd_data->from(),
-                                                  fbb.CreateVector(fwd_data->router()->data(), fwd_data->router()->size()),
-                                                  fbb.CreateVector(fwd_data->content()->data(), fwd_data->content()->size()),
-                                                  fwd_data->flags(), fbb.CreateVector(access_keys)));
+                                                  fbb.CreateVector(router_ptr, router_size),
+                                                  fbb.CreateVector(fwd_content_ptr, fwd_content_size),
+                                                  fwd_data->flags()).Union());
 
         int ret = n.send_ctrl_msg(fwd_data->from(), fbb);
         if (ret < 0) {
@@ -178,7 +193,7 @@ namespace atbus {
                 ::atbus::protocol::Createmsg_head(fbb, ::atbus::protocol::ATBUS_PROTOCOL_CONST_ATBUS_PROTOCOL_VERSION, 0, 0, 0, self_id),
                 ::atbus::protocol::msg_body_node_connect_sync,
                 ::atbus::protocol::Createconnection_data(
-                    fbb, ::atbus::protocol::Createchannel_data(fbb, fbb.CreateString(select_address->c_str(), select_address->size()))));
+                    fbb, ::atbus::protocol::Createchannel_data(fbb, fbb.CreateString(select_address->c_str(), select_address->size()))).Union());
 
 
             int ret = n.send_ctrl_msg(direct_from_bus_id, fbb);
@@ -245,26 +260,32 @@ namespace atbus {
             return EN_ATBUS_ERR_NOT_READY;
         }
 
-        // Check access token
-        if (!n.get_conf().access_tokens.empty()) {
-            bool check_pass = false;
-            for (::flatbuffers::uoffset_t i = 0; false == check_pass && i < fwd_data->access_keys()->size(); ++i) {
-                const ::atbus::protocol::access_data *access_key = fwd_data->access_keys()->Get(i);
-                assert(access_key);
-                check_pass = n.check_access_hash(access_key->token_salt(), access_key->token_hash1(), access_key->token_hash2());
-            }
-
-            if (!check_pass) {
-                ATBUS_FUNC_NODE_ERROR(n, NULL == conn ? NULL : conn->get_binding(), conn, EN_ATBUS_ERR_ACCESS_DENY, 0);
-                return EN_ATBUS_ERR_ACCESS_DENY;
-            }
-        }
+        // all transfer message must be send by a verified connect, there is no need to check access token again
+        // if (!n.get_conf().access_tokens.empty()) {
+        //     bool check_pass = false;
+        //     for (::flatbuffers::uoffset_t i = 0; false == check_pass && i < fwd_data->access_keys()->size(); ++i) {
+        //         const ::atbus::protocol::access_data *access_key = fwd_data->access_keys()->Get(i);
+        //         assert(access_key);
+        //         check_pass = n.check_access_hash(access_key->token_salt(), access_key->token_hash1(), access_key->token_hash2());
+        //     }
+ 
+        //     if (!check_pass) {
+        //         ATBUS_FUNC_NODE_ERROR(n, NULL == conn ? NULL : conn->get_binding(), conn, EN_ATBUS_ERR_ACCESS_DENY, 0);
+        //         return EN_ATBUS_ERR_ACCESS_DENY;
+        //     }
+        // }
 
         // dispatch message
+        const void* fwd_content_ptr = NULL;
+        size_t fwd_content_size = 0;
+        if (NULL != fwd_data->content()) {
+            fwd_content_ptr = reinterpret_cast<const void*>(fwd_data->content()->data());
+            fwd_content_size = fwd_data->content()->size();
+        }
         if (fwd_data->to() == n.get_id()) {
             ATBUS_FUNC_NODE_DEBUG(n, (NULL == conn ? NULL : conn->get_binding()), conn, &m, "node recv data length = %lld",
-                                  static_cast<unsigned long long>(fwd_data->content().size()));
-            n.on_recv_data(conn->get_binding(), conn, m, fwd_data->content()->data(), fwd_data->content()->size());
+                                static_cast<unsigned long long>(fwd_content_size));
+            n.on_recv_data(conn->get_binding(), conn, m, fwd_content_ptr, fwd_content_size);
 
             if (fwd_data->flags() & atbus::protocol::ATBUS_FORWARD_DATA_FLAG_TYPE_REQUIRE_RSP) {
                 return send_transfer_rsp(n, m, EN_ATBUS_ERR_SUCCESS);
@@ -272,7 +293,12 @@ namespace atbus {
             return EN_ATBUS_ERR_SUCCESS;
         }
 
-        if (fwd_data->router().size() >= static_cast<size_t>(n.get_conf().ttl)) {
+        size_t router_size = 0;
+        if (NULL == fwd_data->router()) {
+            return send_transfer_rsp(n, m, EN_ATBUS_ERR_ATNODE_TTL);
+        }
+        router_size = fwd_data->router()->size();
+        if (router_size >= static_cast<size_t>(n.get_conf().ttl)) {
             return send_transfer_rsp(n, m, EN_ATBUS_ERR_ATNODE_TTL);
         }
 
@@ -293,7 +319,7 @@ namespace atbus {
         assert(fwd_data_mut);
         fwd_data_mut->router.push_back(n.get_id());
 
-        flatbuffers::FlatBufferBuilder fbb(fwd_data->content().size() + fwd_data->router().size() * sizeof(uint64_t) +
+        flatbuffers::FlatBufferBuilder fbb(fwd_content_size + router_size * sizeof(uint64_t) +
                                            ATBUS_MACRO_RESERVED_SIZE);
         ::atbus::protocol::msg::Pack(fbb, &msg_mut);
         res = n.send_data_msg(fwd_data->to(), fbb, &to_ep, NULL);
@@ -315,7 +341,7 @@ namespace atbus {
             // 如果失败的发送目标已经是父节点则不需要重发
             const endpoint *parent_ep = n.get_parent_endpoint();
             if (NULL != parent_ep && (NULL == to_ep || false == n.is_parent_node(to_ep->get_id()))) {
-                res = n.send_data_msg(parent_ep->get_id(), m);
+                res = n.send_data_msg(parent_ep->get_id(), fbb);
             }
         }
 
@@ -357,20 +383,20 @@ namespace atbus {
             return EN_ATBUS_ERR_NOT_READY;
         }
 
-        // Check access token
-        if (!n.get_conf().access_tokens.empty()) {
-            bool check_pass = false;
-            for (::flatbuffers::uoffset_t i = 0; false == check_pass && i < fwd_data->access_keys()->size(); ++i) {
-                const ::atbus::protocol::access_data *access_key = fwd_data->access_keys()->Get(i);
-                assert(access_key);
-                check_pass = n.check_access_hash(access_key->token_salt(), access_key->token_hash1(), access_key->token_hash2());
-            }
+        // all transfer message must be send by a verified connect, there is no need to check access token again
+        // if (!n.get_conf().access_tokens.empty()) {
+        //     bool check_pass = false;
+        //     for (::flatbuffers::uoffset_t i = 0; false == check_pass && i < fwd_data->access_keys()->size(); ++i) {
+        //         const ::atbus::protocol::access_data *access_key = fwd_data->access_keys()->Get(i);
+        //         assert(access_key);
+        //         check_pass = n.check_access_hash(access_key->token_salt(), access_key->token_hash1(), access_key->token_hash2());
+        //     }
 
-            if (!check_pass) {
-                ATBUS_FUNC_NODE_ERROR(n, NULL == conn ? NULL : conn->get_binding(), conn, EN_ATBUS_ERR_ACCESS_DENY, 0);
-                return EN_ATBUS_ERR_ACCESS_DENY;
-            }
-        }
+        //     if (!check_pass) {
+        //         ATBUS_FUNC_NODE_ERROR(n, NULL == conn ? NULL : conn->get_binding(), conn, EN_ATBUS_ERR_ACCESS_DENY, 0);
+        //         return EN_ATBUS_ERR_ACCESS_DENY;
+        //     }
+        // }
 
         // dispatch message
         if (fwd_data->to() == n.get_id()) {
@@ -379,6 +405,16 @@ namespace atbus {
             }
             n.on_send_data_failed(conn->get_binding(), conn, &m);
             return EN_ATBUS_ERR_SUCCESS;
+        }
+
+        size_t fwd_content_size = 0;
+        if (NULL != fwd_data->content()) {
+            fwd_content_size = fwd_data->content()->size();
+        }
+
+        size_t router_size = 0;
+        if (NULL != fwd_data->router()) {
+            router_size = fwd_data->router()->size();
         }
 
         // 检查如果发送目标不是来源，则转发失败消息
@@ -411,7 +447,7 @@ namespace atbus {
 
             msg_mut.head->src_bus_id = n.get_id();
 
-            flatbuffers::FlatBufferBuilder fbb(fwd_data->content().size() + fwd_data->router().size() * sizeof(uint64_t) +
+            flatbuffers::FlatBufferBuilder fbb(fwd_content_size + router_size * sizeof(uint64_t) +
                                                ATBUS_MACRO_RESERVED_SIZE);
             ::atbus::protocol::msg::Pack(fbb, &msg_mut);
 
@@ -458,7 +494,7 @@ namespace atbus {
         std::vector<std::pair<const void *, size_t> > cmd_args;
         cmd_args.reserve(cmd_data->commands()->size());
         for (::flatbuffers::uoffset_t i = 0; i < cmd_data->commands()->size(); ++i) {
-            ::atbus::protocol::custom_command_argv *arg = cmd_data->commands()->Get(i);
+            const ::atbus::protocol::custom_command_argv *arg = cmd_data->commands()->Get(i);
             if (NULL != arg) {
                 cmd_args.push_back(std::make_pair<const void *, size_t>(static_cast<const void *>(arg->arg()->data()), arg->arg()->size()));
             }
@@ -493,7 +529,7 @@ namespace atbus {
                 fbb,
                 ::atbus::protocol::Createmsg_head(fbb, ::atbus::protocol::ATBUS_PROTOCOL_CONST_ATBUS_PROTOCOL_VERSION, 0, 0, 0, self_id),
                 ::atbus::protocol::msg_body_custom_command_rsp,
-                ::atbus::protocol::Createcustom_command_data(fbb, n.get_id(), fbb.CreateVector(rsp_texts), fbb.CreateVector(access_keys)));
+                ::atbus::protocol::Createcustom_command_data(fbb, n.get_id(), fbb.CreateVector(rsp_texts), fbb.CreateVector(access_keys)).Union());
 
             ret = msg_handler::send_msg(n, *conn, fbb);
         }
@@ -562,20 +598,49 @@ namespace atbus {
     }
 
     int msg_handler::on_recv_node_reg_req(node &n, connection *conn, const ::atbus::protocol::msg &m, int /*status*/, int errcode) {
+        if (m.body_type() != ::atbus::protocol::msg_body_node_register_req &&
+            m.body_type() != ::atbus::protocol::msg_body_node_register_rsp) {
+            ATBUS_FUNC_NODE_ERROR(n, NULL == conn ? NULL : conn->get_binding(), conn, EN_ATBUS_ERR_BAD_DATA, 0);
+            return EN_ATBUS_ERR_BAD_DATA;
+        }
+
+        const ::atbus::protocol::register_data *reg_data;
+        if (m.body_type() == ::atbus::protocol::msg_body_node_register_req) {
+            reg_data = m.body_as_node_register_req();
+        } else {
+            reg_data = m.body_as_node_register_rsp();
+        }
+        assert(reg_data);
+
+        if (NULL == conn || NULL == m.head()) {
+            ATBUS_FUNC_NODE_ERROR(n, NULL == conn ? NULL : conn->get_binding(), conn, EN_ATBUS_ERR_BAD_DATA, 0);
+            return EN_ATBUS_ERR_BAD_DATA;
+        }
+
+        // Check access token
+        if (!n.get_conf().access_tokens.empty()) {
+            bool check_pass = false;
+            for (::flatbuffers::uoffset_t i = 0; false == check_pass && i < reg_data->access_keys()->size(); ++i) {
+                const ::atbus::protocol::access_data *access_key = reg_data->access_keys()->Get(i);
+                assert(access_key);
+                check_pass = n.check_access_hash(access_key->token_salt(), access_key->token_hash1(), access_key->token_hash2());
+            }
+
+            if (!check_pass) {
+                ATBUS_FUNC_NODE_ERROR(n, NULL == conn ? NULL : conn->get_binding(), conn, EN_ATBUS_ERR_ACCESS_DENY, 0);
+                return EN_ATBUS_ERR_ACCESS_DENY;
+            }
+        }
+
         endpoint *ep     = NULL;
         int32_t res      = EN_ATBUS_ERR_SUCCESS;
         int32_t rsp_code = EN_ATBUS_ERR_SUCCESS;
 
         do {
-            if (NULL == m.body.reg || NULL == conn) {
-                rsp_code = EN_ATBUS_ERR_BAD_DATA;
-                break;
-            }
-
             // 如果连接已经设定了端点，不需要再绑定到endpoint
             if (conn->is_connected()) {
                 ep = conn->get_binding();
-                if (NULL == ep || ep->get_id() != m.body.reg->bus_id) {
+                if (NULL == ep || ep->get_id() != reg_data->bus_id()) {
                     ATBUS_FUNC_NODE_ERROR(n, ep, conn, EN_ATBUS_ERR_ATNODE_BUS_ID_NOT_MATCH, 0);
                     conn->reset();
                     rsp_code = EN_ATBUS_ERR_ATNODE_BUS_ID_NOT_MATCH;
@@ -587,10 +652,15 @@ namespace atbus {
             }
 
             // 老端点新增连接不需要创建新连接
-            ep = n.get_endpoint(m.body.reg->bus_id);
+            std::string hostname;
+            if (NULL != reg_data->hostname()) {
+                hostname = reg_data->hostname()->str();
+            }
+
+            ep = n.get_endpoint(reg_data->bus_id());
             if (NULL != ep) {
                 // 检测机器名和进程号必须一致,自己是临时节点则不需要检查
-                if (0 != n.get_id() && (ep->get_pid() != m.body.reg->pid || ep->get_hostname() != m.body.reg->hostname)) {
+                if (0 != n.get_id() && (ep->get_pid() != reg_data->pid() || ep->get_hostname() != hostname)) {
                     res = EN_ATBUS_ERR_ATNODE_ID_CONFLICT;
                     ATBUS_FUNC_NODE_ERROR(n, ep, conn, res, 0);
                 } else if (false == ep->add_connection(conn, conn->check_flag(connection::flag_t::ACCESS_SHARE_HOST))) {
@@ -605,9 +675,9 @@ namespace atbus {
             }
 
             // 创建新端点时需要判定全局路由表权限
-            std::bitset<endpoint::flag_t::MAX> reg_flags(m.body.reg->flags);
+            std::bitset<endpoint::flag_t::MAX> reg_flags(reg_data->flags());
 
-            if (n.is_child_node(m.body.reg->bus_id)) {
+            if (n.is_child_node(reg_data->bus_id())) {
                 if (reg_flags.test(endpoint::flag_t::GLOBAL_ROUTER) &&
                     false == n.get_self_endpoint()->get_flag(endpoint::flag_t::GLOBAL_ROUTER)) {
                     rsp_code = EN_ATBUS_ERR_ACCESS_DENY;
@@ -616,8 +686,10 @@ namespace atbus {
                     break;
                 }
 
+                // TODO children prefix 必须小于自身
+
                 // 子节点域范围必须小于自身
-                if (n.get_self_endpoint()->get_children_mask() <= m.body.reg->children_id_mask) {
+                if (n.get_self_endpoint()->get_children_mask() <= reg_data->children_id_mask()) {
                     rsp_code = EN_ATBUS_ERR_ATNODE_MASK_CONFLICT;
 
                     ATBUS_FUNC_NODE_DEBUG(n, ep, conn, &m, "child mask must be greater than child node");
@@ -626,7 +698,7 @@ namespace atbus {
             }
 
             endpoint::ptr_t new_ep =
-                endpoint::create(&n, m.body.reg->bus_id, m.body.reg->children_id_mask, m.body.reg->pid, m.body.reg->hostname);
+                endpoint::create(&n, reg_data->bus_id(), reg_data->children_id_mask(), reg_data->pid(), hostname);
             if (!new_ep) {
                 ATBUS_FUNC_NODE_ERROR(n, NULL, conn, EN_ATBUS_ERR_MALLOC, 0);
                 rsp_code = EN_ATBUS_ERR_MALLOC;
@@ -658,14 +730,19 @@ namespace atbus {
 
             // io_stream channel only need one connection
             bool has_data_conn = false;
-            for (size_t i = 0; i < m.body.reg->channels.size(); ++i) {
-                const protocol::channel_data &chan = m.body.reg->channels[i];
+            const flatbuffers::Vector<flatbuffers::Offset<::atbus::protocol::channel_data> > * all_channels = reg_data->channels();
+            for (::flatbuffers::uoffset_t i = 0; NULL!= all_channels && i < all_channels->size(); ++i) {
+                const ::atbus::protocol::channel_data *chan = all_channels->Get(i);
+                assert(chan);
+                if (NULL == chan || NULL == chan->address()) {
+                    continue;
+                }
 
                 if (has_ios_listen && n.get_id() > ep->get_id()) {
                     // wait peer to connect n, do not check and close endpoint
                     has_data_conn = true;
-                    if (0 != UTIL_STRFUNC_STRNCASE_CMP("mem:", chan.address.c_str(), 4) &&
-                        0 != UTIL_STRFUNC_STRNCASE_CMP("shm:", chan.address.c_str(), 4)) {
+                    if (0 != UTIL_STRFUNC_STRNCASE_CMP("mem:", chan->address()->c_str(), 4) &&
+                        0 != UTIL_STRFUNC_STRNCASE_CMP("shm:", chan->address()->c_str(), 4)) {
                         continue;
                     }
                 }
@@ -674,10 +751,10 @@ namespace atbus {
                 bool check_pid      = false;
 
                 // unix sock and shm only available in the same host
-                if (0 == UTIL_STRFUNC_STRNCASE_CMP("unix:", chan.address.c_str(), 5) ||
-                    0 == UTIL_STRFUNC_STRNCASE_CMP("shm:", chan.address.c_str(), 4)) {
+                if (0 == UTIL_STRFUNC_STRNCASE_CMP("unix:", chan->address()->c_str(), 5) ||
+                    0 == UTIL_STRFUNC_STRNCASE_CMP("shm:", chan->address()->c_str(), 4)) {
                     check_hostname = true;
-                } else if (0 == UTIL_STRFUNC_STRNCASE_CMP("mem:", chan.address.c_str(), 4)) {
+                } else if (0 == UTIL_STRFUNC_STRNCASE_CMP("mem:", chan->address()->c_str(), 4)) {
                     check_pid = true;
                 }
 
@@ -693,7 +770,7 @@ namespace atbus {
 
                 // if n is not a temporary node, connect to other nodes
                 if (0 != n.get_id() && 0 != ep->get_id()) {
-                    res = n.connect(chan.address.c_str(), ep);
+                    res = n.connect(chan->address()->c_str(), ep);
                 } else {
                     res = 0;
                     // temporary node also should not check and close endpoint
@@ -702,7 +779,7 @@ namespace atbus {
                 if (res < 0) {
                     ATBUS_FUNC_NODE_ERROR(n, ep, conn, res, 0);
                 } else {
-                    ep->add_listen(chan.address);
+                    ep->add_listen(chan->address()->str());
                     has_data_conn = true;
                 }
             }
@@ -715,7 +792,7 @@ namespace atbus {
 
         // 仅fd连接发回注册回包，否则忽略（内存和共享内存通道为单工通道）
         if (NULL != conn && conn->check_flag(connection::flag_t::REG_FD)) {
-            int ret = send_reg(ATBUS_CMD_NODE_REG_RSP, n, *conn, rsp_code, m.head()->sequence());
+            int ret = send_reg(::atbus::protocol::msg_body_node_register_rsp, n, *conn, rsp_code, m.head()->sequence());
             if (rsp_code < 0) {
                 ATBUS_FUNC_NODE_ERROR(n, ep, conn, ret, errcode);
                 conn->disconnect();
@@ -728,8 +805,39 @@ namespace atbus {
     }
 
     int msg_handler::on_recv_node_reg_rsp(node &n, connection *conn, const ::atbus::protocol::msg &m, int /*status*/, int errcode) {
-        if (NULL == conn) {
+
+        if (m.body_type() != ::atbus::protocol::msg_body_node_register_req &&
+            m.body_type() != ::atbus::protocol::msg_body_node_register_rsp) {
+            ATBUS_FUNC_NODE_ERROR(n, NULL == conn ? NULL : conn->get_binding(), conn, EN_ATBUS_ERR_BAD_DATA, 0);
             return EN_ATBUS_ERR_BAD_DATA;
+        }
+
+        const ::atbus::protocol::register_data *reg_data;
+        if (m.body_type() == ::atbus::protocol::msg_body_node_register_req) {
+            reg_data = m.body_as_node_register_req();
+        } else {
+            reg_data = m.body_as_node_register_rsp();
+        }
+        assert(reg_data);
+
+        if (NULL == conn || NULL == m.head()) {
+            ATBUS_FUNC_NODE_ERROR(n, NULL == conn ? NULL : conn->get_binding(), conn, EN_ATBUS_ERR_BAD_DATA, 0);
+            return EN_ATBUS_ERR_BAD_DATA;
+        }
+
+        // Check access token
+        if (!n.get_conf().access_tokens.empty()) {
+            bool check_pass = false;
+            for (::flatbuffers::uoffset_t i = 0; false == check_pass && i < reg_data->access_keys()->size(); ++i) {
+                const ::atbus::protocol::access_data *access_key = reg_data->access_keys()->Get(i);
+                assert(access_key);
+                check_pass = n.check_access_hash(access_key->token_salt(), access_key->token_hash1(), access_key->token_hash2());
+            }
+
+            if (!check_pass) {
+                ATBUS_FUNC_NODE_ERROR(n, NULL == conn ? NULL : conn->get_binding(), conn, EN_ATBUS_ERR_ACCESS_DENY, 0);
+                return EN_ATBUS_ERR_ACCESS_DENY;
+            }
         }
 
         endpoint *ep = conn->get_binding();
@@ -759,15 +867,13 @@ namespace atbus {
         } else if (node::state_t::CONNECTING_PARENT == n.get_state()) {
             // 父节点返回的rsp成功则可以上线
             // 这时候父节点的endpoint不一定初始化完毕
-            if (n.is_parent_node(m.body.reg->bus_id)) {
+            if (n.is_parent_node(reg_data->bus_id())) {
                 // 父节点先注册完成
                 n.on_parent_reg_done();
                 n.on_actived();
             } else {
                 // 父节点还没注册完成，等父节点注册完成后再 on_actived()
-                node::bus_id_t min_c = endpoint::get_children_min_id(m.body.reg->bus_id, m.body.reg->children_id_mask);
-                node::bus_id_t max_c = endpoint::get_children_max_id(m.body.reg->bus_id, m.body.reg->children_id_mask);
-                if (n.get_id() != m.body.reg->bus_id && n.get_id() >= min_c && n.get_id() <= max_c) {
+                if (endpoint::is_child_node(reg_data->bus_id(), reg_data->children_id_prefix(), reg_data->children_id_mask(), n.get_id())) {
                     n.on_parent_reg_done();
                 }
             }
@@ -801,7 +907,7 @@ namespace atbus {
         }
 
         ATBUS_FUNC_NODE_DEBUG(n, NULL, NULL, &m, "node recv conn_syn and prepare connect to %s", conn_data->address()->address()->c_str());
-        int ret = n.connect(conn_data->address()->address().c_str());
+        int ret = n.connect(conn_data->address()->address()->c_str());
         if (ret < 0) {
             ATBUS_FUNC_NODE_ERROR(n, n.get_self_endpoint(), NULL, ret, 0);
         }
@@ -809,6 +915,11 @@ namespace atbus {
     }
 
     int msg_handler::on_recv_node_ping(node &n, connection *conn, const ::atbus::protocol::msg &m, int /*status*/, int /*errcode*/) {
+        if (NULL == m.head()) {
+            ATBUS_FUNC_NODE_ERROR(n, NULL == conn ? NULL : conn->get_binding(), conn, EN_ATBUS_ERR_BAD_DATA, 0);
+            return EN_ATBUS_ERR_BAD_DATA;
+        }
+
         const ::atbus::protocol::ping_data *msg_body = m.body_as_node_ping_req();
         if (NULL == msg_body) {
             ATBUS_FUNC_NODE_DEBUG(n, conn ? conn->get_binding() : NULL, conn, &m,
@@ -825,13 +936,11 @@ namespace atbus {
                 uint64_t self_id = n.get_id();
                 ::atbus::protocol::Createmsg(
                     fbb,
-                    ::atbus::protocol::Createmsg_head(fbb, ::atbus::protocol::ATBUS_PROTOCOL_CONST_ATBUS_PROTOCOL_VERSION, 0, 0, msg_seq,
+                    ::atbus::protocol::Createmsg_head(fbb, ::atbus::protocol::ATBUS_PROTOCOL_CONST_ATBUS_PROTOCOL_VERSION, 0, 0, m.head()->sequence(),
                                                       self_id),
                     ::atbus::protocol::msg_body_node_pong_rsp, ::atbus::protocol::Createping_data(fbb, msg_body->time_point()).Union());
 
-                return send_msg(n, conn, fbb);
-
-                return n.send_ctrl_msg(ep->get_id(), m);
+                return send_msg(n, *conn, fbb);
             }
         }
 

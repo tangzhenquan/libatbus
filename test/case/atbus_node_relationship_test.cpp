@@ -2,6 +2,7 @@
 #include <cstring>
 #include <iostream>
 #include <sstream>
+#include <vector>
 
 #include "common/string_oprs.h"
 
@@ -14,49 +15,52 @@
 #endif
 
 #include <atbus_node.h>
-
-#include "detail/libatbus_protocol.h"
+#include <libatbus_protocol.h>
 
 #include "frame/test_macros.h"
 
 CASE_TEST(atbus_node_rela, basic_test) {
-    atbus::protocol::msg m_src, m_dst;
-    std::string packed_buffer;
+    std::vector<unsigned char> packed_buffer;
     char test_buffer[] = "hello world!";
 
     {
-        m_src.init(0x12345678, ATBUS_CMD_DATA_TRANSFORM_REQ, 123, 0, 13);
-        m_src.body.make_forward(456, 789, test_buffer, sizeof(test_buffer));
-        m_src.body.forward->router.push_back(210);
+        ::flatbuffers::FlatBufferBuilder fbb;
 
-        std::stringstream ss;
-        msgpack::pack(ss, m_src);
-        packed_buffer = ss.str();
+        uint64_t self_id = 0x12345678;
+        uint32_t flags   = 0;
+        flags |= atbus::protocol::ATBUS_FORWARD_DATA_FLAG_TYPE_REQUIRE_RSP;
+
+        ::atbus::protocol::Createmsg(fbb,
+                                     ::atbus::protocol::Createmsg_head(fbb, ::atbus::protocol::ATBUS_PROTOCOL_CONST_ATBUS_PROTOCOL_VERSION,
+                                                                       123, 0, 9876543210, self_id),
+                                     ::atbus::protocol::msg_body_data_transform_req,
+                                     ::atbus::protocol::Createforward_data(fbb, 0x123456789, 0x987654321, fbb.CreateVector(&self_id, 1),
+                                                                           fbb.CreateVector(reinterpret_cast<const uint8_t *>(test_buffer), sizeof(test_buffer)),
+                                                                           flags)
+                                         .Union());
+
+        packed_buffer.assign(reinterpret_cast<const unsigned char *>(fbb.GetBufferPointer(), fbb.GetSize()));
         std::stringstream so;
         util::string::serialization(packed_buffer.data(), packed_buffer.size(), so);
-        CASE_MSG_INFO() << "msgpack encoded(size=" << packed_buffer.size() << "): " << so.str() << std::endl;
-    }
-
-    msgpack::unpacked result;
-    {
-        msgpack::unpack(result, packed_buffer.data(), packed_buffer.size());
-        msgpack::object obj = result.get();
-        CASE_EXPECT_FALSE(obj.is_nil());
-        obj.convert(m_dst);
+        CASE_MSG_INFO() << "flatbuffers encoded(size=" << packed_buffer.size() << "): " << so.str() << std::endl;
     }
 
     {
-        CASE_EXPECT_EQ(ATBUS_CMD_DATA_TRANSFORM_REQ, m_dst.body_type());
-        CASE_EXPECT_EQ(123, m_dst.head.type);
-        CASE_EXPECT_EQ(0, m_dst.head.ret);
-        CASE_EXPECT_EQ(13, m_dst.head.sequence);
-        CASE_EXPECT_EQ(0x12345678, m_dst.head.src_bus_id);
+        ::flatbuffers::Verifier msg_verify(reinterpret_cast<const uint8_t *>(&packed_buffer[0]), packed_buffer.size());
+        CASE_EXPECT_TRUE(::atbus::protocol::VerifymsgBuffer(msg_verify));
+        const ::atbus::protocol::msg* m = ::atbus::protocol::Getmsg(&packed_buffer[0]);
 
-        CASE_EXPECT_EQ(456, m_dst.body.forward->from);
-        CASE_EXPECT_EQ(789, m_dst.body.forward->to);
-        CASE_EXPECT_EQ(210, m_dst.body.forward->router.front());
+        CASE_EXPECT_EQ(::atbus::protocol::msg_body_data_transform_req, m->body_type());
+        CASE_EXPECT_EQ(123, m->head()->type());
+        CASE_EXPECT_EQ(0, m->head()->ret());
+        CASE_EXPECT_EQ(9876543210, m->head()->sequence());
+        CASE_EXPECT_EQ(0x12345678, m->head()->src_bus_id());
+
+        CASE_EXPECT_EQ(0x123456789, m->body_as_data_transform_req()->from());
+        CASE_EXPECT_EQ(0x987654321, m->body_as_data_transform_req()->to());
+        CASE_EXPECT_EQ(0x12345678, m->body_as_data_transform_req()->router()->Get(0);
         CASE_EXPECT_EQ(
-            0, UTIL_STRFUNC_STRNCMP(test_buffer, reinterpret_cast<const char *>(m_dst.body.forward->content.ptr), sizeof(test_buffer)));
+            0, UTIL_STRFUNC_STRNCMP(test_buffer, reinterpret_cast<const char *>(m->body_as_data_transform_req()->content()->data()), sizeof(test_buffer)));
     }
 }
 

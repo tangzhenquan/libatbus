@@ -108,14 +108,28 @@ namespace atbus {
         return id == parent_id;
     }
 
-    endpoint::bus_id_t endpoint::get_children_min_id(bus_id_t id, uint32_t mask) {
+    endpoint::bus_id_t endpoint::get_children_min_id(bus_id_t children_prefix, uint32_t mask) {
         bus_id_t maskv = (1 << mask) - 1;
-        return id & (~maskv);
+        return children_prefix & (~maskv);
     }
 
-    endpoint::bus_id_t endpoint::get_children_max_id(bus_id_t id, uint32_t mask) {
+    endpoint::bus_id_t endpoint::get_children_max_id(bus_id_t children_prefix, uint32_t mask) {
         bus_id_t maskv = (1 << mask) - 1;
-        return id | maskv;
+        return children_prefix | maskv;
+    }
+
+    bool endpoint::is_child_node(bus_id_t parent_id, bus_id_t parent_children_prefix, uint32_t parent_mask, bus_id_t checked_id) {
+        if (0 == parent_children_prefix) {
+            parent_children_prefix = parent_id;
+        }
+
+        bus_id_t min_c = get_children_min_id(parent_children_prefix, parent_mask);
+        bus_id_t max_c = get_children_max_id(parent_children_prefix, parent_mask);
+        if (parent_id != checked_id && checked_id >= min_c && checked_id <= max_c) {
+            return true;
+        }
+
+        return false;
     }
 
     bool endpoint::add_connection(connection *conn, bool force_data) {

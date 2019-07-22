@@ -588,16 +588,17 @@ namespace atbus {
             flags |= atbus::protocol::ATBUS_FORWARD_DATA_FLAG_TYPE_REQUIRE_RSP;
         }
 
-        std::vector<flatbuffers::Offset< ::atbus::protocol::access_data> > access_keys;
-        access_keys.reserve(get_conf().access_tokens.size());
-        for (size_t idx = 0; idx < get_conf().access_tokens.size(); ++idx) {
-            uint32_t salt     = 0;
-            uint64_t hashval1 = 0;
-            uint64_t hashval2 = 0;
-            if (generate_access_hash(idx, salt, hashval1, hashval2)) {
-                access_keys.push_back(::atbus::protocol::Createaccess_data(fbb, salt, hashval1, hashval2));
-            }
-        }
+        // all transfer message must be send by a verified connect, there is no need to check access token again
+        // std::vector<flatbuffers::Offset< ::atbus::protocol::access_data> > access_keys;
+        // access_keys.reserve(get_conf().access_tokens.size());
+        // for (size_t idx = 0; idx < get_conf().access_tokens.size(); ++idx) {
+        //     uint32_t salt     = 0;
+        //     uint64_t hashval1 = 0;
+        //     uint64_t hashval2 = 0;
+        //     if (generate_access_hash(idx, salt, hashval1, hashval2)) {
+        //         access_keys.push_back(::atbus::protocol::Createaccess_data(fbb, salt, hashval1, hashval2));
+        //     }
+        // }
 
         ::atbus::protocol::Createmsg(fbb,
                                      ::atbus::protocol::Createmsg_head(fbb, ::atbus::protocol::ATBUS_PROTOCOL_CONST_ATBUS_PROTOCOL_VERSION,
@@ -605,7 +606,7 @@ namespace atbus {
                                      ::atbus::protocol::msg_body_data_transform_req,
                                      ::atbus::protocol::Createforward_data(fbb, self_id, tid, fbb.CreateVector(&self_id, 1),
                                                                            fbb.CreateVector(reinterpret_cast<const uint8_t *>(buffer), s),
-                                                                           flags, fbb.CreateVector(access_keys))
+                                                                           flags)
                                          .Union());
 
         return send_data_msg(tid, fbb);

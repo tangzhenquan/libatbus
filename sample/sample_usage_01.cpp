@@ -7,8 +7,7 @@
 
 
 #include <atbus_node.h>
-
-#include "detail/libatbus_protocol.h"
+#include <libatbus_protocol.h>
 
 int main() {
 #if defined(UTIL_CONFIG_COMPILER_CXX_LAMBDAS) && UTIL_CONFIG_COMPILER_CXX_LAMBDAS
