@@ -13,6 +13,7 @@ CHANGELOG
 5. 增加（共享）内存通道的版本号功能，增加协议版本号功能，用于跨版本兼容性检查
 6. 连接层面也增加错误计数，如果超出容忍值直接断开连接
 7. 改用 ```shm_open/ftruncate/mmap/munmap/shm_unlink/close/fstat``` 来管理共享内存，支持字符串命名的共享内存（长度限定为NAME_MAX(255）)
+8. 新增本地回环channel
 
 ### TODO 1.2.0
 1. children_prefix功能,单元测试
@@ -23,6 +24,7 @@ CHANGELOG
 6. 字符串路径共享内存测试
 7. 握手connection的backlog支持，定时器优化
 8. unit test -- no router : EN_ATBUS_ERR_ATNODE_TTL
+9. 新增本地回环channel
 
 1.1.0
 ------------

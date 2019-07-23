@@ -56,11 +56,11 @@ namespace atbus {
         ::flatbuffers::FlatBufferBuilder fbb(ATBUS_MACRO_RESERVED_SIZE + ATBUS_MACRO_RESERVED_SIZE);
 
         uint64_t self_id = n.get_id();
-        ::atbus::protocol::Createmsg(
+        fbb.Finish(::atbus::protocol::Createmsg(
             fbb,
             ::atbus::protocol::Createmsg_head(fbb, ::atbus::protocol::ATBUS_PROTOCOL_CONST_ATBUS_PROTOCOL_VERSION, 0, 0, msg_seq, self_id),
             ::atbus::protocol::msg_body_node_ping_req,
-            ::atbus::protocol::Createping_data(fbb, (n.get_timer_sec() / 1000) * 1000 + (n.get_timer_usec() / 1000) % 1000).Union());
+            ::atbus::protocol::Createping_data(fbb, (n.get_timer_sec() / 1000) * 1000 + (n.get_timer_usec() / 1000) % 1000).Union()));
 
         return send_msg(n, conn, fbb);
     }
@@ -91,14 +91,14 @@ namespace atbus {
         }
 
         uint64_t self_id = n.get_id();
-        ::atbus::protocol::Createmsg(
+        fbb.Finish(::atbus::protocol::Createmsg(
             fbb,
             ::atbus::protocol::Createmsg_head(fbb, ::atbus::protocol::ATBUS_PROTOCOL_CONST_ATBUS_PROTOCOL_VERSION, 0, ret_code, msg_seq, self_id),
             static_cast< ::atbus::protocol::msg_body>(msg_id),
             ::atbus::protocol::Createregister_data(
                 fbb, n.get_id(), n.get_pid(), fbb.CreateString(n.get_hostname().c_str(), n.get_hostname().size()),
                 fbb.CreateVector(channels), n.get_self_endpoint()->get_children_mask(), n.get_self_endpoint()->get_children_prefix(),
-                n.get_self_endpoint()->get_flags(), fbb.CreateVector(access_keys)).Union());
+                n.get_self_endpoint()->get_flags(), fbb.CreateVector(access_keys)).Union()));
 
         return send_msg(n, conn, fbb);
     }
@@ -147,7 +147,7 @@ namespace atbus {
         }
 
         uint64_t self_id = n.get_id();
-        ::atbus::protocol::Createmsg(
+        fbb.Finish(::atbus::protocol::Createmsg(
             fbb,
             ::atbus::protocol::Createmsg_head(fbb, ::atbus::protocol::ATBUS_PROTOCOL_CONST_ATBUS_PROTOCOL_VERSION, m.head()->type(),
                                               ret_code, m.head()->sequence(), self_id),
@@ -155,7 +155,7 @@ namespace atbus {
             ::atbus::protocol::Createforward_data(fbb, fwd_data->to(), fwd_data->from(),
                                                   fbb.CreateVector(router_ptr, router_size),
                                                   fbb.CreateVector(fwd_content_ptr, fwd_content_size),
-                                                  fwd_data->flags()).Union());
+                                                  fwd_data->flags()).Union()));
 
         int ret = n.send_ctrl_msg(fwd_data->from(), fbb);
         if (ret < 0) {
@@ -188,12 +188,12 @@ namespace atbus {
         if (NULL != select_address && !select_address->empty()) {
             ::flatbuffers::FlatBufferBuilder fbb;
             uint64_t self_id = n.get_id();
-            ::atbus::protocol::Createmsg(
+            fbb.Finish(::atbus::protocol::Createmsg(
                 fbb,
                 ::atbus::protocol::Createmsg_head(fbb, ::atbus::protocol::ATBUS_PROTOCOL_CONST_ATBUS_PROTOCOL_VERSION, 0, 0, 0, self_id),
                 ::atbus::protocol::msg_body_node_connect_sync,
                 ::atbus::protocol::Createconnection_data(
-                    fbb, ::atbus::protocol::Createchannel_data(fbb, fbb.CreateString(select_address->c_str(), select_address->size()))).Union());
+                    fbb, ::atbus::protocol::Createchannel_data(fbb, fbb.CreateString(select_address->c_str(), select_address->size()))).Union()));
 
 
             int ret = n.send_ctrl_msg(direct_from_bus_id, fbb);
@@ -321,7 +321,7 @@ namespace atbus {
 
         flatbuffers::FlatBufferBuilder fbb(fwd_content_size + router_size * sizeof(uint64_t) +
                                            ATBUS_MACRO_RESERVED_SIZE);
-        ::atbus::protocol::msg::Pack(fbb, &msg_mut);
+        fbb.Finish(::atbus::protocol::msg::Pack(fbb, &msg_mut));
         res = n.send_data_msg(fwd_data->to(), fbb, &to_ep, NULL);
 
         // 子节点转发成功
@@ -449,7 +449,7 @@ namespace atbus {
 
             flatbuffers::FlatBufferBuilder fbb(fwd_content_size + router_size * sizeof(uint64_t) +
                                                ATBUS_MACRO_RESERVED_SIZE);
-            ::atbus::protocol::msg::Pack(fbb, &msg_mut);
+            fbb.Finish(::atbus::protocol::msg::Pack(fbb, &msg_mut));
 
             ret = send_msg(n, *target_conn, fbb);
         }
@@ -525,11 +525,11 @@ namespace atbus {
                     fbb, fbb.CreateVector(reinterpret_cast<const uint8_t *>((*iter).c_str()), (*iter).size())));
             }
 
-            ::atbus::protocol::Createmsg(
+            fbb.Finish(::atbus::protocol::Createmsg(
                 fbb,
-                ::atbus::protocol::Createmsg_head(fbb, ::atbus::protocol::ATBUS_PROTOCOL_CONST_ATBUS_PROTOCOL_VERSION, 0, 0, 0, self_id),
+                ::atbus::protocol::Createmsg_head(fbb, ::atbus::protocol::ATBUS_PROTOCOL_CONST_ATBUS_PROTOCOL_VERSION, 0, 0, m.head()->sequence(), self_id),
                 ::atbus::protocol::msg_body_custom_command_rsp,
-                ::atbus::protocol::Createcustom_command_data(fbb, n.get_id(), fbb.CreateVector(rsp_texts), fbb.CreateVector(access_keys)).Union());
+                ::atbus::protocol::Createcustom_command_data(fbb, n.get_id(), fbb.CreateVector(rsp_texts), fbb.CreateVector(access_keys)).Union()));
 
             ret = msg_handler::send_msg(n, *conn, fbb);
         }
@@ -934,11 +934,11 @@ namespace atbus {
                 ::flatbuffers::FlatBufferBuilder fbb(ATBUS_MACRO_RESERVED_SIZE + ATBUS_MACRO_RESERVED_SIZE);
 
                 uint64_t self_id = n.get_id();
-                ::atbus::protocol::Createmsg(
+                fbb.Finish(::atbus::protocol::Createmsg(
                     fbb,
                     ::atbus::protocol::Createmsg_head(fbb, ::atbus::protocol::ATBUS_PROTOCOL_CONST_ATBUS_PROTOCOL_VERSION, 0, 0, m.head()->sequence(),
                                                       self_id),
-                    ::atbus::protocol::msg_body_node_pong_rsp, ::atbus::protocol::Createping_data(fbb, msg_body->time_point()).Union());
+                    ::atbus::protocol::msg_body_node_pong_rsp, ::atbus::protocol::Createping_data(fbb, msg_body->time_point()).Union()));
 
                 return send_msg(n, *conn, fbb);
             }
@@ -948,10 +948,10 @@ namespace atbus {
     }
 
     int msg_handler::on_recv_node_pong(node &n, connection *conn, const ::atbus::protocol::msg &m, int /*status*/, int /*errcode*/) {
-        const ::atbus::protocol::ping_data *msg_body = m.body_as_node_ping_req();
+        const ::atbus::protocol::ping_data *msg_body = m.body_as_node_pong_rsp();
         if (NULL == msg_body) {
             ATBUS_FUNC_NODE_DEBUG(n, conn ? conn->get_binding() : NULL, conn, &m,
-                                  "node recv node_ping from 0x%llx but without node_ping_req",
+                                  "node recv node_ping from 0x%llx but without node_pong_rsp",
                                   static_cast<unsigned long long>(m.head() ? m.head()->src_bus_id() : 0));
             return EN_ATBUS_ERR_BAD_DATA;
         }

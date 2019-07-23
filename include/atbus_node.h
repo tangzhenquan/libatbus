@@ -560,7 +560,7 @@ namespace atbus {
         std::unique_ptr<channel::io_stream_conf> iostream_conf_;
         evt_msg_t event_msg_;
         typedef std::list<std::vector<unsigned char> > self_data_msgs_t;
-        typedef std::list<std::vector<std::vector<unsigned char> > > self_cmd_msgs_t;
+        typedef std::list<std::vector<unsigned char> > self_cmd_msgs_t;
         self_data_msgs_t self_data_msgs_;
         self_cmd_msgs_t self_cmd_msgs_;
 

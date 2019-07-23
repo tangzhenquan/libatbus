@@ -611,7 +611,7 @@ namespace atbus {
             if (tail >= head || last_block >= head) { // .... head NNNNNN tail ....
                 size_t free_len = fn::buffer_offset(tail, fn::buffer_next(static_buffer_.buffer_, static_buffer_.size_));
                 // if tail < head && last_block >= head, tail must be static_buffer_.buffer_
-                assert(static_buffer_.size_ == free_len || fn::buffer_next(last_block->raw_data(), last_block->raw_size()) == tail);
+                assert(static_buffer_.size_ == free_len || fn::buffer_next(last_block->raw_data(), buffer_block::padding_size(last_block->raw_size())) == tail);
 
                 if (free_len >= fs && tail >= head) { // .... head NNNNNN tail NN old_bound NN new_bound ....
                     pointer = fn::buffer_next(last_block->pointer_, last_block->size_);
@@ -948,7 +948,8 @@ namespace atbus {
             reset();
 
             if (0 != max_size && max_number > 0) {
-                size_t bfs             = buffer_block::padding_size(max_size);
+                // additional one block for keeping different head and tail
+                size_t bfs             = buffer_block::padding_size(max_size + ATBUS_MACRO_DATA_ALIGN_SIZE);
                 static_buffer_.buffer_ = ::malloc(bfs);
                 if (NULL != static_buffer_.buffer_) {
                     static_buffer_.size_ = bfs;

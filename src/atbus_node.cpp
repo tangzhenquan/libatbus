@@ -600,14 +600,14 @@ namespace atbus {
         //     }
         // }
 
-        ::atbus::protocol::Createmsg(fbb,
+        fbb.Finish(::atbus::protocol::Createmsg(fbb,
                                      ::atbus::protocol::Createmsg_head(fbb, ::atbus::protocol::ATBUS_PROTOCOL_CONST_ATBUS_PROTOCOL_VERSION,
                                                                        type, 0, alloc_msg_seq(), self_id),
                                      ::atbus::protocol::msg_body_data_transform_req,
                                      ::atbus::protocol::Createforward_data(fbb, self_id, tid, fbb.CreateVector(&self_id, 1),
                                                                            fbb.CreateVector(reinterpret_cast<const uint8_t *>(buffer), s),
                                                                            flags)
-                                         .Union());
+                                         .Union()));
 
         return send_data_msg(tid, fbb);
     }
@@ -638,11 +638,11 @@ namespace atbus {
                 fbb, fbb.CreateVector(reinterpret_cast<const uint8_t *>(arr_buf[i]), arr_size[i])));
         }
 
-        ::atbus::protocol::Createmsg(
+        fbb.Finish(::atbus::protocol::Createmsg(
             fbb,
             ::atbus::protocol::Createmsg_head(fbb, ::atbus::protocol::ATBUS_PROTOCOL_CONST_ATBUS_PROTOCOL_VERSION, 0, 0, msg_seq, self_id),
             ::atbus::protocol::msg_body_custom_command_req,
-            ::atbus::protocol::Createcustom_command_data(fbb, self_id, fbb.CreateVector(&argv[0], argv.size())).Union());
+            ::atbus::protocol::Createcustom_command_data(fbb, self_id, fbb.CreateVector(&argv[0], argv.size())).Union()));
 
         if (NULL != seq) {
             *seq = msg_seq;
@@ -1134,11 +1134,15 @@ namespace atbus {
             ATBUS_FUNC_NODE_ERROR(*this, NULL, conn, status, errcode);
 
             if (NULL != conn) {
+                // maybe removed all reference of this connection after call add_endpoint_fault()
+                connection::ptr_t conn_sptr = conn->watch();
                 endpoint *ep = conn->get_binding();
                 if (NULL != ep) {
                     add_endpoint_fault(*ep);
                 }
-                add_connection_fault(*conn);
+                if (conn_sptr) {
+                    add_connection_fault(*conn);
+                }
             }
             return;
         }
@@ -1147,11 +1151,15 @@ namespace atbus {
         int res = msg_handler::dispatch_msg(*this, conn, m, status, errcode);
         if (res < 0) {
             if (NULL != conn) {
+                // maybe removed all reference of this connection after call add_endpoint_fault()
+                connection::ptr_t conn_sptr = conn->watch();
                 endpoint *ep = conn->get_binding();
                 if (NULL != ep) {
                     add_endpoint_fault(*ep);
                 }
-                add_connection_fault(*conn);
+                if (conn_sptr) {
+                    add_connection_fault(*conn);
+                }
             }
 
             return;
@@ -1390,7 +1398,7 @@ namespace atbus {
         }
 
         while (loop_left-- > 0 && !self_cmd_msgs_.empty()) {
-            std::vector<bin_data_block_t> &bin_datas = self_cmd_msgs_.front();
+            bin_data_block_t &bin_datas = self_cmd_msgs_.front();
             do {
                 ::flatbuffers::Verifier msg_verify(reinterpret_cast<const uint8_t *>(&bin_datas[0]), bin_datas.size());
                 // verify
@@ -1726,6 +1734,7 @@ namespace atbus {
             }
 
             if (!(::atbus::protocol::msg_body_data_transform_req == m->body_type() ||
+                  ::atbus::protocol::msg_body_data_transform_rsp == m->body_type() ||
                   ::atbus::protocol::msg_body_custom_command_req == m->body_type() ||
                   ::atbus::protocol::msg_body_custom_command_rsp == m->body_type())) {
                 ATBUS_FUNC_NODE_ERROR(*this, get_self_endpoint(), NULL, EN_ATBUS_ERR_ATNODE_INVALID_MSG, 0);
@@ -1733,12 +1742,14 @@ namespace atbus {
             }
 
             assert(::atbus::protocol::msg_body_data_transform_req == m->body_type() ||
+                   ::atbus::protocol::msg_body_data_transform_rsp == m->body_type() ||
                    ::atbus::protocol::msg_body_custom_command_req == m->body_type() ||
                    ::atbus::protocol::msg_body_custom_command_rsp == m->body_type());
 
             typedef std::vector<unsigned char> bin_data_block_t;
             // self data msg
-            if (::atbus::protocol::msg_body_data_transform_req == m->body_type()) {
+            if (::atbus::protocol::msg_body_data_transform_req == m->body_type() ||
+                ::atbus::protocol::msg_body_data_transform_rsp == m->body_type()) {
                 self_data_msgs_.push_back(bin_data_block_t());
                 bin_data_block_t &bin_data = self_data_msgs_.back();
 
@@ -1750,8 +1761,8 @@ namespace atbus {
             // self command msg
             if (::atbus::protocol::msg_body_custom_command_req == m->body_type() ||
                 ::atbus::protocol::msg_body_custom_command_rsp == m->body_type()) {
-                self_cmd_msgs_.push_back(std::vector<bin_data_block_t>());
-                std::vector<bin_data_block_t> &bin_data = self_cmd_msgs_.back();
+                self_cmd_msgs_.push_back(bin_data_block_t());
+                bin_data_block_t &bin_data = self_cmd_msgs_.back();
 
                 // just copy message
                 bin_data.resize(static_cast<size_t>(mb.GetSize()));

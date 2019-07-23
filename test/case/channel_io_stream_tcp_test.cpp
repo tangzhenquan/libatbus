@@ -459,7 +459,7 @@ static void connect_failed_callback_test_fn(atbus::channel::io_stream_channel *c
     if (EN_ATBUS_ERR_SOCK_CONNECT_FAILED == status) {
         CASE_EXPECT_EQ(UV_ECONNREFUSED, channel->error_code);
     } else {
-        CASE_EXPECT_EQ(UV_EAI_NONAME, channel->error_code);
+        CASE_EXPECT_TRUE(UV_EAI_NONAME == channel->error_code || UV_EAI_AGAIN == channel->error_code);
     }
 
     if (0 != channel->error_code) {

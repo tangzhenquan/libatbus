@@ -184,8 +184,8 @@ namespace atbus {
         struct mem_block {
             enum size_def {
                 channel_head_size = sizeof(mem_channel_head_align),
-                block_head_size   = (sizeof(mem_block_head) + ATBUS_MACRO_DATA_ALIGN_SIZE - 1) / ATBUS_MACRO_DATA_ALIGN_SIZE,
-                node_head_size    = (sizeof(mem_node_head) + ATBUS_MACRO_DATA_ALIGN_SIZE - 1) / ATBUS_MACRO_DATA_ALIGN_SIZE,
+                block_head_size   = ((sizeof(mem_block_head) + ATBUS_MACRO_DATA_ALIGN_SIZE - 1) / ATBUS_MACRO_DATA_ALIGN_SIZE) * ATBUS_MACRO_DATA_ALIGN_SIZE,
+                node_head_size    = ((sizeof(mem_node_head) + ATBUS_MACRO_DATA_ALIGN_SIZE - 1) / ATBUS_MACRO_DATA_ALIGN_SIZE) * ATBUS_MACRO_DATA_ALIGN_SIZE,
 
                 node_data_size      = ATBUS_MACRO_DATA_NODE_SIZE,
                 node_head_data_size = node_data_size - block_head_size,
@@ -411,7 +411,7 @@ namespace atbus {
         // 节点大小必须是2的N次
         static_assert(0 == ((mem_block::node_data_size - 1) & mem_block::node_data_size), "node size must be 2^N");
         // 节点大小必须是对齐单位的2的N次方倍
-        static_assert(0 == (mem_block::node_data_size & (mem_block::node_data_size - sizeof(uint64_t))),
+        static_assert(0 == (mem_block::node_data_size & (mem_block::node_data_size - ATBUS_MACRO_DATA_ALIGN_SIZE)),
                       "node size must be [data align size] * 2^N");
 
 

@@ -3,6 +3,9 @@
         "-DPROJECT_ENABLE_UNITTEST=YES",
         "-DPROJECT_ENABLE_SAMPLE=YES",
         "-DPROJECT_ENABLE_TOOLS=YES",
+        "-DCMAKE_CXX_FLAGS=-fsanitize=address -fno-omit-frame-pointer",
+        "-DCMAKE_C_FLAGS=-fsanitize=address -fno-omit-frame-pointer",
+        "-DCMAKE_EXE_LINKER_FLAGS=-static-libsan"
     ],
     "cmake.configureEnvironment": {
         "CPRINTF_MODE": "none"

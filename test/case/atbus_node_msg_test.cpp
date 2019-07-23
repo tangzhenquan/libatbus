@@ -345,9 +345,9 @@ CASE_TEST(atbus_node_msg, send_cmd_to_self) {
 
         CASE_EXPECT_EQ(EN_ATBUS_ERR_SUCCESS, node1->start());
 
-        time_t proc_t = time(NULL) + 1;
+        time_t proc_tm = time(NULL) + 1;
         node1->poll();
-        node1->proc(proc_t, 0);
+        node1->proc(proc_tm, 0);
 
         int count = recv_msg_history.count;
         node1->set_on_custom_cmd_handle(node_msg_test_recv_msg_test_custom_cmd_fn);
