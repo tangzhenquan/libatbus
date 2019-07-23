@@ -139,21 +139,23 @@ namespace atbus {
             fwd_content_size = fwd_data->content()->size();
         }
 
-        const uint64_t* router_ptr = NULL;
-        size_t router_size = 0;
+        uint64_t self_id = n.get_id();
+        std::vector<uint64_t> rsp_router;
         if (NULL != fwd_data->router()) {
-            router_ptr = fwd_data->router()->data();
-            router_size = fwd_data->router()->size();
+            rsp_router.reserve(fwd_data->router()->size() + 1);
+            rsp_router.assign(fwd_data->router()->data(), fwd_data->router()->data() + fwd_data->router()->size());
+            rsp_router.push_back(self_id);
+        } else {
+            rsp_router.push_back(self_id);
         }
 
-        uint64_t self_id = n.get_id();
         fbb.Finish(::atbus::protocol::Createmsg(
             fbb,
             ::atbus::protocol::Createmsg_head(fbb, ::atbus::protocol::ATBUS_PROTOCOL_CONST_ATBUS_PROTOCOL_VERSION, m.head()->type(),
                                               ret_code, m.head()->sequence(), self_id),
             ::atbus::protocol::msg_body_data_transform_rsp,
             ::atbus::protocol::Createforward_data(fbb, fwd_data->to(), fwd_data->from(),
-                                                  fbb.CreateVector(router_ptr, router_size),
+                                                  fbb.CreateVector(rsp_router),
                                                   fbb.CreateVector(fwd_content_ptr, fwd_content_size),
                                                   fwd_data->flags()).Union()));
 

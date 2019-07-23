@@ -906,6 +906,8 @@ CASE_TEST(atbus_node_msg, transfer_failed_cross_parents) {
         int before_remove_endpoint_count = recv_msg_history.remove_endpoint_count;
         int before_test_count            = recv_msg_history.failed_count;
         int recv_transfer_failed         = 0;
+        
+        recv_msg_history.last_msg_router.clear();
         for (size_t i = 0; i < try_times; ++i) {
             // 转发消息
             std::string send_data;
