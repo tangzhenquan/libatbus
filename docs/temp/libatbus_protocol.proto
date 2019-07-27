@@ -1,0 +1,97 @@
+syntax = "proto3";
+
+package atbus.protocol;
+
+option optimize_for = SPEED;
+// option optimize_for = LITE_RUNTIME;
+// option optimize_for = CODE_SIZE;
+// --cpp_out=lite:,--cpp_out=
+option cc_enable_arenas = true;
+
+enum ATBUS_PROTOCOL_CONST {
+    option allow_alias             = true;
+    ATBUS_PROTOCOL_CONST_UNKNOWN   = 0;
+    ATBUS_PROTOCOL_VERSION         = 2;
+    ATBUS_PROTOCOL_MINIMAL_VERSION = 2; // minimal protocol version supported
+}
+
+enum ATBUS_FORWARD_DATA_FLAG_TYPE {
+    FORWARD_DATA_FLAG_NONE = 0;
+    // all flags must be power of 2
+    FORWARD_DATA_FLAG_REQUIRE_RSP = 1;
+}
+
+message custom_command_argv { bytes arg = 1; }
+
+message custom_command_data {
+    uint64   from                         = 1;
+    repeated custom_command_argv commands = 2;
+    repeated access_data access_keys      = 3;
+}
+
+message forward_data {
+    uint64   from           = 1;
+    uint64   to             = 2;
+    repeated uint64 router  = 3;
+    bytes           content = 4;
+    uint32          flags   = 5;
+}
+
+message access_data {
+    uint32 token_salt  = 1;
+    uint64 token_hash1 = 2;
+    uint64 token_hash2 = 3;
+}
+
+message channel_data { string address = 1; }
+
+message node_data {
+    uint64   bus_id             = 1;
+    bool     overwrite          = 2;
+    bool     flags              = 3;
+    uint64   children_id_mask   = 4;
+    uint64   children_id_prefix = 5;
+    repeated node_data children = 6;
+}
+
+message node_tree { repeated node_data nodes = 1; }
+
+message ping_data { int64 time_point = 1; }
+
+message register_data {
+    uint64   bus_id                          = 1;
+    int32    pid                             = 2;
+    string   hostname                        = 3;
+    repeated channel_data channels           = 4;
+    uint32                children_id_mask   = 5;
+    uint64                children_id_prefix = 6;
+    uint32                flags              = 7;
+    repeated access_data access_keys         = 8;
+}
+
+message connection_data { channel_data address = 1; }
+
+message msg_head {
+    int32  version    = 1;
+    int32  type       = 2;
+    int32  ret        = 3;
+    uint64 sequence   = 4;
+    uint64 src_bus_id = 5;
+}
+
+message msg {
+    msg_head head = 1;
+    oneof    msg_body {
+        custom_command_data custom_command_req = 11;
+        custom_command_data custom_command_rsp = 12;
+        forward_data        data_transform_req = 13;
+        forward_data        data_transform_rsp = 14;
+        node_tree           node_sync_req      = 15;
+        node_tree           node_sync_rsp      = 16;
+        register_data       node_register_req  = 17;
+        register_data       node_register_rsp  = 18;
+        connection_data     node_connect_sync  = 20;
+        ping_data           node_ping_req      = 21;
+        ping_data           node_pong_rsp      = 22;
+    }
+}

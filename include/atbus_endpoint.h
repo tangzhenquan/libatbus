@@ -139,7 +139,7 @@ namespace atbus {
         connection *get_ctrl_connection(endpoint *ep) const;
 
         connection *get_data_connection(endpoint *ep) const;
-        connection *get_data_connection(endpoint *ep, bool reuse_ctrl) const;
+        connection *get_data_connection(endpoint *ep, bool enable_fallback_ctrl) const;
 
         /** 增加错误计数 **/
         size_t add_stat_fault();

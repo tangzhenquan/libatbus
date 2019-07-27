@@ -252,7 +252,12 @@ namespace atbus {
         }
         assert(fwd_data);
 
-        if (NULL == conn || NULL == m.head()) {
+        if (NULL == m.head()) {
+            ATBUS_FUNC_NODE_ERROR(n, NULL == conn ? NULL : conn->get_binding(), conn, EN_ATBUS_ERR_BAD_DATA, 0);
+            return EN_ATBUS_ERR_BAD_DATA;
+        }
+        // message from self has no connection
+        if (NULL == conn && m.head()->src_bus_id() != n.get_id()) {
             ATBUS_FUNC_NODE_ERROR(n, NULL == conn ? NULL : conn->get_binding(), conn, EN_ATBUS_ERR_BAD_DATA, 0);
             return EN_ATBUS_ERR_BAD_DATA;
         }
@@ -287,7 +292,7 @@ namespace atbus {
         if (fwd_data->to() == n.get_id()) {
             ATBUS_FUNC_NODE_DEBUG(n, (NULL == conn ? NULL : conn->get_binding()), conn, &m, "node recv data length = %lld",
                                 static_cast<unsigned long long>(fwd_content_size));
-            n.on_recv_data(conn->get_binding(), conn, m, fwd_content_ptr, fwd_content_size);
+            n.on_recv_data(NULL == conn ? NULL : conn->get_binding(), conn, m, fwd_content_ptr, fwd_content_size);
 
             if (fwd_data->flags() & atbus::protocol::ATBUS_FORWARD_DATA_FLAG_TYPE_REQUIRE_RSP) {
                 return send_transfer_rsp(n, m, EN_ATBUS_ERR_SUCCESS);
@@ -375,12 +380,17 @@ namespace atbus {
         }
         assert(fwd_data);
 
-        if (NULL == conn || NULL == m.head()) {
+        if (NULL == m.head()) {
+            ATBUS_FUNC_NODE_ERROR(n, NULL == conn ? NULL : conn->get_binding(), conn, EN_ATBUS_ERR_BAD_DATA, 0);
+            return EN_ATBUS_ERR_BAD_DATA;
+        }
+        // message from self has no connection
+        if (NULL == conn && m.head()->src_bus_id() != n.get_id()) {
             ATBUS_FUNC_NODE_ERROR(n, NULL == conn ? NULL : conn->get_binding(), conn, EN_ATBUS_ERR_BAD_DATA, 0);
             return EN_ATBUS_ERR_BAD_DATA;
         }
 
-        if (::atbus::connection::state_t::CONNECTED != conn->get_status()) {
+        if (NULL == conn && ::atbus::connection::state_t::CONNECTED != conn->get_status()) {
             ATBUS_FUNC_NODE_ERROR(n, NULL == conn ? NULL : conn->get_binding(), conn, EN_ATBUS_ERR_NOT_READY, 0);
             return EN_ATBUS_ERR_NOT_READY;
         }
@@ -403,9 +413,9 @@ namespace atbus {
         // dispatch message
         if (fwd_data->to() == n.get_id()) {
             if (m.head()->ret() < 0) {
-                ATBUS_FUNC_NODE_ERROR(n, conn->get_binding(), conn, m.head()->ret(), 0);
+                ATBUS_FUNC_NODE_ERROR(n, NULL == conn ? NULL : conn->get_binding(), conn, m.head()->ret(), 0);
             }
-            n.on_send_data_failed(conn->get_binding(), conn, &m);
+            n.on_send_data_failed(NULL == conn ? NULL : conn->get_binding(), conn, &m);
             return EN_ATBUS_ERR_SUCCESS;
         }
 
@@ -473,7 +483,12 @@ namespace atbus {
         }
         assert(cmd_data);
 
-        if (NULL == conn || NULL == m.head()) {
+        if (NULL == m.head()) {
+            ATBUS_FUNC_NODE_ERROR(n, NULL == conn ? NULL : conn->get_binding(), conn, EN_ATBUS_ERR_BAD_DATA, 0);
+            return EN_ATBUS_ERR_BAD_DATA;
+        }
+        // message from self has no connection
+        if (NULL == conn && cmd_data->from() != n.get_id()) {
             ATBUS_FUNC_NODE_ERROR(n, NULL == conn ? NULL : conn->get_binding(), conn, EN_ATBUS_ERR_BAD_DATA, 0);
             return EN_ATBUS_ERR_BAD_DATA;
         }
@@ -533,7 +548,11 @@ namespace atbus {
                 ::atbus::protocol::msg_body_custom_command_rsp,
                 ::atbus::protocol::Createcustom_command_data(fbb, n.get_id(), fbb.CreateVector(rsp_texts), fbb.CreateVector(access_keys)).Union()));
 
-            ret = msg_handler::send_msg(n, *conn, fbb);
+            if (NULL != conn) {
+                ret = msg_handler::send_msg(n, *conn, fbb);
+            } else {
+                ret = n.send_ctrl_msg(cmd_data->from(), fbb);
+            }
         }
 
         return ret;
@@ -554,7 +573,12 @@ namespace atbus {
         }
         assert(cmd_data);
 
-        if (NULL == conn || NULL == m.head()) {
+        if (NULL == m.head()) {
+            ATBUS_FUNC_NODE_ERROR(n, NULL == conn ? NULL : conn->get_binding(), conn, EN_ATBUS_ERR_BAD_DATA, 0);
+            return EN_ATBUS_ERR_BAD_DATA;
+        }
+        // message from self has no connection
+        if (NULL == conn && cmd_data->from() != n.get_id()) {
             ATBUS_FUNC_NODE_ERROR(n, NULL == conn ? NULL : conn->get_binding(), conn, EN_ATBUS_ERR_BAD_DATA, 0);
             return EN_ATBUS_ERR_BAD_DATA;
         }

@@ -297,7 +297,7 @@ namespace atbus {
 
     connection *endpoint::get_data_connection(endpoint *ep) const { return get_data_connection(ep, true); }
 
-    connection *endpoint::get_data_connection(endpoint *ep, bool reuse_ctrl) const {
+    connection *endpoint::get_data_connection(endpoint *ep, bool enable_fallback_ctrl) const {
         if (NULL == ep) {
             return NULL;
         }
@@ -338,7 +338,7 @@ namespace atbus {
             }
         }
 
-        if (reuse_ctrl) {
+        if (enable_fallback_ctrl) {
             return get_ctrl_connection(ep);
         } else {
             return NULL;

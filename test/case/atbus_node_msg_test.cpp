@@ -357,6 +357,7 @@ CASE_TEST(atbus_node_msg, send_cmd_to_self) {
         recv_msg_history.last_cmd_seq        = 0;
         recv_msg_history.expect_cmd_req_from = node1->get_id();
         recv_msg_history.expect_cmd_rsp_from = node1->get_id();
+        recv_msg_history.data.clear();
         node1->send_custom_cmd(node1->get_id(), cmds_in, cmds_len, 3, &recv_msg_history.last_cmd_seq);
 
         CASE_EXPECT_EQ(count + 2, recv_msg_history.count);
