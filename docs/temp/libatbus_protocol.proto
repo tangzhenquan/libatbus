@@ -74,7 +74,7 @@ message connection_data { channel_data address = 1; }
 message msg_head {
     int32  version    = 1;
     int32  type       = 2;
-    int32  ret        = 3;
+    sint32 ret        = 3;
     uint64 sequence   = 4;
     uint64 src_bus_id = 5;
 }
