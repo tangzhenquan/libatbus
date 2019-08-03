@@ -40,6 +40,9 @@ namespace atbus {
 
         static int send_transfer_rsp(node &n, const ::atbus::protocol::msg &, int32_t ret_code);
 
+        static int send_custom_cmd_rsp(node &n, connection *conn, const std::list<std::string>& rsp_data, 
+            int32_t type, int32_t ret_code, uint64_t sequence, uint64_t from_bus_id);
+
         static int send_node_connect_sync(node &n, uint64_t direct_from_bus_id, endpoint &dst_ep);
 
         static int send_msg(node &n, connection &conn, ::flatbuffers::FlatBufferBuilder &mb);

@@ -917,7 +917,7 @@ namespace atbus {
 
     bool node::check_access_hash(const uint32_t salt, const uint64_t hashval1, const uint64_t hashval2) const {
         if (conf_.access_tokens.empty()) {
-            return true;
+            return 0 == hashval1 && 0 == hashval2;
         }
 
         for (size_t i = 0; i < conf_.access_tokens.size(); ++i) {

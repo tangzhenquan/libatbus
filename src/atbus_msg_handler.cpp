@@ -167,6 +167,45 @@ namespace atbus {
         return ret;
     }
 
+    int msg_handler::send_custom_cmd_rsp(node &n, connection *conn, const std::list<std::string>& rsp_data, 
+            int32_t type, int32_t ret_code, uint64_t sequence, uint64_t from_bus_id) {
+        int ret = 0;
+        ::flatbuffers::FlatBufferBuilder fbb;
+        uint64_t self_id = n.get_id();
+
+        std::vector<flatbuffers::Offset< ::atbus::protocol::access_data> > access_keys;
+        access_keys.reserve(n.get_conf().access_tokens.size());
+        for (size_t idx = 0; idx < n.get_conf().access_tokens.size(); ++idx) {
+            uint32_t salt     = 0;
+            uint64_t hashval1 = 0;
+            uint64_t hashval2 = 0;
+            if (n.generate_access_hash(idx, salt, hashval1, hashval2)) {
+                access_keys.push_back(::atbus::protocol::Createaccess_data(fbb, salt, hashval1, hashval2));
+            }
+        }
+
+        std::vector<flatbuffers::Offset< ::atbus::protocol::custom_command_argv> > rsp_texts;
+        rsp_texts.reserve(rsp_data.size());
+        for (std::list<std::string>::const_iterator iter = rsp_data.begin(); iter != rsp_data.end(); ++iter) {
+            rsp_texts.push_back(::atbus::protocol::Createcustom_command_argv(
+                fbb, fbb.CreateVector(reinterpret_cast<const uint8_t *>((*iter).c_str()), (*iter).size())));
+        }
+
+        fbb.Finish(::atbus::protocol::Createmsg(
+            fbb,
+            ::atbus::protocol::Createmsg_head(fbb, ::atbus::protocol::ATBUS_PROTOCOL_CONST_ATBUS_PROTOCOL_VERSION, type, ret_code, sequence, self_id),
+            ::atbus::protocol::msg_body_custom_command_rsp,
+            ::atbus::protocol::Createcustom_command_data(fbb, n.get_id(), fbb.CreateVector(rsp_texts), fbb.CreateVector(access_keys)).Union()));
+
+        if (NULL != conn) {
+            ret = msg_handler::send_msg(n, *conn, fbb);
+        } else {
+            ret = n.send_ctrl_msg(from_bus_id, fbb);
+        }
+
+        return ret;
+    }
+
     int msg_handler::send_node_connect_sync(node &n, uint64_t direct_from_bus_id, endpoint &dst_ep) {
         const std::list<std::string> &listen_addrs = dst_ep.get_listen();
         const endpoint *from_ep                    = n.get_endpoint(direct_from_bus_id);
@@ -270,7 +309,8 @@ namespace atbus {
         // all transfer message must be send by a verified connect, there is no need to check access token again
         // if (!n.get_conf().access_tokens.empty()) {
         //     bool check_pass = false;
-        //     for (::flatbuffers::uoffset_t i = 0; false == check_pass && i < fwd_data->access_keys()->size(); ++i) {
+        //     ::flatbuffers::uoffset_t access_keys_size = NULL == fwd_data->access_keys()? 0: fwd_data->access_keys()->size();
+        //     for (::flatbuffers::uoffset_t i = 0; false == check_pass && i < access_keys_size; ++i) {
         //         const ::atbus::protocol::access_data *access_key = fwd_data->access_keys()->Get(i);
         //         assert(access_key);
         //         check_pass = n.check_access_hash(access_key->token_salt(), access_key->token_hash1(), access_key->token_hash2());
@@ -398,7 +438,8 @@ namespace atbus {
         // all transfer message must be send by a verified connect, there is no need to check access token again
         // if (!n.get_conf().access_tokens.empty()) {
         //     bool check_pass = false;
-        //     for (::flatbuffers::uoffset_t i = 0; false == check_pass && i < fwd_data->access_keys()->size(); ++i) {
+        //     ::flatbuffers::uoffset_t access_keys_size = NULL == fwd_data->access_keys()? 0: fwd_data->access_keys()->size();
+        //     for (::flatbuffers::uoffset_t i = 0; false == check_pass && i < access_keys_size; ++i) {
         //         const ::atbus::protocol::access_data *access_key = fwd_data->access_keys()->Get(i);
         //         assert(access_key);
         //         check_pass = n.check_access_hash(access_key->token_salt(), access_key->token_hash1(), access_key->token_hash2());
@@ -494,17 +535,20 @@ namespace atbus {
         }
 
         // Check access token
-        if (!n.get_conf().access_tokens.empty()) {
+        ::flatbuffers::uoffset_t access_keys_size = NULL == cmd_data->access_keys()? 0: cmd_data->access_keys()->size();
+        if (!n.get_conf().access_tokens.empty() || access_keys_size > 0) {
             bool check_pass = false;
-            for (::flatbuffers::uoffset_t i = 0; false == check_pass && i < cmd_data->access_keys()->size(); ++i) {
+            for (::flatbuffers::uoffset_t i = 0; false == check_pass && i < access_keys_size; ++i) {
                 const ::atbus::protocol::access_data *access_key = cmd_data->access_keys()->Get(i);
                 assert(access_key);
                 check_pass = n.check_access_hash(access_key->token_salt(), access_key->token_hash1(), access_key->token_hash2());
             }
 
             if (!check_pass) {
+                std::list<std::string> rsp_data;
+                rsp_data.push_back("Access Deny - Invalid Token");
                 ATBUS_FUNC_NODE_ERROR(n, NULL == conn ? NULL : conn->get_binding(), conn, EN_ATBUS_ERR_ACCESS_DENY, 0);
-                return EN_ATBUS_ERR_ACCESS_DENY;
+                return send_custom_cmd_rsp(n ,conn, rsp_data, m.head()->type(), EN_ATBUS_ERR_ACCESS_DENY, m.head()->sequence(), cmd_data->from());
             }
         }
 
@@ -521,38 +565,7 @@ namespace atbus {
         int ret = n.on_custom_cmd(NULL == conn ? NULL : conn->get_binding(), conn, cmd_data->from(), cmd_args, rsp_data);
         // shm & mem ignore response from other node
         if ((NULL != conn && conn->is_running() && conn->check_flag(connection::flag_t::REG_FD)) || n.get_id() == cmd_data->from()) {
-            ::flatbuffers::FlatBufferBuilder fbb;
-            uint64_t self_id = n.get_id();
-
-            std::vector<flatbuffers::Offset< ::atbus::protocol::access_data> > access_keys;
-            access_keys.reserve(n.get_conf().access_tokens.size());
-            for (size_t idx = 0; idx < n.get_conf().access_tokens.size(); ++idx) {
-                uint32_t salt     = 0;
-                uint64_t hashval1 = 0;
-                uint64_t hashval2 = 0;
-                if (n.generate_access_hash(idx, salt, hashval1, hashval2)) {
-                    access_keys.push_back(::atbus::protocol::Createaccess_data(fbb, salt, hashval1, hashval2));
-                }
-            }
-
-            std::vector<flatbuffers::Offset< ::atbus::protocol::custom_command_argv> > rsp_texts;
-            rsp_texts.reserve(rsp_data.size());
-            for (std::list<std::string>::iterator iter = rsp_data.begin(); iter != rsp_data.end(); ++iter) {
-                rsp_texts.push_back(::atbus::protocol::Createcustom_command_argv(
-                    fbb, fbb.CreateVector(reinterpret_cast<const uint8_t *>((*iter).c_str()), (*iter).size())));
-            }
-
-            fbb.Finish(::atbus::protocol::Createmsg(
-                fbb,
-                ::atbus::protocol::Createmsg_head(fbb, ::atbus::protocol::ATBUS_PROTOCOL_CONST_ATBUS_PROTOCOL_VERSION, 0, 0, m.head()->sequence(), self_id),
-                ::atbus::protocol::msg_body_custom_command_rsp,
-                ::atbus::protocol::Createcustom_command_data(fbb, n.get_id(), fbb.CreateVector(rsp_texts), fbb.CreateVector(access_keys)).Union()));
-
-            if (NULL != conn) {
-                ret = msg_handler::send_msg(n, *conn, fbb);
-            } else {
-                ret = n.send_ctrl_msg(cmd_data->from(), fbb);
-            }
+            ret = send_custom_cmd_rsp(n ,conn, rsp_data, m.head()->type(), 0, m.head()->sequence(), cmd_data->from());
         }
 
         return ret;
@@ -644,9 +657,10 @@ namespace atbus {
         }
 
         // Check access token
-        if (!n.get_conf().access_tokens.empty()) {
+        ::flatbuffers::uoffset_t access_keys_size = NULL == reg_data->access_keys()? 0: reg_data->access_keys()->size();
+        if (!n.get_conf().access_tokens.empty() || access_keys_size > 0) {
             bool check_pass = false;
-            for (::flatbuffers::uoffset_t i = 0; false == check_pass && i < reg_data->access_keys()->size(); ++i) {
+            for (::flatbuffers::uoffset_t i = 0; false == check_pass && i < access_keys_size; ++i) {
                 const ::atbus::protocol::access_data *access_key = reg_data->access_keys()->Get(i);
                 assert(access_key);
                 check_pass = n.check_access_hash(access_key->token_salt(), access_key->token_hash1(), access_key->token_hash2());
@@ -654,7 +668,17 @@ namespace atbus {
 
             if (!check_pass) {
                 ATBUS_FUNC_NODE_ERROR(n, NULL == conn ? NULL : conn->get_binding(), conn, EN_ATBUS_ERR_ACCESS_DENY, 0);
-                return EN_ATBUS_ERR_ACCESS_DENY;
+
+                if (NULL != conn) {
+                    int ret = send_reg(::atbus::protocol::msg_body_node_register_rsp, n, *conn, EN_ATBUS_ERR_ACCESS_DENY, m.head()->sequence());
+                    if (ret < 0) {
+                        ATBUS_FUNC_NODE_ERROR(n, conn->get_binding(), conn, ret, 0);
+                        conn->disconnect();
+                    }
+                    return ret;
+                } else {
+                    return EN_ATBUS_ERR_ACCESS_DENY;
+                }
             }
         }
 
@@ -851,10 +875,15 @@ namespace atbus {
             return EN_ATBUS_ERR_BAD_DATA;
         }
 
+        endpoint *ep = conn->get_binding();
+        n.on_reg(ep, conn, m.head()->ret());
+
         // Check access token
-        if (!n.get_conf().access_tokens.empty()) {
+        bool check_access_token = true;
+        ::flatbuffers::uoffset_t access_keys_size = NULL == reg_data->access_keys()? 0: reg_data->access_keys()->size();
+        if (!n.get_conf().access_tokens.empty() || access_keys_size > 0) {
             bool check_pass = false;
-            for (::flatbuffers::uoffset_t i = 0; false == check_pass && i < reg_data->access_keys()->size(); ++i) {
+            for (::flatbuffers::uoffset_t i = 0; false == check_pass && i < access_keys_size; ++i) {
                 const ::atbus::protocol::access_data *access_key = reg_data->access_keys()->Get(i);
                 assert(access_key);
                 check_pass = n.check_access_hash(access_key->token_salt(), access_key->token_hash1(), access_key->token_hash2());
@@ -862,16 +891,17 @@ namespace atbus {
 
             if (!check_pass) {
                 ATBUS_FUNC_NODE_ERROR(n, NULL == conn ? NULL : conn->get_binding(), conn, EN_ATBUS_ERR_ACCESS_DENY, 0);
-                return EN_ATBUS_ERR_ACCESS_DENY;
+                check_access_token = false;
             }
         }
 
-        endpoint *ep = conn->get_binding();
-        n.on_reg(ep, conn, m.head()->ret());
-
-        if (m.head()->ret() < 0) {
+        if (!check_access_token || m.head()->ret() < 0) {
             if (NULL != ep) {
                 n.add_check_list(ep->watch());
+            }
+            int ret_code = m.head()->ret();
+            if (!check_access_token && ret_code >= 0) {
+                ret_code = EN_ATBUS_ERR_ACCESS_DENY;
             }
 
             do {
@@ -879,17 +909,16 @@ namespace atbus {
                 if (conn->get_address().address == n.get_conf().parent_address) {
                     if (!n.check_flag(node::flag_t::EN_FT_ACTIVED)) {
                         ATBUS_FUNC_NODE_DEBUG(n, ep, conn, &m, "node register to parent node failed, shutdown");
-                        ATBUS_FUNC_NODE_FATAL_SHUTDOWN(n, ep, conn, m.head()->ret(), errcode);
+                        ATBUS_FUNC_NODE_FATAL_SHUTDOWN(n, ep, conn, ret_code, errcode);
                         break;
                     }
                 }
 
-                ATBUS_FUNC_NODE_ERROR(n, ep, conn, m.head()->ret(), errcode);
+                ATBUS_FUNC_NODE_ERROR(n, ep, conn, ret_code, errcode);
             } while (false);
 
-
             conn->disconnect();
-            return m.head()->ret();
+            return ret_code;
         } else if (node::state_t::CONNECTING_PARENT == n.get_state()) {
             // 父节点返回的rsp成功则可以上线
             // 这时候父节点的endpoint不一定初始化完毕

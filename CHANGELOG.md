@@ -15,14 +15,15 @@ CHANGELOG
 7. 支持字符串路径的共享内存（使用: ```shm_open/ftruncate/mmap/munmap/shm_unlink/close/fstat``` 来管理），支持字符串命名的共享内存（长度限定为NAME_MAX(255）)
 
 ### TODO 1.2.0
-1. children_prefix功能,单元测试
-2. access_token验证的单元测试（成功+失败）
-3. 重构父节点范围管理的结构
-4. 协议版本兼容性单元测试
-5. 内存通道版本兼容性单元测试
-6. 字符串路径共享内存测试
-7. 握手connection的backlog支持，定时器优化
-8. unit test -- no router : EN_ATBUS_ERR_ATNODE_TTL
+
+- [ ] children_prefix功能,单元测试
+- [x] access_token验证的单元测试（成功+失败）
+- [ ] 重构父节点范围管理的结构
+- [ ] 协议版本兼容性单元测试
+- [ ] 内存通道版本兼容性单元测试
+- [ ] 字符串路径共享内存测试
+- [ ] 握手connection的backlog支持，定时器优化
+- [ ] unit test -- no router : EN_ATBUS_ERR_ATNODE_TTL
 
 1.1.0
 ------------
