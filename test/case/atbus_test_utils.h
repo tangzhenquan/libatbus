@@ -32,7 +32,7 @@ struct unit_test_libuv_wait_manager {
         !libuv_wait_mgr.is_timeout_ && (conndition); libuv_wait_mgr.run(ev))                                                        \
         if (!libuv_wait_mgr.is_timeout_)
 
-#define UNITTEST_WAIT_MS(ev, conndition, timeout_ms, tick_ms)                                                                       \
+#define UNITTEST_WAIT_MS(ev, timeout_ms, tick_ms)                                                                                   \
     for (unit_test_libuv_wait_manager libuv_wait_mgr(ev, timeout_ms, tick_ms, false);                                               \
         !libuv_wait_mgr.is_timeout_; libuv_wait_mgr.run(ev))                                                                        \
         if (!libuv_wait_mgr.is_timeout_)

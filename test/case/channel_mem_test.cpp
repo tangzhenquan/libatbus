@@ -20,6 +20,87 @@
 
 #include "frame/test_macros.h"
 
+CASE_TEST(channel, mem_attach_with_invalid_magic) {
+    using namespace atbus::channel;
+    const size_t buffer_len = 2 * 1024 * 1024; // 2MB
+    unsigned char *buffer            = new unsigned char[buffer_len];
+
+    mem_channel *channel = NULL;
+    CASE_EXPECT_EQ(0, mem_init(buffer, buffer_len, &channel, NULL));
+    CASE_EXPECT_NE(NULL, channel);
+
+    memset(buffer + 4, 0, 4);
+    CASE_EXPECT_EQ(EN_ATBUS_ERR_CHANNEL_BUFFER_INVALID, mem_attach(buffer, buffer_len, &channel, NULL));
+
+    delete[] buffer;
+}
+
+CASE_TEST(channel, mem_attach_with_invalid_version) {
+    using namespace atbus::channel;
+    const size_t buffer_len = 2 * 1024 * 1024; // 2MB
+    unsigned char *buffer            = new unsigned char[buffer_len];
+
+    mem_channel *channel = NULL;
+    CASE_EXPECT_EQ(0, mem_init(buffer, buffer_len, &channel, NULL));
+    CASE_EXPECT_NE(NULL, channel);
+
+    CASE_EXPECT_EQ(2, mem_info_get_version(channel));
+    CASE_EXPECT_EQ(0, mem_info_get_version(NULL));
+
+    (*reinterpret_cast<uint16_t*>(buffer + 16)) = 1;
+    CASE_EXPECT_EQ(EN_ATBUS_ERR_CHANNEL_UNSUPPORTED_VERSION, mem_attach(buffer, buffer_len, &channel, NULL));
+
+    delete[] buffer;
+}
+
+CASE_TEST(channel, mem_attach_with_invalid_align_size) {
+    using namespace atbus::channel;
+    const size_t buffer_len = 2 * 1024 * 1024; // 2MB
+    unsigned char *buffer            = new unsigned char[buffer_len];
+
+    mem_channel *channel = NULL;
+    CASE_EXPECT_EQ(0, mem_init(buffer, buffer_len, &channel, NULL));
+    CASE_EXPECT_NE(NULL, channel);
+
+    CASE_EXPECT_EQ(ATBUS_MACRO_DATA_ALIGN_SIZE, mem_info_get_align_size(channel));
+    CASE_EXPECT_EQ(0, mem_info_get_align_size(NULL));
+
+    (*reinterpret_cast<uint16_t*>(buffer + 18)) = ATBUS_MACRO_DATA_ALIGN_SIZE / 2;
+    CASE_EXPECT_EQ(EN_ATBUS_ERR_CHANNEL_ALIGN_SIZE_MISMATCH, mem_attach(buffer, buffer_len, &channel, NULL));
+
+    delete[] buffer;
+}
+
+CASE_TEST(channel, mem_attach_with_invalid_host_size) {
+    using namespace atbus::channel;
+    const size_t buffer_len = 2 * 1024 * 1024; // 2MB
+    unsigned char *buffer            = new unsigned char[buffer_len];
+
+    mem_channel *channel = NULL;
+    CASE_EXPECT_EQ(0, mem_init(buffer, buffer_len, &channel, NULL));
+    CASE_EXPECT_NE(NULL, channel);
+
+    CASE_EXPECT_EQ(sizeof(size_t), mem_info_get_host_size(channel));
+    CASE_EXPECT_EQ(0, mem_info_get_host_size(NULL));
+
+    (*reinterpret_cast<uint16_t*>(buffer + 20)) = sizeof(size_t) / 2;
+    CASE_EXPECT_EQ(EN_ATBUS_ERR_CHANNEL_ARCH_SIZE_T_MISMATCH, mem_attach(buffer, buffer_len, &channel, NULL));
+
+    delete[] buffer;
+}
+
+CASE_TEST(channel, mem_show_channel) {
+    using namespace atbus::channel;
+    const size_t buffer_len = 16 * 1024; // 16KB
+    unsigned char *buffer            = new unsigned char[buffer_len];
+
+    mem_channel *channel = NULL;
+    CASE_EXPECT_EQ(0, mem_init(buffer, buffer_len, &channel, NULL));
+    CASE_EXPECT_NE(NULL, channel);
+    mem_show_channel(channel, CASE_MSG_INFO(), true, 8);
+
+    delete[] buffer;
+}
 
 CASE_TEST(channel, mem_siso) {
     using namespace atbus::channel;

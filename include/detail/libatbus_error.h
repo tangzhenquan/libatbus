@@ -6,19 +6,20 @@
 typedef enum {
     EN_ATBUS_ERR_SUCCESS = 0,
 
-    EN_ATBUS_ERR_PARAMS         = -1,
-    EN_ATBUS_ERR_INNER          = -2,
-    EN_ATBUS_ERR_NO_DATA        = -3,  // 无数据
-    EN_ATBUS_ERR_BUFF_LIMIT     = -4,  // 缓冲区不足
-    EN_ATBUS_ERR_MALLOC         = -5,  // 分配失败
-    EN_ATBUS_ERR_SCHEME         = -6,  // 协议错误
-    EN_ATBUS_ERR_BAD_DATA       = -7,  // 数据校验不通过
-    EN_ATBUS_ERR_INVALID_SIZE   = -8,  // 数据大小异常
-    EN_ATBUS_ERR_NOT_INITED     = -9,  // 未初始化
-    EN_ATBUS_ERR_ALREADY_INITED = -10, // 已填充初始数据
-    EN_ATBUS_ERR_ACCESS_DENY    = -11, // 不允许的操作
-    EN_ATBUS_ERR_UNPACK         = -12, // 解包失败
-    EN_ATBUS_ERR_PACK           = -13, // 打包失败
+    EN_ATBUS_ERR_PARAMS              = -1,
+    EN_ATBUS_ERR_INNER               = -2,
+    EN_ATBUS_ERR_NO_DATA             = -3,  // 无数据
+    EN_ATBUS_ERR_BUFF_LIMIT          = -4,  // 缓冲区不足
+    EN_ATBUS_ERR_MALLOC              = -5,  // 分配失败
+    EN_ATBUS_ERR_SCHEME              = -6,  // 协议错误
+    EN_ATBUS_ERR_BAD_DATA            = -7,  // 数据校验不通过
+    EN_ATBUS_ERR_INVALID_SIZE        = -8,  // 数据大小异常
+    EN_ATBUS_ERR_NOT_INITED          = -9,  // 未初始化
+    EN_ATBUS_ERR_ALREADY_INITED      = -10, // 已填充初始数据
+    EN_ATBUS_ERR_ACCESS_DENY         = -11, // 不允许的操作
+    EN_ATBUS_ERR_UNPACK              = -12, // 解包失败
+    EN_ATBUS_ERR_PACK                = -13, // 打包失败
+    EN_ATBUS_ERR_UNSUPPORTED_VERSION = -14, // 版本不受支持
 
     EN_ATBUS_ERR_ATNODE_NOT_FOUND        = -65, // 查找不到目标节点
     EN_ATBUS_ERR_ATNODE_INVALID_ID       = -66, // 不可用的ID

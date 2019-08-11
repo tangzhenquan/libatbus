@@ -437,6 +437,20 @@ namespace atbus {
             return channel->conf.write_retry_times;
         }
 
+        uint16_t mem_info_get_version(mem_channel *channel) {
+            if (NULL == channel) return 0;
+            return channel->channel_version;
+        }
+
+        uint16_t mem_info_get_align_size(mem_channel *channel) {
+            if (NULL == channel) return 0;
+            return channel->channel_align_size;
+        }
+
+        uint16_t mem_info_get_host_size(mem_channel *channel) {
+            if (NULL == channel) return 0;
+            return channel->channel_host_size;
+        }
 
         int mem_attach(void *buf, size_t len, mem_channel **channel, const mem_conf * /*conf*/) {
             // 缓冲区最小长度为数据头+空洞node的长度
@@ -874,6 +888,9 @@ namespace atbus {
             size_t node_count     = channel->node_count;
 
             out << "Summary:" << std::endl
+                << "\tchannel version: " << channel->channel_version << std::endl
+                << "\tchannel align size: " << channel->channel_align_size << std::endl
+                << "\tchannel host size: " << channel->channel_host_size << std::endl
                 << "\tchannel node size: " << node_size << std::endl
                 << "\tchannel node count: " << node_count << std::endl
                 << "\tchannel using memory size: " << (channel->area_end_offset - channel->area_channel_offset) << std::endl

@@ -265,6 +265,24 @@ namespace atbus {
             return mem_configure_get_write_retry_times(switcher.mem);
         }
 
+        uint16_t shm_info_get_version(shm_channel *channel) {
+            shm_channel_switcher switcher;
+            switcher.shm = channel;
+            return mem_info_get_version(switcher.mem);
+        }
+
+        uint16_t shm_info_get_align_size(shm_channel *channel) {
+            shm_channel_switcher switcher;
+            switcher.shm = channel;
+            return mem_info_get_align_size(switcher.mem);
+        }
+
+        uint16_t shm_info_get_host_size(shm_channel *channel) {
+            shm_channel_switcher switcher;
+            switcher.shm = channel;
+            return mem_info_get_host_size(switcher.mem);
+        }
+
 
         int shm_attach(key_t shm_key, size_t len, shm_channel **channel, const shm_conf *conf) {
             shm_channel_switcher channel_s;

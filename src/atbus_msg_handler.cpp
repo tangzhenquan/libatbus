@@ -58,7 +58,7 @@ namespace atbus {
         uint64_t self_id = n.get_id();
         fbb.Finish(::atbus::protocol::Createmsg(
             fbb,
-            ::atbus::protocol::Createmsg_head(fbb, ::atbus::protocol::ATBUS_PROTOCOL_CONST_ATBUS_PROTOCOL_VERSION, 0, 0, msg_seq, self_id),
+            ::atbus::protocol::Createmsg_head(fbb, n.get_protocol_version(), 0, 0, msg_seq, self_id),
             ::atbus::protocol::msg_body_node_ping_req,
             ::atbus::protocol::Createping_data(fbb, (n.get_timer_sec() / 1000) * 1000 + (n.get_timer_usec() / 1000) % 1000).Union()));
 
@@ -93,7 +93,7 @@ namespace atbus {
         uint64_t self_id = n.get_id();
         fbb.Finish(::atbus::protocol::Createmsg(
             fbb,
-            ::atbus::protocol::Createmsg_head(fbb, ::atbus::protocol::ATBUS_PROTOCOL_CONST_ATBUS_PROTOCOL_VERSION, 0, ret_code, msg_seq, self_id),
+            ::atbus::protocol::Createmsg_head(fbb, n.get_protocol_version(), 0, ret_code, msg_seq, self_id),
             static_cast< ::atbus::protocol::msg_body>(msg_id),
             ::atbus::protocol::Createregister_data(
                 fbb, n.get_id(), n.get_pid(), fbb.CreateString(n.get_hostname().c_str(), n.get_hostname().size()),
@@ -151,7 +151,7 @@ namespace atbus {
 
         fbb.Finish(::atbus::protocol::Createmsg(
             fbb,
-            ::atbus::protocol::Createmsg_head(fbb, ::atbus::protocol::ATBUS_PROTOCOL_CONST_ATBUS_PROTOCOL_VERSION, m.head()->type(),
+            ::atbus::protocol::Createmsg_head(fbb, n.get_protocol_version(), m.head()->type(),
                                               ret_code, m.head()->sequence(), self_id),
             ::atbus::protocol::msg_body_data_transform_rsp,
             ::atbus::protocol::Createforward_data(fbb, fwd_data->to(), fwd_data->from(),
@@ -193,7 +193,7 @@ namespace atbus {
 
         fbb.Finish(::atbus::protocol::Createmsg(
             fbb,
-            ::atbus::protocol::Createmsg_head(fbb, ::atbus::protocol::ATBUS_PROTOCOL_CONST_ATBUS_PROTOCOL_VERSION, type, ret_code, sequence, self_id),
+            ::atbus::protocol::Createmsg_head(fbb, n.get_protocol_version(), type, ret_code, sequence, self_id),
             ::atbus::protocol::msg_body_custom_command_rsp,
             ::atbus::protocol::Createcustom_command_data(fbb, n.get_id(), fbb.CreateVector(rsp_texts), fbb.CreateVector(access_keys)).Union()));
 
@@ -231,7 +231,7 @@ namespace atbus {
             uint64_t self_id = n.get_id();
             fbb.Finish(::atbus::protocol::Createmsg(
                 fbb,
-                ::atbus::protocol::Createmsg_head(fbb, ::atbus::protocol::ATBUS_PROTOCOL_CONST_ATBUS_PROTOCOL_VERSION, 0, 0, 0, self_id),
+                ::atbus::protocol::Createmsg_head(fbb, n.get_protocol_version(), 0, 0, n.alloc_msg_seq(), self_id),
                 ::atbus::protocol::msg_body_node_connect_sync,
                 ::atbus::protocol::Createconnection_data(
                     fbb, ::atbus::protocol::Createchannel_data(fbb, fbb.CreateString(select_address->c_str(), select_address->size()))).Union()));
@@ -295,6 +295,12 @@ namespace atbus {
             ATBUS_FUNC_NODE_ERROR(n, NULL == conn ? NULL : conn->get_binding(), conn, EN_ATBUS_ERR_BAD_DATA, 0);
             return EN_ATBUS_ERR_BAD_DATA;
         }
+
+        // check version
+        if (m.head()->version() < n.get_protocol_minimal_version()) {
+            return send_transfer_rsp(n, m, EN_ATBUS_ERR_UNSUPPORTED_VERSION);
+        }
+
         // message from self has no connection
         if (NULL == conn && m.head()->src_bus_id() != n.get_id()) {
             ATBUS_FUNC_NODE_ERROR(n, NULL == conn ? NULL : conn->get_binding(), conn, EN_ATBUS_ERR_BAD_DATA, 0);
@@ -528,6 +534,14 @@ namespace atbus {
             ATBUS_FUNC_NODE_ERROR(n, NULL == conn ? NULL : conn->get_binding(), conn, EN_ATBUS_ERR_BAD_DATA, 0);
             return EN_ATBUS_ERR_BAD_DATA;
         }
+
+        // check version
+        if (m.head()->version() < n.get_protocol_minimal_version()) {
+            std::list<std::string> rsp_data;
+            rsp_data.push_back("Access Deny - Unsupported Version");
+            return send_custom_cmd_rsp(n ,conn, rsp_data, m.head()->type(), EN_ATBUS_ERR_UNSUPPORTED_VERSION, m.head()->sequence(), cmd_data->from());
+        }
+
         // message from self has no connection
         if (NULL == conn && cmd_data->from() != n.get_id()) {
             ATBUS_FUNC_NODE_ERROR(n, NULL == conn ? NULL : conn->get_binding(), conn, EN_ATBUS_ERR_BAD_DATA, 0);
@@ -619,6 +633,12 @@ namespace atbus {
             return EN_ATBUS_ERR_NOT_READY;
         }
 
+        // check version
+        if (m.head()->version() < n.get_protocol_minimal_version()) {
+            ATBUS_FUNC_NODE_ERROR(n, NULL == conn ? NULL : conn->get_binding(), conn, EN_ATBUS_ERR_UNSUPPORTED_VERSION, 0);
+            return EN_ATBUS_ERR_UNSUPPORTED_VERSION;
+        }
+
         return EN_ATBUS_ERR_SUCCESS;
     }
 
@@ -654,6 +674,20 @@ namespace atbus {
         if (NULL == conn || NULL == m.head()) {
             ATBUS_FUNC_NODE_ERROR(n, NULL == conn ? NULL : conn->get_binding(), conn, EN_ATBUS_ERR_BAD_DATA, 0);
             return EN_ATBUS_ERR_BAD_DATA;
+        }
+
+        // check version
+        if (m.head()->version() < n.get_protocol_minimal_version()) {
+            if (NULL != conn) {
+                int ret = send_reg(::atbus::protocol::msg_body_node_register_rsp, n, *conn, EN_ATBUS_ERR_UNSUPPORTED_VERSION, m.head()->sequence());
+                if (ret < 0) {
+                    ATBUS_FUNC_NODE_ERROR(n, conn->get_binding(), conn, ret, 0);
+                    conn->disconnect();
+                }
+                return ret;
+            } else {
+                return EN_ATBUS_ERR_UNSUPPORTED_VERSION;
+            }
         }
 
         // Check access token
@@ -951,6 +985,11 @@ namespace atbus {
             return EN_ATBUS_ERR_BAD_DATA;
         }
 
+        // check version
+        if (m.head()->version() < n.get_protocol_minimal_version()) {
+            return EN_ATBUS_ERR_UNSUPPORTED_VERSION;
+        }
+
         if (::atbus::connection::state_t::CONNECTED != conn->get_status()) {
             ATBUS_FUNC_NODE_ERROR(n, NULL == conn ? NULL : conn->get_binding(), conn, EN_ATBUS_ERR_NOT_READY, 0);
             return EN_ATBUS_ERR_NOT_READY;
@@ -983,6 +1022,12 @@ namespace atbus {
             return EN_ATBUS_ERR_BAD_DATA;
         }
 
+        // check version
+        int ret_code = 0;
+        if (m.head()->version() < n.get_protocol_minimal_version()) {
+            ret_code = EN_ATBUS_ERR_UNSUPPORTED_VERSION;
+        }
+
         if (NULL != conn) {
             endpoint *ep = conn->get_binding();
             if (NULL != ep) {
@@ -991,7 +1036,7 @@ namespace atbus {
                 uint64_t self_id = n.get_id();
                 fbb.Finish(::atbus::protocol::Createmsg(
                     fbb,
-                    ::atbus::protocol::Createmsg_head(fbb, ::atbus::protocol::ATBUS_PROTOCOL_CONST_ATBUS_PROTOCOL_VERSION, 0, 0, m.head()->sequence(),
+                    ::atbus::protocol::Createmsg_head(fbb, n.get_protocol_version(), m.head()->type(), ret_code, m.head()->sequence(),
                                                       self_id),
                     ::atbus::protocol::msg_body_node_pong_rsp, ::atbus::protocol::Createping_data(fbb, msg_body->time_point()).Union()));
 

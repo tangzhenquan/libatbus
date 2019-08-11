@@ -25,6 +25,8 @@ add_library(${PROJECT_LIB_LINK} STATIC ${PROJECT_LIB_SRC_LIST})
 
 add_dependencies(${PROJECT_LIB_LINK} atbus_generate_protocol)
 
+target_compile_definitions(${PROJECT_LIB_LINK} PRIVATE ATBUS_MACRO_BUILD_API=1)
+
 set_target_properties(${PROJECT_LIB_LINK} PROPERTIES 
     C_VISIBILITY_PRESET "default"
     CXX_VISIBILITY_PRESET "default"

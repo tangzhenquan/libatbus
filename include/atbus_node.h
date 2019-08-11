@@ -79,6 +79,8 @@ namespace atbus {
             std::string parent_address;                  /** 父节点地址 **/
             int loop_times;                              /** 消息循环次数限制，防止某些通道繁忙把其他通道堵死 **/
             int ttl;                                     /** 消息转发跳转限制 **/
+            int32_t protocol_version;
+            int32_t protocol_minimal_version;
 
             // ===== 连接配置 =====
             int backlog;
@@ -414,6 +416,10 @@ namespace atbus {
          */
         static bool set_hostname(const std::string &hn, bool force = false);
 
+        int32_t get_protocol_version() const;
+
+        int32_t get_protocol_minimal_version() const;
+
         inline const std::list<std::string> &get_listen_list() const { return self_->get_listen(); }
 
         bool add_proc_connection(connection::ptr_t conn);
@@ -506,7 +512,9 @@ namespace atbus {
         void set_on_remove_endpoint_handle(evt_msg_t::on_remove_endpoint_fn_t fn);
         const evt_msg_t::on_remove_endpoint_fn_t &get_on_remove_endpoint_handle() const;
 
+        // inner API, please don't use it if you don't known what will happen
         void ref_object(void *);
+        // inner API, please don't use it if you don't known what will happen
         void unref_object(void *);
 
     private:

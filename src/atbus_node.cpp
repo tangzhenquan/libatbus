@@ -75,10 +75,16 @@ namespace atbus {
     }
 
     void node::default_conf(conf_t *conf) {
+        if (NULL == conf) {
+            return;
+        }
+
         conf->ev_loop       = NULL;
         conf->children_mask = 0;
         conf->loop_times    = 128;
         conf->ttl           = 16; // 默认最长8次跳转
+        conf->protocol_version = atbus::protocol::ATBUS_PROTOCOL_CONST_ATBUS_PROTOCOL_VERSION;
+        conf->protocol_minimal_version = atbus::protocol::ATBUS_PROTOCOL_COMPACT_ATBUS_PROTOCOL_MINIMAL_VERSION;
 
         conf->first_idle_timeout = ATBUS_MACRO_CONNECTION_CONFIRM_TIMEOUT;
         conf->ping_interval      = 8; // 默认ping包间隔为8s
@@ -126,6 +132,9 @@ namespace atbus {
         if (conf_.access_tokens.size() > conf_.access_token_max_number) {
             conf_.access_tokens.resize(conf_.access_token_max_number);
         }
+        // follow protocol, not input configure
+        conf_.protocol_version = atbus::protocol::ATBUS_PROTOCOL_CONST_ATBUS_PROTOCOL_VERSION;
+        conf_.protocol_minimal_version = atbus::protocol::ATBUS_PROTOCOL_COMPACT_ATBUS_PROTOCOL_MINIMAL_VERSION;
 
         ev_loop_ = conf_.ev_loop;
         self_    = endpoint::create(this, id, conf_.children_mask, get_pid(), get_hostname());
@@ -601,7 +610,7 @@ namespace atbus {
         // }
 
         fbb.Finish(::atbus::protocol::Createmsg(fbb,
-                                     ::atbus::protocol::Createmsg_head(fbb, ::atbus::protocol::ATBUS_PROTOCOL_CONST_ATBUS_PROTOCOL_VERSION,
+                                     ::atbus::protocol::Createmsg_head(fbb, get_protocol_version(),
                                                                        type, 0, alloc_msg_seq(), self_id),
                                      ::atbus::protocol::msg_body_data_transform_req,
                                      ::atbus::protocol::Createforward_data(fbb, self_id, tid, fbb.CreateVector(&self_id, 1),
@@ -640,7 +649,7 @@ namespace atbus {
 
         fbb.Finish(::atbus::protocol::Createmsg(
             fbb,
-            ::atbus::protocol::Createmsg_head(fbb, ::atbus::protocol::ATBUS_PROTOCOL_CONST_ATBUS_PROTOCOL_VERSION, 0, 0, msg_seq, self_id),
+            ::atbus::protocol::Createmsg_head(fbb, get_protocol_version(), 0, 0, msg_seq, self_id),
             ::atbus::protocol::msg_body_custom_command_req,
             ::atbus::protocol::Createcustom_command_data(fbb, self_id, fbb.CreateVector(&argv[0], argv.size())).Union()));
 
@@ -1083,6 +1092,14 @@ namespace atbus {
         }
 
         return false;
+    }
+
+    int32_t node::get_protocol_version() const {
+        return conf_.protocol_version;
+    }
+
+    int32_t node::get_protocol_minimal_version() const {
+        return conf_.protocol_minimal_version;
     }
 
     bool node::add_proc_connection(connection::ptr_t conn) {
