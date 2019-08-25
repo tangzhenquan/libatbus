@@ -156,14 +156,6 @@ namespace atbus {
             inline operator bool() { return holder; }
         };
 
-        // ================== 用这个来取代C++继承，减少层次结构 ==================
-        struct no_stream_channel_t {
-            void *channel;
-            key_t key;
-            int (*proc_fn)(node &, no_stream_channel_t *, time_t, time_t);
-            int (*free_fn)(node &, no_stream_channel_t *);
-        };
-
     public:
         static void default_conf(conf_t *conf);
 

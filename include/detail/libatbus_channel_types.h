@@ -43,7 +43,6 @@
 #define ATBUS_CHANNEL_SHM 1
 #else
 #include <Windows.h>
-typedef long key_t;
 
 #define ATBUS_CHANNEL_SHM 1
 #endif

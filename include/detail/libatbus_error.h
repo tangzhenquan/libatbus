@@ -48,8 +48,11 @@ typedef enum {
 
     EN_ATBUS_ERR_NODE_TIMEOUT = -211, // 操作超时
 
-    EN_ATBUS_ERR_SHM_GET_FAILED = -301, // 连接共享内存出错，具体错误原因可以查看errno或类似的位置
-    EN_ATBUS_ERR_SHM_NOT_FOUND  = -302, // 共享内存未找到
+    EN_ATBUS_ERR_SHM_GET_FAILED   = -301, // 连接共享内存出错，具体错误原因可以查看errno或类似的位置
+    EN_ATBUS_ERR_SHM_NOT_FOUND    = -302, // 共享内存未找到
+    EN_ATBUS_ERR_SHM_CLOSE_FAILED = -303, // 移除共享内存出错，具体错误原因可以查看errno或类似的位置
+    EN_ATBUS_ERR_SHM_PATH_INVALID = -304, // 共享内存地址错误
+    EN_ATBUS_ERR_SHM_MAP_FAILED   = -305, // 共享内存地址映射错误
 
     EN_ATBUS_ERR_SOCK_BIND_FAILED    = -401, // 绑定地址或端口失败
     EN_ATBUS_ERR_SOCK_LISTEN_FAILED  = -402, // 监听失败

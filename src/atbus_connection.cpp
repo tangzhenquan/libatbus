@@ -184,11 +184,9 @@ namespace atbus {
         } else if (0 == UTIL_STRFUNC_STRNCASE_CMP("shm", address_.scheme.c_str(), 3)) {
 #ifdef ATBUS_CHANNEL_SHM
             channel::shm_channel *shm_chann = NULL;
-            key_t shm_key;
-            util::string::str2int(shm_key, address_.host.c_str());
-            int res = channel::shm_attach(shm_key, conf.recv_buffer_size, &shm_chann, NULL);
+            int res = channel::shm_attach(address_.host.c_str(), conf.recv_buffer_size, &shm_chann, NULL);
             if (res < 0) {
-                res = channel::shm_init(shm_key, conf.recv_buffer_size, &shm_chann, NULL);
+                res = channel::shm_init(address_.host.c_str(), conf.recv_buffer_size, &shm_chann, NULL);
             }
 
             if (res < 0) {
@@ -201,7 +199,6 @@ namespace atbus {
 
             // 加入轮询队列
             conn_data_.shared.shm.channel = shm_chann;
-            conn_data_.shared.shm.shm_key = shm_key;
             conn_data_.shared.shm.len     = conf.recv_buffer_size;
             owner_->add_proc_connection(watcher_.lock());
             flags_.set(flag_t::REG_PROC, true);
@@ -309,11 +306,9 @@ namespace atbus {
         } else if (0 == UTIL_STRFUNC_STRNCASE_CMP("shm", address_.scheme.c_str(), 3)) {
 #ifdef ATBUS_CHANNEL_SHM
             channel::shm_channel *shm_chann = NULL;
-            key_t shm_key;
-            util::string::str2int(shm_key, address_.host.c_str());
-            int res = channel::shm_attach(shm_key, conf.recv_buffer_size, &shm_chann, NULL);
+            int res = channel::shm_attach(address_.host.c_str(), conf.recv_buffer_size, &shm_chann, NULL);
             if (res < 0) {
-                res = channel::shm_init(shm_key, conf.recv_buffer_size, &shm_chann, NULL);
+                res = channel::shm_init(address_.host.c_str(), conf.recv_buffer_size, &shm_chann, NULL);
             }
 
             if (res < 0) {
@@ -328,7 +323,6 @@ namespace atbus {
 
             // 连接信息
             conn_data_.shared.shm.channel = shm_chann;
-            conn_data_.shared.shm.shm_key = shm_key;
             conn_data_.shared.shm.len     = conf.recv_buffer_size;
 
             // 仅在listen时要设置proc,否则同机器的同名通道离线会导致proc中断
@@ -699,7 +693,7 @@ namespace atbus {
         return ret;
     }
 
-    int connection::shm_free_fn(node &, connection &conn) { return channel::shm_close(conn.conn_data_.shared.shm.shm_key); }
+    int connection::shm_free_fn(node &, connection &conn) { return channel::shm_close(conn.get_address().host.c_str()); }
 
     int connection::shm_push_fn(connection &conn, const void *buffer, size_t s) {
         int ret = channel::shm_send(conn.conn_data_.shared.shm.channel, buffer, s);

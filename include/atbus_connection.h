@@ -227,7 +227,6 @@ namespace atbus {
 #ifdef ATBUS_CHANNEL_SHM
         typedef struct {
             channel::shm_channel *channel;
-            key_t shm_key;
             size_t len;
         } conn_data_shm;
 #endif

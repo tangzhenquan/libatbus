@@ -24,12 +24,6 @@ int main(int argc, char *argv[]) {
 
     using namespace atbus::channel;
     shm_channel *channel = NULL;
-    key_t shm_key;
-    if ('0' == *argv[1] && *(argv[1] + 1) && ('x' == *(argv[1] + 1) || 'X' == *(argv[1] + 1))) {
-        shm_key = (key_t)strtol(argv[1] + 2, NULL, 16);
-    } else {
-        shm_key = (key_t)strtol(argv[1], NULL, 10);
-    }
     long need_node_info   = 0;
     size_t need_node_data = 0;
 
@@ -41,9 +35,9 @@ int main(int argc, char *argv[]) {
         need_node_data = (size_t)strtol(argv[3], NULL, 10);
     }
 
-    int res = shm_attach(shm_key, 0, &channel, NULL);
+    int res = shm_attach(argv[1], 0, &channel, NULL);
     if (res < 0) {
-        fprintf(stderr, "shm_attach for 0x%llx failed, ret: %d\n", static_cast<unsigned long long>(shm_key), res);
+        fprintf(stderr, "shm_attach for %s failed, ret: %d\n", argv[1], res);
         return res;
     }
 

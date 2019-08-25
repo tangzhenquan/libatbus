@@ -21,7 +21,7 @@ CHANGELOG
 - [ ] 重构父节点范围管理的结构
 - [x] 协议版本兼容性单元测试
 - [x] 内存通道版本兼容性单元测试
-- [ ] 字符串路径共享内存测试
+- [x] 字符串路径共享内存测试
 - [ ] 握手connection的backlog支持，定时器优化
 - [ ] unit test -- no router : EN_ATBUS_ERR_ATNODE_TTL
 - [ ] msg size -> configure: 256KB

@@ -11,7 +11,11 @@
 #include <cstring>
 #include <ctime>
 #include <map>
+#include <string>
+#include <algorithm>
 #include <stdint.h>
+
+#include <std/smart_ptr.h>
 
 #include "detail/libatbus_adapter_libuv.h"
 
@@ -42,6 +46,12 @@
 
 #else
 #include <unistd.h>
+#include <fcntl.h> /* For O_* constants */
+#include <sys/mman.h>
+#include <sys/stat.h> /* For mode constants */
+#include <sys/types.h>
+#include <unistd.h>
+#include <sys/mman.h>
 #endif
 #ifdef ATBUS_CHANNEL_SHM
 
@@ -67,60 +77,142 @@ namespace atbus {
             HANDLE handle;
             LPCTSTR buffer;
             size_t size;
-            size_t reference_count;
-        } shm_mapped_record_type;
+        } shm_mapped_handle_info;
 #else
         typedef struct {
             int shm_id;
+            int shm_fd;
+            std::string shm_path;
             void *buffer;
             size_t size;
-            size_t reference_count;
-        } shm_mapped_record_type;
+        } shm_mapped_handle_info;
 #endif
+        typedef struct {
+            shm_mapped_handle_info handle;
+            util::lock::atomic_int_type<size_t> reference_count;
+        } shm_mapped_record_type;
 
-        static std::map<key_t, shm_mapped_record_type> shm_mapped_records;
+        typedef ATBUS_ADVANCE_TYPE_MAP(std::string, std::shared_ptr<shm_mapped_record_type>) shm_mapped_by_key_t;
+        static shm_mapped_by_key_t shm_mapped_by_key_records;
         static ::util::lock::spin_lock shm_mapped_records_lock;
 
-        static int shm_close_buffer(key_t shm_key) {
-            ::util::lock::lock_holder< ::util::lock::spin_lock> lock_guard(shm_mapped_records_lock);
+        static std::pair<std::string, int64_t> shm_normalize_path(const char* in) {
+            std::pair<std::string, int64_t> ret;
+            ret.second = 0;
 
-            std::map<key_t, shm_mapped_record_type>::iterator iter = shm_mapped_records.find(shm_key);
-            if (shm_mapped_records.end() == iter) return EN_ATBUS_ERR_SHM_NOT_FOUND;
-
-            assert(iter->second.reference_count > 0);
-            if (iter->second.reference_count > 1) {
-                --iter->second.reference_count;
-                return EN_ATBUS_ERR_SUCCESS;
-            } else {
-                iter->second.reference_count = 0;
+            if (NULL == in || 0 == *in) {
+                return ret;
             }
 
-            shm_mapped_record_type record = iter->second;
-            shm_mapped_records.erase(iter);
+            if ('/' == *in || '\\' == *in) {
+                ret.first.push_back('/');
+                ret.first += &in[1];
+            } else {
+                util::string::str2int(ret.second, in);
+                char key_buf[32] = {0};
+                util::string::int2str(key_buf, 31, ret.second);
+                ret.first = &key_buf[0];
+            }
 
 #ifdef WIN32
-            UnmapViewOfFile(record.buffer);
-            CloseHandle(record.handle);
+            std::transform(ret.begin(), ret.end(), ret.begin(), util::string::tolower<char>);
+#endif 
+            return ret;
+        }
+
+        static bool shm_verify_path(const std::string& shm_path) {
+            if (shm_path.empty()) {
+                return false;
+            }
+#ifdef WIN32
+            // 248 = 255 - strlen("Global\")
+            if (shm_path.size() > 248) {
+                return false;
+            }
 #else
-            int res = shmdt(record.buffer);
-            if (-1 == res) return EN_ATBUS_ERR_SHM_GET_FAILED;
+            if (shm_path.size() > NAME_MAX) {
+                return false;
+            }
+#endif
+            if (shm_path[0] != '/') {
+                return true;
+            }
+
+            for (std::string::size_type i = 1; i < shm_path.size(); ++ i) {
+                if (!shm_path[i] || shm_path[i] == '/') {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        static int shm_close_buffer(const char* input_path) {
+            std::pair<std::string, int64_t> shm_path = shm_normalize_path(input_path);
+            // check path
+            if (!shm_verify_path(shm_path.first)) {
+                return EN_ATBUS_ERR_SHM_PATH_INVALID;
+            }
+
+            ::util::lock::lock_holder< ::util::lock::spin_lock> lock_guard(shm_mapped_records_lock);
+
+            shm_mapped_by_key_t::iterator iter = shm_mapped_by_key_records.find(shm_path.first);
+            if (shm_mapped_by_key_records.end() == iter) return EN_ATBUS_ERR_SHM_NOT_FOUND;
+
+            assert(iter->second);
+            assert(iter->second->reference_count.load() > 0);
+            if ((--iter->second->reference_count) > 0) {
+                return EN_ATBUS_ERR_SUCCESS;
+            } else {
+                iter->second->reference_count = 0;
+            }
+
+            shm_mapped_handle_info handle = iter->second->handle;
+            shm_mapped_by_key_records.erase(iter);
+
+#ifdef WIN32
+            UnmapViewOfFile(handle.buffer);
+            CloseHandle(handle.handle);
+#else
+            if (handle.shm_path.empty()) {
+                // record with shmget/shmat/shmdt mode
+                int res = shmdt(handle.buffer);
+                if (-1 == res) {
+                    return EN_ATBUS_ERR_SHM_CLOSE_FAILED;
+                }
+            } else {
+                if(0 != munmap(handle.buffer, handle.size)) {
+                    shm_unlink(handle.shm_path.c_str());
+                    return EN_ATBUS_ERR_SHM_CLOSE_FAILED;
+                }
+                shm_unlink(handle.shm_path.c_str());
+            }
 #endif
 
             return EN_ATBUS_ERR_SUCCESS;
         }
 
-        static int shm_open_buffer(key_t shm_key, size_t len, void **data, size_t *real_size, bool create) {
+        static int shm_open_buffer(const char* input_path, size_t len, void **data, size_t *real_size, bool create) {
+            std::pair<std::string, int64_t> shm_path = shm_normalize_path(input_path);
+            // check path
+            if (!shm_verify_path(shm_path.first)) {
+                return EN_ATBUS_ERR_SHM_PATH_INVALID;
+            }
+
             ::util::lock::lock_holder< ::util::lock::spin_lock> lock_guard(shm_mapped_records_lock);
 
-            shm_mapped_record_type shm_record;
+            std::shared_ptr<shm_mapped_record_type> shm_record = std::make_shared<shm_mapped_record_type>();
+            if (!shm_record) {
+                return EN_ATBUS_ERR_MALLOC;
+            }
 
             // 已经映射则直接返回
             {
-                std::map<key_t, shm_mapped_record_type>::iterator iter = shm_mapped_records.find(shm_key);
-                if (shm_mapped_records.end() != iter) {
-                    if (data) *data = (void *)iter->second.buffer;
-                    if (real_size) *real_size = iter->second.size;
-                    ++iter->second.reference_count;
+                shm_mapped_by_key_t::iterator iter = shm_mapped_by_key_records.find(shm_path.first);
+                if (shm_mapped_by_key_records.end() != iter) {
+                    if (data) *data = (void *)iter->second->handle.buffer;
+                    if (real_size) *real_size = iter->second->handle.size;
+                    ++iter->second->reference_count;
                     return EN_ATBUS_ERR_SUCCESS;
                 }
             }
@@ -129,63 +221,63 @@ namespace atbus {
 #ifdef _MSC_VER
             USES_CONVERSION;
 #endif
-            memset(&shm_record, 0, sizeof(shm_record));
+            memset(&shm_record->handle, 0, sizeof(shm_record->handle));
             SYSTEM_INFO si;
             ::GetSystemInfo(&si);
             // size_t page_size = static_cast<std::size_t>(si.dwPageSize);
 
-            char shm_file_name[64] = {0};
+            char shm_file_name[256] = {0};
             // Use Global\\ prefix requires the SeCreateGlobalPrivilege privilege, so we do not use it
-            UTIL_STRFUNC_SNPRINTF(shm_file_name, sizeof(shm_file_name), "Global\\libatbus_win_shm_%ld.bus", shm_key);
+            UTIL_STRFUNC_SNPRINTF(shm_file_name, sizeof(shm_file_name), "Global\\%s", '/' == shm_path.first[0]? &shm_path.first[1]: &shm_path.first[0]);
 
             // 首先尝试直接打开
-            shm_record.handle = OpenFileMapping(FILE_MAP_ALL_ACCESS,         // read/write access
+            shm_record->handle.handle = OpenFileMapping(FILE_MAP_ALL_ACCESS, // read/write access
                                                 FALSE,                       // do not inherit the name
                                                 ATBUS_VC_TEXT(shm_file_name) // name of mapping object
             );
-            if (NULL != shm_record.handle) {
-                shm_record.buffer = (LPTSTR)MapViewOfFile(shm_record.handle,   // handle to map object
+            if (NULL != shm_record->handle.handle) {
+                shm_record->handle.buffer = (LPTSTR)MapViewOfFile(shm_record->handle.handle,   // handle to map object
                                                           FILE_MAP_ALL_ACCESS, // read/write permission
                                                           0, 0, len);
 
-                if (NULL == shm_record.buffer) {
-                    CloseHandle(shm_record.handle);
+                if (NULL == shm_record->handle.buffer) {
+                    CloseHandle(shm_record->handle.handle);
                     return EN_ATBUS_ERR_SHM_GET_FAILED;
                 }
 
-                if (data) *data = (void *)shm_record.buffer;
+                if (data) *data = (void *)shm_record->handle.buffer;
                 if (real_size) *real_size = len;
 
-                shm_record.size             = len;
-                shm_record.reference_count  = 1;
-                shm_mapped_records[shm_key] = shm_record;
+                shm_record->handle.size            = len;
+                shm_record->reference_count.store(1);
+                shm_mapped_by_key_records[shm_path] = shm_record;
                 return EN_ATBUS_ERR_SUCCESS;
             }
 
             // 如果允许创建则创建
             if (!create) return EN_ATBUS_ERR_SHM_GET_FAILED;
 
-            shm_record.handle = CreateFileMapping(INVALID_HANDLE_VALUE,        // use paging file
-                                                  NULL,                        // default security
-                                                  PAGE_READWRITE,              // read/write access
-                                                  0,                           // maximum object size (high-order DWORD)
-                                                  static_cast<DWORD>(len),     // maximum object size (low-order DWORD)
-                                                  ATBUS_VC_TEXT(shm_file_name) // name of mapping object
+            shm_record->handle.handle = CreateFileMapping(INVALID_HANDLE_VALUE, // use paging file
+                                                  NULL,                         // default security
+                                                  PAGE_READWRITE,               // read/write access
+                                                  0,                            // maximum object size (high-order DWORD)
+                                                  static_cast<DWORD>(len),      // maximum object size (low-order DWORD)
+                                                  ATBUS_VC_TEXT(shm_file_name)  // name of mapping object
             );
 
-            if (NULL == shm_record.handle) return EN_ATBUS_ERR_SHM_GET_FAILED;
+            if (NULL == shm_record->handle.handle) return EN_ATBUS_ERR_SHM_GET_FAILED;
 
-            shm_record.buffer = (LPTSTR)MapViewOfFile(shm_record.handle,   // handle to map object
-                                                      FILE_MAP_ALL_ACCESS, // read/write permission
+            shm_record->handle.buffer = (LPTSTR)MapViewOfFile(shm_record->handle.handle, // handle to map object
+                                                      FILE_MAP_ALL_ACCESS,               // read/write permission
                                                       0, 0, len);
 
-            if (NULL == shm_record.buffer) return EN_ATBUS_ERR_SHM_GET_FAILED;
+            if (NULL == shm_record->handle.buffer) return EN_ATBUS_ERR_SHM_GET_FAILED;
 
-            shm_record.size             = len;
-            shm_record.reference_count  = 1;
-            shm_mapped_records[shm_key] = shm_record;
+            shm_record->handle.size            = len;
+            shm_record->reference_count.store(1);
+            shm_mapped_by_key_records[shm_path] = shm_record;
 
-            if (data) *data = (void *)shm_record.buffer;
+            if (data) *data = (void *)shm_record->handle.buffer;
             if (real_size) *real_size = len;
 
 #else
@@ -214,26 +306,73 @@ namespace atbus {
             //#endif
 
 #endif
-            shm_record.shm_id = shmget(shm_key, len, shmflag);
-            if (-1 == shm_record.shm_id) return EN_ATBUS_ERR_SHM_GET_FAILED;
+            // create record with shmget/shmat/shmdt mode
+            if (0 == shm_path.second) {
+                shm_record->handle.shm_id = 0;
+                shm_record->handle.shm_path = shm_path.first;
 
-            // 获取实际长度
-            {
-                struct shmid_ds shm_info;
-                if (shmctl(shm_record.shm_id, IPC_STAT, &shm_info)) return EN_ATBUS_ERR_SHM_GET_FAILED;
+                int open_flag = O_RDWR;
+                if (create) {
+                    open_flag |= O_CREAT;
+                }
+                shm_record->handle.shm_fd = shm_open(shm_path.first.c_str(), open_flag, S_IRWXU | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
+                if (-1 == shm_record->handle.shm_fd) return EN_ATBUS_ERR_SHM_GET_FAILED;
+                struct stat statbuf;
+                if (0 != fstat(shm_record->handle.shm_fd, &statbuf)) {
+                    shm_unlink(shm_path.first.c_str());
+                    return EN_ATBUS_ERR_SHM_GET_FAILED;
+                }
 
-                shm_record.size = shm_info.shm_segsz;
+                if (statbuf.st_size <= 0) {
+                    if (0 != ftruncate(shm_record->handle.shm_fd, (off_t)len)) {
+                        shm_unlink(shm_path.first.c_str());
+                        return EN_ATBUS_ERR_SHM_GET_FAILED;
+                    }
+
+                    if (0 != fstat(shm_record->handle.shm_fd, &statbuf)) {
+                        shm_unlink(shm_path.first.c_str());
+                        return EN_ATBUS_ERR_SHM_GET_FAILED;
+                    }
+
+                    shm_record->handle.size = static_cast<size_t>(statbuf.st_size);
+                } else {
+                    shm_record->handle.size = static_cast<size_t>(statbuf.st_size);
+                }
+
+                int shm_map_flag = MAP_SHARED;
+#ifdef __linux__
+                shm_map_flag |= MAP_NORESERVE;
+#endif
+                shm_record->handle.buffer = mmap(NULL , shm_record->handle.size, PROT_READ | PROT_WRITE, shm_map_flag, shm_record->handle.shm_fd, 0);
+                if (MAP_FAILED == shm_record->handle.buffer) {
+                    shm_unlink(shm_path.first.c_str());
+                    return EN_ATBUS_ERR_SHM_MAP_FAILED;
+                }
+            } else {
+                shm_record->handle.shm_id = shmget(shm_path.second, len, shmflag);
+                shm_record->handle.shm_fd = 0;
+                shm_record->handle.shm_path.clear();
+                if (-1 == shm_record->handle.shm_id) return EN_ATBUS_ERR_SHM_GET_FAILED;
+
+                // 获取实际长度
+                {
+                    struct shmid_ds shm_info;
+                    if (shmctl(shm_record->handle.shm_id, IPC_STAT, &shm_info)) return EN_ATBUS_ERR_SHM_GET_FAILED;
+
+                    shm_record->handle.size = shm_info.shm_segsz;
+                }
+
+
+                // 获取地址
+                shm_record->handle.buffer            = shmat(shm_record->handle.shm_id, NULL, 0);
+                shm_record->reference_count.store(1);
             }
 
+            shm_mapped_by_key_records[shm_path.first] = shm_record;
 
-            // 获取地址
-            shm_record.buffer           = shmat(shm_record.shm_id, NULL, 0);
-            shm_record.reference_count  = 1;
-            shm_mapped_records[shm_key] = shm_record;
-
-            if (data) *data = shm_record.buffer;
+            if (data) *data = shm_record->handle.buffer;
             if (real_size) {
-                *real_size = shm_record.size;
+                *real_size = shm_record->handle.size;
             }
 
 #endif
@@ -284,19 +423,19 @@ namespace atbus {
         }
 
 
-        int shm_attach(key_t shm_key, size_t len, shm_channel **channel, const shm_conf *conf) {
+        int shm_attach(const char * shm_path, size_t len, shm_channel **channel, const shm_conf *conf) {
             shm_channel_switcher channel_s;
             shm_conf_cswitcher conf_s;
             conf_s.shm = conf;
 
             size_t real_size;
             void *buffer;
-            int ret = shm_open_buffer(shm_key, len, &buffer, &real_size, false);
+            int ret = shm_open_buffer(shm_path, len, &buffer, &real_size, false);
             if (ret < 0) return ret;
 
             ret = mem_attach(buffer, real_size, &channel_s.mem, conf_s.mem);
             if (ret < 0) {
-                shm_close_buffer(shm_key);
+                shm_close_buffer(shm_path);
                 return ret;
             }
 
@@ -305,19 +444,19 @@ namespace atbus {
             return ret;
         }
 
-        int shm_init(key_t shm_key, size_t len, shm_channel **channel, const shm_conf *conf) {
+        int shm_init(const char * shm_path, size_t len, shm_channel **channel, const shm_conf *conf) {
             shm_channel_switcher channel_s;
             shm_conf_cswitcher conf_s;
             conf_s.shm = conf;
 
             size_t real_size;
             void *buffer;
-            int ret = shm_open_buffer(shm_key, len, &buffer, &real_size, true);
+            int ret = shm_open_buffer(shm_path, len, &buffer, &real_size, true);
             if (ret < 0) return ret;
 
             ret = mem_init(buffer, real_size, &channel_s.mem, conf_s.mem);
             if (ret < 0) {
-                shm_close_buffer(shm_key);
+                shm_close_buffer(shm_path);
                 return ret;
             }
 
@@ -326,7 +465,7 @@ namespace atbus {
             return ret;
         }
 
-        int shm_close(key_t shm_key) { return shm_close_buffer(shm_key); }
+        int shm_close(const char * shm_path) { return shm_close_buffer(shm_path); }
 
         int shm_send(shm_channel *channel, const void *buf, size_t len) {
             shm_channel_switcher switcher;

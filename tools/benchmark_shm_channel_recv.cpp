@@ -44,14 +44,8 @@ int main(int argc, char *argv[]) {
     if (argc > 3) buffer_len = (size_t)strtol(argv[3], NULL, 10);
 
     shm_channel *channel = NULL;
-    key_t shm_key;
-    if ('0' == *argv[1] && *(argv[1] + 1) && ('x' == *(argv[1] + 1) || 'X' == *(argv[1] + 1))) {
-        shm_key = (key_t)strtol(argv[1] + 2, NULL, 16);
-    } else {
-        shm_key = (key_t)strtol(argv[1], NULL, 10);
-    }
 
-    int res = shm_init(shm_key, buffer_len, &channel, NULL);
+    int res = shm_init(argv[1], buffer_len, &channel, NULL);
     if (res < 0) {
         fprintf(stderr, "shm_init failed, ret: %d\n", res);
         return res;

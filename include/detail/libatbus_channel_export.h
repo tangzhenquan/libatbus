@@ -59,9 +59,19 @@ namespace atbus {
         extern ATBUS_MACRO_API uint16_t shm_info_get_align_size(shm_channel *channel);
         extern ATBUS_MACRO_API uint16_t shm_info_get_host_size(shm_channel *channel);
 
-        extern ATBUS_MACRO_API int shm_attach(key_t shm_key, size_t len, shm_channel **channel, const shm_conf *conf);
-        extern ATBUS_MACRO_API int shm_init(key_t shm_key, size_t len, shm_channel **channel, const shm_conf *conf);
-        extern ATBUS_MACRO_API int shm_close(key_t shm_key);
+        /**
+         * @brief shm_attach/shm_init/shm_close with shm_path
+         * @param shm_path shm_path can be a number(means shared memory key) or a path begin with '/'
+         * @note shm_path can only contains one '/' and the length shoud not extend 255 according to POSIX
+         *       On Windows, we will add prefix of "Global\\" for shm_path, so the length of shm_path can 
+         *         not be grater than 248
+         * @see http://man7.org/linux/man-pages/man3/shm_open.3.html
+         * @see https://linux.die.net/man/3/shm_open
+         * @see https://man.openbsd.org/shm_open.3
+         */
+        extern ATBUS_MACRO_API int shm_attach(const char * shm_path, size_t len, shm_channel **channel, const shm_conf *conf);
+        extern ATBUS_MACRO_API int shm_init(const char * shm_path, size_t len, shm_channel **channel, const shm_conf *conf);
+        extern ATBUS_MACRO_API int shm_close(const char * shm_path);
         extern ATBUS_MACRO_API int shm_send(shm_channel *channel, const void *buf, size_t len);
         extern ATBUS_MACRO_API int shm_recv(shm_channel *channel, void *buf, size_t len, size_t *recv_size);
         extern ATBUS_MACRO_API std::pair<size_t, size_t> shm_last_action();
