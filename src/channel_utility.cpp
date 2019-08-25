@@ -12,7 +12,7 @@
 
 namespace atbus {
     namespace channel {
-        bool make_address(const char *in, channel_address_t &addr) {
+        ATBUS_MACRO_API bool make_address(const char *in, channel_address_t &addr) {
             addr.address = in;
 
             // 获取协议
@@ -34,7 +34,7 @@ namespace atbus {
             return true;
         }
 
-        void make_address(const char *scheme, const char *host, int port, channel_address_t &addr) {
+        ATBUS_MACRO_API void make_address(const char *scheme, const char *host, int port, channel_address_t &addr) {
             addr.scheme = scheme;
             addr.host = host;
             addr.port = port;

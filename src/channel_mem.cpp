@@ -415,44 +415,44 @@ namespace atbus {
                       "node size must be [data align size] * 2^N");
 
 
-        int mem_configure_set_write_timeout(mem_channel *channel, uint64_t ms) {
+        ATBUS_MACRO_API int mem_configure_set_write_timeout(mem_channel *channel, uint64_t ms) {
             if (NULL == channel) return EN_ATBUS_ERR_PARAMS;
             channel->conf.conf_send_timeout_ms = ms;
             return EN_ATBUS_ERR_SUCCESS;
         }
 
-        uint64_t mem_configure_get_write_timeout(mem_channel *channel) {
+        ATBUS_MACRO_API uint64_t mem_configure_get_write_timeout(mem_channel *channel) {
             if (NULL == channel) return 0;
             return channel->conf.conf_send_timeout_ms;
         }
 
-        int mem_configure_set_write_retry_times(mem_channel *channel, size_t v) {
+        ATBUS_MACRO_API int mem_configure_set_write_retry_times(mem_channel *channel, size_t v) {
             if (NULL == channel) return EN_ATBUS_ERR_PARAMS;
             channel->conf.write_retry_times = v;
             return EN_ATBUS_ERR_SUCCESS;
         }
 
-        size_t mem_configure_get_write_retry_times(mem_channel *channel) {
+        ATBUS_MACRO_API size_t mem_configure_get_write_retry_times(mem_channel *channel) {
             if (NULL == channel) return 0;
             return channel->conf.write_retry_times;
         }
 
-        uint16_t mem_info_get_version(mem_channel *channel) {
+        ATBUS_MACRO_API uint16_t mem_info_get_version(mem_channel *channel) {
             if (NULL == channel) return 0;
             return channel->channel_version;
         }
 
-        uint16_t mem_info_get_align_size(mem_channel *channel) {
+        ATBUS_MACRO_API uint16_t mem_info_get_align_size(mem_channel *channel) {
             if (NULL == channel) return 0;
             return channel->channel_align_size;
         }
 
-        uint16_t mem_info_get_host_size(mem_channel *channel) {
+        ATBUS_MACRO_API uint16_t mem_info_get_host_size(mem_channel *channel) {
             if (NULL == channel) return 0;
             return channel->channel_host_size;
         }
 
-        int mem_attach(void *buf, size_t len, mem_channel **channel, const mem_conf * /*conf*/) {
+        ATBUS_MACRO_API int mem_attach(void *buf, size_t len, mem_channel **channel, const mem_conf * /*conf*/) {
             // 缓冲区最小长度为数据头+空洞node的长度
             if (len < sizeof(mem_channel_head_align) + mem_block::node_data_size + mem_block::node_head_size)
                 return EN_ATBUS_ERR_CHANNEL_SIZE_TOO_SMALL;
@@ -480,7 +480,7 @@ namespace atbus {
             return EN_ATBUS_ERR_SUCCESS;
         }
 
-        int mem_init(void *buf, size_t len, mem_channel **channel, const mem_conf *conf) {
+        ATBUS_MACRO_API int mem_init(void *buf, size_t len, mem_channel **channel, const mem_conf *conf) {
             // 缓冲区最小长度为数据头+空洞node的长度
             if (len < sizeof(mem_channel_head_align) + mem_block::node_data_size + mem_block::node_head_size)
                 return EN_ATBUS_ERR_CHANNEL_SIZE_TOO_SMALL;
@@ -643,7 +643,7 @@ namespace atbus {
             return EN_ATBUS_ERR_SUCCESS;
         }
 
-        int mem_send(mem_channel *channel, const void *buf, size_t len) {
+        ATBUS_MACRO_API int mem_send(mem_channel *channel, const void *buf, size_t len) {
             if (NULL == channel) return EN_ATBUS_ERR_PARAMS;
 
             int ret               = 0;
@@ -663,7 +663,7 @@ namespace atbus {
             return ret;
         }
 
-        int mem_recv(mem_channel *channel, void *buf, size_t len, size_t *recv_size) {
+        ATBUS_MACRO_API int mem_recv(mem_channel *channel, void *buf, size_t len, size_t *recv_size) {
             if (NULL == channel) return EN_ATBUS_ERR_PARAMS;
 
             int ret = EN_ATBUS_ERR_SUCCESS;
@@ -872,11 +872,11 @@ namespace atbus {
             return ret;
         }
 
-        std::pair<size_t, size_t> mem_last_action() {
+        ATBUS_MACRO_API std::pair<size_t, size_t> mem_last_action() {
             return std::make_pair(detail::last_action_channel_begin_node_index, detail::last_action_channel_end_node_index);
         }
 
-        void mem_show_channel(mem_channel *channel, std::ostream &out, bool need_node_status, size_t need_node_data) {
+        ATBUS_MACRO_API void mem_show_channel(mem_channel *channel, std::ostream &out, bool need_node_status, size_t need_node_data) {
             if (NULL == channel) {
                 return;
             }
@@ -965,7 +965,7 @@ namespace atbus {
             }
         }
 
-        void mem_stats_get_error(mem_channel *channel, mem_stats_block_error &out) {
+        ATBUS_MACRO_API void mem_stats_get_error(mem_channel *channel, mem_stats_block_error &out) {
             memset(&out, 0, sizeof(out));
             if (NULL == channel) {
                 return;

@@ -10,11 +10,11 @@
 
 #include <common/string_oprs.h>
 
-#include "frame/test_macros.h"
 #include <atbus_endpoint.h>
 #include <atbus_node.h>
 #include <detail/libatbus_error.h>
 
+#include "frame/test_macros.h"
 
 CASE_TEST(atbus_endpoint, get_children_min_max) {
     atbus::endpoint::bus_id_t tested = atbus::endpoint::get_children_max_id(0x12345678, 16);

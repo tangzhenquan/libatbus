@@ -27,8 +27,18 @@ CASE_TEST(channel, shm_attach_with_invalid_magic) {
     const size_t buffer_len = 2 * 1024 * 1024; // 2MB
 
     shm_channel *channel = NULL;
+#ifdef _WIN32
+    // Win32 may need administrator permission to use shared memory
+    if (0 != shm_init(shm_path, buffer_len, &channel, NULL)) {
+        return;
+    }
+    if (NULL == channel) {
+        return;
+    }
+#else
     CASE_EXPECT_EQ(0, shm_init(shm_path, buffer_len, &channel, NULL));
     CASE_EXPECT_NE(NULL, channel);
+#endif
 
     memset(reinterpret_cast<unsigned char*>(channel) + 4, 0, 4);
     CASE_EXPECT_EQ(EN_ATBUS_ERR_CHANNEL_BUFFER_INVALID, shm_attach(shm_path, buffer_len, &channel, NULL));
@@ -40,8 +50,18 @@ CASE_TEST(channel, shm_attach_with_invalid_version) {
     const size_t buffer_len = 2 * 1024 * 1024; // 2MB
 
     shm_channel *channel = NULL;
+#ifdef _WIN32
+    // Win32 may need administrator permission to use shared memory
+    if (0 != shm_init(shm_path, buffer_len, &channel, NULL)) {
+        return;
+    }
+    if (NULL == channel) {
+        return;
+    }
+#else
     CASE_EXPECT_EQ(0, shm_init(shm_path, buffer_len, &channel, NULL));
     CASE_EXPECT_NE(NULL, channel);
+#endif
 
     CASE_EXPECT_EQ(2, shm_info_get_version(channel));
     CASE_EXPECT_EQ(0, shm_info_get_version(NULL));
@@ -56,8 +76,18 @@ CASE_TEST(channel, shm_attach_with_invalid_align_size) {
     const size_t buffer_len = 2 * 1024 * 1024; // 2MB
 
     shm_channel *channel = NULL;
+#ifdef _WIN32
+    // Win32 may need administrator permission to use shared memory
+    if (0 != shm_init(shm_path, buffer_len, &channel, NULL)) {
+        return;
+    }
+    if (NULL == channel) {
+        return;
+    }
+#else
     CASE_EXPECT_EQ(0, shm_init(shm_path, buffer_len, &channel, NULL));
     CASE_EXPECT_NE(NULL, channel);
+#endif
 
     CASE_EXPECT_EQ(ATBUS_MACRO_DATA_ALIGN_SIZE, shm_info_get_align_size(channel));
     CASE_EXPECT_EQ(0, shm_info_get_align_size(NULL));
@@ -72,8 +102,18 @@ CASE_TEST(channel, shm_attach_with_invalid_host_size) {
     const char* shm_path = "/atbus-channel-test";
 
     shm_channel *channel = NULL;
+#ifdef _WIN32
+    // Win32 may need administrator permission to use shared memory
+    if (0 != shm_init(shm_path, buffer_len, &channel, NULL)) {
+        return;
+    }
+    if (NULL == channel) {
+        return;
+    }
+#else
     CASE_EXPECT_EQ(0, shm_init(shm_path, buffer_len, &channel, NULL));
     CASE_EXPECT_NE(NULL, channel);
+#endif
 
     CASE_EXPECT_EQ(sizeof(size_t), shm_info_get_host_size(channel));
     CASE_EXPECT_EQ(0, shm_info_get_host_size(NULL));
@@ -88,8 +128,18 @@ CASE_TEST(channel, shm_show_channel) {
     const size_t buffer_len = 2 * 1024 * 1024; // 2MB
 
     shm_channel *channel = NULL;
+#ifdef _WIN32
+    // Win32 may need administrator permission to use shared memory
+    if (0 != shm_init(shm_path, buffer_len, &channel, NULL)) {
+        return;
+    }
+    if (NULL == channel) {
+        return;
+    }
+#else
     CASE_EXPECT_EQ(0, shm_init(shm_path, buffer_len, &channel, NULL));
     CASE_EXPECT_NE(NULL, channel);
+#endif
     shm_show_channel(channel, CASE_MSG_INFO() , true, 8);
 }
 
@@ -100,8 +150,18 @@ CASE_TEST(channel, shm_siso) {
 
     shm_channel *channel = NULL;
 
+#ifdef _WIN32
+    // Win32 may need administrator permission to use shared memory
+    if (0 != shm_init(shm_path, buffer_len, &channel, NULL)) {
+        return;
+    }
+    if (NULL == channel) {
+        return;
+    }
+#else
     CASE_EXPECT_EQ(0, shm_init(shm_path, buffer_len, &channel, NULL));
     CASE_EXPECT_NE(NULL, channel);
+#endif
     // 4KB header
 
     // 数据初始化

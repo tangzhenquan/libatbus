@@ -115,7 +115,7 @@ namespace atbus {
             }
 
 #ifdef WIN32
-            std::transform(ret.begin(), ret.end(), ret.begin(), util::string::tolower<char>);
+            std::transform(ret.first.begin(), ret.first.end(), ret.first.begin(), util::string::tolower<char>);
 #endif 
             return ret;
         }
@@ -250,7 +250,7 @@ namespace atbus {
 
                 shm_record->handle.size            = len;
                 shm_record->reference_count.store(1);
-                shm_mapped_by_key_records[shm_path] = shm_record;
+                shm_mapped_by_key_records[shm_path.first] = shm_record;
                 return EN_ATBUS_ERR_SUCCESS;
             }
 
@@ -275,7 +275,7 @@ namespace atbus {
 
             shm_record->handle.size            = len;
             shm_record->reference_count.store(1);
-            shm_mapped_by_key_records[shm_path] = shm_record;
+            shm_mapped_by_key_records[shm_path.first] = shm_record;
 
             if (data) *data = (void *)shm_record->handle.buffer;
             if (real_size) *real_size = len;
@@ -380,50 +380,49 @@ namespace atbus {
             return EN_ATBUS_ERR_SUCCESS;
         }
 
-        int shm_configure_set_write_timeout(shm_channel *channel, uint64_t ms) {
+        ATBUS_MACRO_API int shm_configure_set_write_timeout(shm_channel *channel, uint64_t ms) {
             shm_channel_switcher switcher;
             switcher.shm = channel;
             return mem_configure_set_write_timeout(switcher.mem, ms);
         }
 
-        uint64_t shm_configure_get_write_timeout(shm_channel *channel) {
+        ATBUS_MACRO_API uint64_t shm_configure_get_write_timeout(shm_channel *channel) {
             shm_channel_switcher switcher;
             switcher.shm = channel;
             return mem_configure_get_write_timeout(switcher.mem);
         }
 
-        int shm_configure_set_write_retry_times(shm_channel *channel, size_t times) {
+        ATBUS_MACRO_API int shm_configure_set_write_retry_times(shm_channel *channel, size_t times) {
             shm_channel_switcher switcher;
             switcher.shm = channel;
             return mem_configure_set_write_retry_times(switcher.mem, times);
         }
 
-        size_t shm_configure_get_write_retry_times(shm_channel *channel) {
+        ATBUS_MACRO_API size_t shm_configure_get_write_retry_times(shm_channel *channel) {
             shm_channel_switcher switcher;
             switcher.shm = channel;
             return mem_configure_get_write_retry_times(switcher.mem);
         }
 
-        uint16_t shm_info_get_version(shm_channel *channel) {
+        ATBUS_MACRO_API uint16_t shm_info_get_version(shm_channel *channel) {
             shm_channel_switcher switcher;
             switcher.shm = channel;
             return mem_info_get_version(switcher.mem);
         }
 
-        uint16_t shm_info_get_align_size(shm_channel *channel) {
+        ATBUS_MACRO_API uint16_t shm_info_get_align_size(shm_channel *channel) {
             shm_channel_switcher switcher;
             switcher.shm = channel;
             return mem_info_get_align_size(switcher.mem);
         }
 
-        uint16_t shm_info_get_host_size(shm_channel *channel) {
+        ATBUS_MACRO_API uint16_t shm_info_get_host_size(shm_channel *channel) {
             shm_channel_switcher switcher;
             switcher.shm = channel;
             return mem_info_get_host_size(switcher.mem);
         }
 
-
-        int shm_attach(const char * shm_path, size_t len, shm_channel **channel, const shm_conf *conf) {
+        ATBUS_MACRO_API int shm_attach(const char * shm_path, size_t len, shm_channel **channel, const shm_conf *conf) {
             shm_channel_switcher channel_s;
             shm_conf_cswitcher conf_s;
             conf_s.shm = conf;
@@ -444,7 +443,7 @@ namespace atbus {
             return ret;
         }
 
-        int shm_init(const char * shm_path, size_t len, shm_channel **channel, const shm_conf *conf) {
+        ATBUS_MACRO_API int shm_init(const char * shm_path, size_t len, shm_channel **channel, const shm_conf *conf) {
             shm_channel_switcher channel_s;
             shm_conf_cswitcher conf_s;
             conf_s.shm = conf;
@@ -465,29 +464,29 @@ namespace atbus {
             return ret;
         }
 
-        int shm_close(const char * shm_path) { return shm_close_buffer(shm_path); }
+        ATBUS_MACRO_API int shm_close(const char * shm_path) { return shm_close_buffer(shm_path); }
 
-        int shm_send(shm_channel *channel, const void *buf, size_t len) {
+        ATBUS_MACRO_API int shm_send(shm_channel *channel, const void *buf, size_t len) {
             shm_channel_switcher switcher;
             switcher.shm = channel;
             return mem_send(switcher.mem, buf, len);
         }
 
-        int shm_recv(shm_channel *channel, void *buf, size_t len, size_t *recv_size) {
+        ATBUS_MACRO_API int shm_recv(shm_channel *channel, void *buf, size_t len, size_t *recv_size) {
             shm_channel_switcher switcher;
             switcher.shm = channel;
             return mem_recv(switcher.mem, buf, len, recv_size);
         }
 
-        std::pair<size_t, size_t> shm_last_action() { return mem_last_action(); }
+        ATBUS_MACRO_API std::pair<size_t, size_t> shm_last_action() { return mem_last_action(); }
 
-        void shm_show_channel(shm_channel *channel, std::ostream &out, bool need_node_status, size_t need_node_data) {
+        ATBUS_MACRO_API void shm_show_channel(shm_channel *channel, std::ostream &out, bool need_node_status, size_t need_node_data) {
             shm_channel_switcher switcher;
             switcher.shm = channel;
             mem_show_channel(switcher.mem, out, need_node_status, need_node_data);
         }
 
-        void shm_stats_get_error(shm_channel *channel, shm_stats_block_error &out) {
+        ATBUS_MACRO_API void shm_stats_get_error(shm_channel *channel, shm_stats_block_error &out) {
             shm_channel_switcher switcher;
             switcher.shm = channel;
             mem_stats_get_error(switcher.mem, out);

@@ -4,10 +4,6 @@
 #include <iostream>
 #include <sstream>
 
-#include <common/file_system.h>
-#include <common/string_oprs.h>
-#include <std/explicit_declare.h>
-
 #ifdef max
 #undef max
 #endif
@@ -18,6 +14,10 @@
 
 #include <atbus_node.h>
 #include <libatbus_protocol.h>
+
+#include <common/file_system.h>
+#include <common/string_oprs.h>
+#include <std/explicit_declare.h>
 
 #include "atbus_test_utils.h"
 #include "frame/test_macros.h"
@@ -51,13 +51,13 @@ static void node_reg_test_on_debug(const char *file_path, size_t line, const atb
 
 #ifdef _MSC_VER
 
-    static char *APPVEYOR = getenv("APPVEYOR");
-    static char *CI       = getenv("CI");
+    // static char *APPVEYOR = getenv("APPVEYOR");
+    // static char *CI       = getenv("CI");
 
     // appveyor ci open msg content
-    if (APPVEYOR && APPVEYOR[0] && CI && CI[0] && NULL != m) {
-        std::cout << *m << std::endl;
-    }
+    // if (APPVEYOR && APPVEYOR[0] && CI && CI[0] && NULL != m) {
+    //     std::cout << *m << std::endl;
+    // }
 #endif
 }
 
