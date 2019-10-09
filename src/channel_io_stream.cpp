@@ -876,8 +876,11 @@ namespace atbus {
             assert(conn_raw_ptr);
             io_stream_channel *channel = conn_raw_ptr->channel;
             assert(channel);
-            io_stream_flag_guard flag_guard(channel->flags, io_stream_channel::EN_CF_IN_CALLBACK);
+            if (NULL == channel) {
+                return;
+            }
 
+            io_stream_flag_guard flag_guard(channel->flags, io_stream_channel::EN_CF_IN_CALLBACK);
             channel->error_code = status;
             int res             = EN_ATBUS_ERR_SUCCESS;
 
@@ -885,7 +888,7 @@ namespace atbus {
             std::shared_ptr<adapter::stream_t> recv_conn;
 
             do {
-                if (0 != status || NULL == channel) {
+                if (0 != status) {
                     res = EN_ATBUS_ERR_PIPE_CONNECT_FAILED;
                     break;
                 }
@@ -1244,6 +1247,9 @@ namespace atbus {
         static void io_stream_dns_connect_cb(uv_getaddrinfo_t *req, int status, struct addrinfo *res) {
             io_stream_dns_async_data *async_data = reinterpret_cast<io_stream_dns_async_data *>(req->data);
             assert(async_data);
+            if (NULL == async_data) {
+                return;
+            }
             assert(async_data->channel);
 
             ATBUS_CHANNEL_REQ_END(async_data->channel);

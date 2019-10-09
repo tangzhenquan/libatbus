@@ -86,7 +86,7 @@ namespace atbus {
         }
 
         // 目前id是整数，直接位运算即可
-        bus_id_t mask = ~((1 << children_mask_) - 1);
+        bus_id_t mask = ~((static_cast<bus_id_t>(1) << children_mask_) - 1);
         return (id & mask) == (id_ & mask);
     }
 
@@ -98,24 +98,24 @@ namespace atbus {
 
         // 兄弟节点的子节点也视为兄弟节点
         // 目前id是整数，直接位运算即可
-        bus_id_t c_mask = ~((1 << children_mask_) - 1);
-        bus_id_t f_mask = ~((1 << father_mask) - 1);
+        bus_id_t c_mask = ~((static_cast<bus_id_t>(1) << children_mask_) - 1);
+        bus_id_t f_mask = ~((static_cast<bus_id_t>(1) << father_mask) - 1);
         // 同一父节点下，且子节点域不同
         return (id & c_mask) != (id_ & c_mask) && (0 == father_mask || (id & f_mask) == (id_ & f_mask));
     }
 
     bool endpoint::is_parent_node(bus_id_t id, bus_id_t father_id, uint32_t /*father_mask*/) {
-        // bus_id_t mask = ~((1 << father_mask) - 1);
+        // bus_id_t mask = ~((static_cast<bus_id_t>(1) << father_mask) - 1);
         return id == father_id;
     }
 
     endpoint::bus_id_t endpoint::get_children_min_id(bus_id_t id, uint32_t mask) {
-        bus_id_t maskv = (1 << mask) - 1;
+        bus_id_t maskv = (static_cast<bus_id_t>(1) << mask) - 1;
         return id & (~maskv);
     }
 
     endpoint::bus_id_t endpoint::get_children_max_id(bus_id_t id, uint32_t mask) {
-        bus_id_t maskv = (1 << mask) - 1;
+        bus_id_t maskv = (static_cast<bus_id_t>(1) << mask) - 1;
         return id | maskv;
     }
 
