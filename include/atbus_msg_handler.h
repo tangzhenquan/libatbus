@@ -16,13 +16,9 @@
 #include <ctime>
 #include <list>
 
-namespace flatbuffers {
-    class FlatBufferBuilder;
-}
-
 namespace atbus {
     namespace protocol {
-        struct msg;
+        class msg;
     }
 
     class node;
@@ -45,7 +41,7 @@ namespace atbus {
 
         static int send_node_connect_sync(node &n, uint64_t direct_from_bus_id, endpoint &dst_ep);
 
-        static int send_msg(node &n, connection &conn, ::flatbuffers::FlatBufferBuilder &mb);
+        static int send_msg(node &n, connection &conn, const ::atbus::protocol::msg & msg);
 
         // ========================= 接收handle =========================
         static int on_recv_data_transfer_req(node &n, connection *conn, const ::atbus::protocol::msg &, int status, int errcode);

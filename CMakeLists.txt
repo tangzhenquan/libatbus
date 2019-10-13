@@ -36,6 +36,8 @@ include("${PROJECT_CMAKE_MODULE_DIR}/ProjectTools.cmake")
 include("${PROJECT_CMAKE_MODULE_DIR}/CompilerOption.cmake")
 include("${PROJECT_CMAKE_MODULE_DIR}/TargetOption.cmake")
 EchoWithColor(COLOR GREEN "-- Build Type: ${CMAKE_BUILD_TYPE}")
+string(TOLOWER "${CMAKE_SYSTEM_NAME}_${CMAKE_SYSTEM_PROCESSOR}" PLATFORM_BUILD_PLATFORM_NAME)
+string(TOLOWER "${CMAKE_HOST_SYSTEM_NAME}_${CMAKE_HOST_SYSTEM_PROCESSOR}" PLATFORM_BUILD_HOST_PLATFORM_NAME)
 
 ########################################################################
 # 导入项目配置

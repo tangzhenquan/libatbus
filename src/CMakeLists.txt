@@ -2,7 +2,7 @@
 
 EchoWithColor(COLOR GREEN "-- Configure ${CMAKE_CURRENT_LIST_DIR}")
 
-include_directories(${PROJECT_LIBATBUS_ROOT_SRC_DIR})
+include_directories(${PROJECT_LIBATBUS_ROOT_SRC_DIR} "${PROJECT_LIBATBUS_ROOT_INC_DIR}/detail")
 
 file(RELATIVE_PATH PROJECT_ROOT_RELINC_DIR ${CMAKE_CURRENT_LIST_DIR} ${PROJECT_LIBATBUS_ROOT_INC_DIR})
 
@@ -17,6 +17,22 @@ file(GLOB_RECURSE PROJECT_LIB_SRC_LIST
     ${PROJECT_LIBATBUS_ROOT_SRC_DIR}/*.cc
     ${PROJECT_LIBATBUS_ROOT_SRC_DIR}/*.cxx
 )
+
+list(REMOVE_ITEM PROJECT_LIB_SRC_LIST
+    "${PROJECT_ROOT_RELINC_DIR}/detail/libatbus_protocol.pb.h"
+    "${PROJECT_ROOT_RELINC_DIR}/detail/libatbus_protocol.pb.cc"
+)
+LIST(APPEND PROJECT_LIB_SRC_LIST
+    "${PROJECT_LIBATBUS_ROOT_INC_DIR}/detail/libatbus_protocol.pb.h"
+    "${PROJECT_LIBATBUS_ROOT_SRC_DIR}/detail/libatbus_protocol.pb.cc"
+)
+
+set_source_files_properties(
+    "${PROJECT_LIBATBUS_ROOT_INC_DIR}/detail/libatbus_protocol.pb.h"
+    "${PROJECT_LIBATBUS_ROOT_SRC_DIR}/detail/libatbus_protocol.pb.cc"
+    PROPERTIES GENERATED TRUE
+)
+list(REMOVE_DUPLICATES PROJECT_LIB_SRC_LIST)
 source_group_by_dir(PROJECT_LIB_SRC_LIST)
 
 

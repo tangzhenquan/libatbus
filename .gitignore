@@ -38,3 +38,5 @@ build_*
 # generated file
 /include/detail/libatbus_config.h
 /include/detail/libatbus_protocol_generated.h
+/include/detail/libatbus_protocol.pb.h
+/src/detail/libatbus_protocol.pb.cc

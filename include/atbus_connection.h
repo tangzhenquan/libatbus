@@ -32,7 +32,7 @@
 
 namespace atbus {
     namespace protocol {
-        struct msg;
+        class msg;
     }
 
     class node;

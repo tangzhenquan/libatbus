@@ -17,6 +17,11 @@
         "editor.formatOnSave": false
     },
     "files.associations": {
+        "*.h.in": "cpp",
+        "*.h.cpp": "cpp",
+        "*.ps1.in": "powershell",
+        "*.sh.in": "shellscript",
+        "*.bat.in": "bat",
         "*.ejs": "html",
         "array": "cpp",
         "atomic": "cpp",
