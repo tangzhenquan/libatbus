@@ -118,14 +118,7 @@ if (NOT 3RD_PARTY_PROTOBUF_BIN_PROTOC OR NOT 3RD_PARTY_PROTOBUF_BASE_DIR OR NOT 
             file(MAKE_DIRECTORY ${3RD_PARTY_PROTOBUF_BUILD_SCRIPT_DIR})
         endif()
 
-        if (MSVC)
-            set(3RD_PARTY_PROTOBUF_BUILD_MULTI_CORE "-- /m")
-        else ()
-            include(ProcessorCount)
-            ProcessorCount(CPU_CORE_NUM)
-            set(3RD_PARTY_PROTOBUF_BUILD_MULTI_CORE "-- -j${CPU_CORE_NUM}")
-            unset(CPU_CORE_NUM)
-        endif ()
+        set(3RD_PARTY_PROTOBUF_BUILD_MULTI_CORE ${FindConfigurePackageCMakeBuildMultiJobs})
 
         string(REGEX REPLACE ";" "\" \"" 3RD_PARTY_PROTOBUF_BUILD_FLAGS_CMD "${3RD_PARTY_PROTOBUF_BUILD_FLAGS}")
         set (3RD_PARTY_PROTOBUF_BUILD_FLAGS_CMD "\"${3RD_PARTY_PROTOBUF_BUILD_FLAGS_CMD}\"")
