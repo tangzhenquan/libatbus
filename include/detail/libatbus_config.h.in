@@ -7,6 +7,7 @@
 
 #include <stdint.h>
 #include <config/compile_optimize.h>
+#include <config/compiler_features.h>
 
 #cmakedefine LIBATBUS_VERSION_MAJOR @LIBATBUS_VERSION_MAJOR@
 #ifndef LIBATBUS_VERSION_MAJOR
@@ -62,5 +63,14 @@
 //      #define ATBUS_MACRO_API UTIL_SYMBOL_IMPORT
 // #endif
 #define ATBUS_MACRO_API
+
+#if defined(UTIL_CONFIG_COMPILER_CXX_RVALUE_REFERENCES) && UTIL_CONFIG_COMPILER_CXX_RVALUE_REFERENCES
+#define ATBUS_MACRO_RVALUE_REFERENCES &&
+#define ATBUS_MACRO_MOVE(x) std::move(x)
+#else
+#define ATBUS_MACRO_RVALUE_REFERENCES &
+#define ATBUS_MACRO_MOVE(x) (x)
+#endif
+
 
 #endif

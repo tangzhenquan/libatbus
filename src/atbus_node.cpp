@@ -1146,7 +1146,7 @@ namespace atbus {
 
     time_t node::get_timer_usec() const { return event_timer_.usec; }
 
-    void node::on_recv(connection *conn, const ::atbus::msg_t *m, int status, int errcode) {
+    void node::on_recv(connection *conn, ::atbus::protocol::msg ATBUS_MACRO_RVALUE_REFERENCES m, int status, int errcode) {
         if (status < 0 || errcode < 0) {
             ATBUS_FUNC_NODE_ERROR(*this, NULL, conn, status, errcode);
 
@@ -1165,7 +1165,7 @@ namespace atbus {
         }
 
         // 内部协议处理
-        int res = msg_handler::dispatch_msg(*this, conn, m, status, errcode);
+        int res = msg_handler::dispatch_msg(*this, conn, ATBUS_MACRO_MOVE(m), status, errcode);
         if (res < 0) {
             if (NULL != conn) {
                 // maybe removed all reference of this connection after call add_endpoint_fault()
@@ -1182,30 +1182,12 @@ namespace atbus {
             return;
         }
 
-        int ret_code = EN_ATBUS_ERR_BAD_DATA;
-        int body_type = 0;
-        if (NULL != m) {
-            body_type = m->body_type();
-            if (NULL != m->head()) {
-                ret_code = m->head()->ret();
-            }
-            return;
-        }
-
         if (NULL != conn) {
             endpoint *ep = conn->get_binding();
-            // 如果消息为回发转发消息失败，并且回发成功，则是为正确流程，不能标记错误
-            if (ret_code != ::atbus::protocol::msg_body_data_transform_rsp && ret_code < 0) {
-                if (NULL != ep) {
-                    add_endpoint_fault(*ep);
-                }
-                add_connection_fault(*conn);
-            } else {
-                if (NULL != ep) {
-                    ep->clear_stat_fault();
-                }
-                conn->clear_stat_fault();
+            if (NULL != ep) {
+                ep->clear_stat_fault();
             }
+            conn->clear_stat_fault();
         }
     }
 
@@ -1220,10 +1202,10 @@ namespace atbus {
         }
     }
 
-    void node::on_send_data_failed(const endpoint *ep, const connection *conn, const ::atbus::msg_t *m) {
-        if (event_msg_.on_send_data_failed) {
+    void node::on_recv_forward_response(const endpoint *ep, const connection *conn, const ::atbus::msg_t *m) {
+        if (event_msg_.on_forward_response) {
             flag_guard_t fgd(this, flag_t::EN_FT_IN_CALLBACK);
-            event_msg_.on_send_data_failed(std::cref(*this), ep, conn, m);
+            event_msg_.on_forward_response(std::cref(*this), ep, conn, m);
         }
     }
 
@@ -1405,7 +1387,7 @@ namespace atbus {
                         // be careful, all mutable action here can not set any new element.
                         m->mutable_head()->mutate_ret(0);
                         m->mutate_body_type(::atbus::protocol::msg_body_data_transform_rsp);
-                        on_send_data_failed(get_self_endpoint(), NULL, m);
+                        on_recv_forward_response(get_self_endpoint(), NULL, m);
                     }
                 }
             } while (false);
@@ -1510,8 +1492,8 @@ namespace atbus {
     void node::set_on_recv_handle(evt_msg_t::on_recv_msg_fn_t fn) { event_msg_.on_recv_msg = fn; }
     const node::evt_msg_t::on_recv_msg_fn_t &node::get_on_recv_handle() const { return event_msg_.on_recv_msg; }
 
-    void node::set_on_send_data_failed_handle(evt_msg_t::on_send_data_failed_fn_t fn) { event_msg_.on_send_data_failed = fn; }
-    const node::evt_msg_t::on_send_data_failed_fn_t &node::get_on_send_data_failed_handle() const { return event_msg_.on_send_data_failed; }
+    void node::set_on_forward_response_handle(evt_msg_t::on_forward_response_fn_t fn) { event_msg_.on_forward_response = fn; }
+    const node::evt_msg_t::on_forward_response_fn_t &node::get_on_forward_response_handle() const { return event_msg_.on_forward_response; }
 
     void node::set_on_error_handle(node::evt_msg_t::on_error_fn_t fn) { event_msg_.on_error = fn; }
     const node::evt_msg_t::on_error_fn_t &node::get_on_error_handle() const { return event_msg_.on_error; }

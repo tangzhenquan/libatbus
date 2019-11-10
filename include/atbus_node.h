@@ -45,7 +45,7 @@ namespace atbus {
     class node UTIL_CONFIG_FINAL : public util::design_pattern::noncopyable {
     public:
         typedef std::shared_ptr<node> ptr_t;
-        typedef ::flatbuffers::FlatBufferBuilder &msg_builder_ref_t;
+        typedef ::atbus::protocol::msg &msg_builder_ref_t;
 
         typedef ATBUS_MACRO_BUSID_TYPE bus_id_t;
         struct conf_flag_t {
@@ -105,9 +105,10 @@ namespace atbus {
             typedef std::function<int(const node &, const endpoint *, const connection *, const ::atbus::protocol::msg &, const void *,
                                       size_t)>
                 on_recv_msg_fn_t;
-            // 发送或消息失败事件回调 => 参数列表: 发起节点，来源对端，来源连接，消息体
+            // 发送消息失败事件或成功通知回调 => 参数列表: 发起节点，来源对端，来源连接，消息体
+            // @note 除非发送时标记atbus::protocol::FORWARD_DATA_FLAG_REQUIRE_RSP为true(即需要通知)，否则成功发送消息默认不回发通知 
             typedef std::function<int(const node &, const endpoint *, const connection *, const ::atbus::protocol::msg *m)>
-                on_send_data_failed_fn_t;
+                on_forward_response_fn_t;
             // 错误回调 => 参数列表: 发起节点，来源对端，来源连接，状态码（通常来自libuv），错误码
             typedef std::function<int(const node &, const endpoint *, const connection *, int, int)> on_error_fn_t;
             // 新对端注册事件回调 => 参数列表: 发起节点，来源对端，来源连接，返回码（通常来自libuv）
@@ -134,7 +135,7 @@ namespace atbus {
             typedef std::function<int(const node &, endpoint *, int)> on_remove_endpoint_fn_t;
 
             on_recv_msg_fn_t on_recv_msg;
-            on_send_data_failed_fn_t on_send_data_failed;
+            on_forward_response_fn_t on_forward_response;
             on_error_fn_t on_error;
             on_reg_fn_t on_reg;
             on_node_down_fn_t on_node_down;
@@ -423,11 +424,11 @@ namespace atbus {
 
         time_t get_timer_usec() const;
 
-        void on_recv(connection *conn, const ::atbus::protocol::msg *m, int status, int errcode);
+        void on_recv(connection *conn, ::atbus::protocol::msg ATBUS_MACRO_RVALUE_REFERENCES m, int status, int errcode);
 
         void on_recv_data(const endpoint *ep, connection *conn, const ::atbus::protocol::msg &m, const void *buffer, size_t s) const;
 
-        void on_send_data_failed(const endpoint *, const connection *, const ::atbus::protocol::msg *m);
+        void on_recv_forward_response(const endpoint *, const connection *, const ::atbus::protocol::msg *m);
 
         int on_error(const char *file_path, size_t line, const endpoint *, const connection *, int, int);
         int on_disconnect(const connection *);
@@ -474,8 +475,8 @@ namespace atbus {
         void set_on_recv_handle(evt_msg_t::on_recv_msg_fn_t fn);
         const evt_msg_t::on_recv_msg_fn_t &get_on_recv_handle() const;
 
-        void set_on_send_data_failed_handle(evt_msg_t::on_send_data_failed_fn_t fn);
-        const evt_msg_t::on_send_data_failed_fn_t &get_on_send_data_failed_handle() const;
+        void set_on_forward_response_handle(evt_msg_t::on_forward_response_fn_t fn);
+        const evt_msg_t::on_forward_response_fn_t &get_on_forward_response_handle() const;
 
         void set_on_error_handle(evt_msg_t::on_error_fn_t fn);
         const evt_msg_t::on_error_fn_t &get_on_error_handle() const;
