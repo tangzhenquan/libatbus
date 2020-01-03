@@ -45,6 +45,7 @@ namespace atbus {
         }
     }
 
+
     node::flag_guard_t::~flag_guard_t() {
         if ((*this) && owner) {
             owner->flags_.set(flag, false);
