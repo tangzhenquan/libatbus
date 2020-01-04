@@ -80,12 +80,43 @@ namespace atbus {
             }
         };
 
+        struct custom_route_data{
+            std::string name;
+            std::vector<std::string> tags;
+            int custom_route_type;
+            enum custom_route_type_t {
+                CUSTOM_ROUTE_UNICAST = 0,
+                CUSTOM_ROUTE_MULTICAST = 1,
+                CUSTOM_ROUTE_BROADCAST = 2,
+            };
+            custom_route_data():custom_route_type(0){
+
+            }
+            template <typename CharT, typename Traits>
+            friend std::basic_ostream<CharT, Traits> &operator<<(std::basic_ostream<CharT, Traits> &os, const custom_route_data &mbc) {
+                os << "{" << std::endl << "      name: " << mbc.name << std::endl << "      custom_route_type: " << mbc.custom_route_type << std::endl;
+                if (!mbc.tags.empty()){
+                    os << "      tags: ";
+                    for (size_t i = 0; i < mbc.tags.size(); ++i) {
+                        if (0 != i) {
+                            os << ", ";
+                        }
+                        os << mbc.tags[i];
+                    }
+                    os << std::endl;
+                }
+                os << "    }";
+                return os;
+            }
+        };
+
         struct forward_data {
             ATBUS_MACRO_BUSID_TYPE from;                // ID: 0
             ATBUS_MACRO_BUSID_TYPE to;                  // ID: 1
             std::vector<ATBUS_MACRO_BUSID_TYPE> router; // ID: 2
             bin_data_block content;                     // ID: 3
             int flags;                                  // ID: 4 | require a response message even success
+            custom_route_data route_data;              // ID: 5
 
             enum flag_t {
                 FLAG_REQUIRE_RSP = 0,
@@ -100,7 +131,7 @@ namespace atbus {
             inline void set_flag(flag_t f) { flags |= (1 << f); }
             inline void unset_flag(flag_t f) { flags &= ~(1 << f); }
 
-            MSGPACK_DEFINE(from, to, router, content, flags);
+            MSGPACK_DEFINE(from, to, router, content, flags, route_data);
 
             template <typename CharT, typename Traits>
             friend std::basic_ostream<CharT, Traits> &operator<<(std::basic_ostream<CharT, Traits> &os, const forward_data &mbc) {
@@ -390,6 +421,35 @@ namespace atbus {
 namespace msgpack {
     MSGPACK_API_VERSION_NAMESPACE(MSGPACK_DEFAULT_API_NS) {
         namespace adaptor {
+
+            template <>
+            struct convert<atbus::protocol::custom_route_data> {
+                msgpack::object const &operator()(msgpack::object const &o, atbus::protocol::custom_route_data &) const {
+                    if (o.type != msgpack::type::BIN) throw msgpack::type_error();
+
+                   // v.ptr  = o.via.bin.ptr;
+                   // v.size = o.via.bin.size;
+                    return o;
+                }
+            };
+
+            template <>
+            struct pack<atbus::protocol::custom_route_data> {
+                template <typename Stream>
+                packer<Stream> &operator()(msgpack::packer<Stream> &o, atbus::protocol::custom_route_data const &) const {
+                    return o;
+                }
+            };
+
+            template <>
+            struct object_with_zone<atbus::protocol::custom_route_data> {
+                void operator()(msgpack::object::with_zone &o, atbus::protocol::custom_route_data const &) const {
+                    o.type         = type::BIN;
+                }
+            };
+
+
+
 
             template <>
             struct convert<atbus::protocol::bin_data_block> {
