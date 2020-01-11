@@ -565,7 +565,9 @@ namespace atbus {
         return EN_ATBUS_ERR_ATNODE_NOT_FOUND;
     }
 
-    int node::send_data(bus_id_t tid, int type, const void *buffer, size_t s, bool require_rsp) {
+
+    int node::send_data(node::bus_id_t tid, int type, const void *buffer, size_t s, bool require_rsp,
+                         std::shared_ptr<protocol::custom_route_data> custom_route_data) {
         if (state_t::CREATED == state_) {
             return EN_ATBUS_ERR_NOT_INITED;
         }
@@ -611,9 +613,13 @@ namespace atbus {
         if (require_rsp) {
             m.body.forward->set_flag(atbus::protocol::forward_data::FLAG_REQUIRE_RSP);
         }
+        if (custom_route_data){
+            m.body.forward->route_data = custom_route_data;
+        }
 
         return send_data_msg(tid, m);
     }
+
 
     int node::send_data_msg(bus_id_t tid, atbus::protocol::msg &mb) { return send_data_msg(tid, mb, NULL, NULL); }
 
@@ -760,6 +766,20 @@ namespace atbus {
         }
 
         do {
+
+            // tid 为0直接发给父节点
+            if (tid == 0){
+                if (node_father_.node_){
+                    target = node_father_.node_.get();
+                    conn   = (self_.get()->*fn)(target);
+
+                    ASSIGN_EPCONN();
+                    break;
+                }else{
+                    return EN_ATBUS_ERR_ATNODE_INVALID_ID;
+                }
+            }
+
             // 父节点单独判定，防止父节点被判定为兄弟节点
             if (node_father_.node_ && is_parent_node(tid)) {
                 target = node_father_.node_.get();
@@ -1529,6 +1549,9 @@ namespace atbus {
     void node::set_on_recv_handle(evt_msg_t::on_recv_msg_fn_t fn) { event_msg_.on_recv_msg = fn; }
     const node::evt_msg_t::on_recv_msg_fn_t &node::get_on_recv_handle() const { return event_msg_.on_recv_msg; }
 
+    void node::set_on_custom_route_handle(evt_msg_t::on_custom_route_fn_t fn) { event_msg_.on_custom_route = fn; }
+    const node::evt_msg_t::on_custom_route_fn_t &node::get_on_custom_route_handle() const { return event_msg_.on_custom_route; }
+
     void node::set_on_send_data_failed_handle(evt_msg_t::on_send_data_failed_fn_t fn) { event_msg_.on_send_data_failed = fn; }
     const node::evt_msg_t::on_send_data_failed_fn_t &node::get_on_send_data_failed_handle() const { return event_msg_.on_send_data_failed; }
 
@@ -1745,6 +1768,8 @@ namespace atbus {
 
         return iostream_conf_.get();
     }
+
+
 
     node::stat_info_t::stat_info_t() : dispatch_times(0) {}
 } // namespace atbus

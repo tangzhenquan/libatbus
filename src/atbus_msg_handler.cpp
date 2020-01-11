@@ -184,6 +184,27 @@ namespace atbus {
             return send_transfer_rsp(n, m, EN_ATBUS_ERR_ATNODE_TTL);
         }
 
+        if (m.body.forward->to == 0){
+            if (n.get_on_custom_route_handle()){
+                std::vector<uint64_t > bus_ids;
+                 int res =  n.get_on_custom_route_handle()(n, *(m.body.forward->route_data), bus_ids);
+                 if (res >= 0 && bus_ids.size() > 0){
+                    //unicast
+                    m.body.forward->to = bus_ids[0];
+                    m.body.forward->route_data.reset();
+                    ATBUS_FUNC_NODE_DEBUG(n, nullptr, nullptr, nullptr, "route_data null %d",
+                                          m.body.forward->route_data == nullptr);
+                    //Todo multicast broadcast
+                 } else{
+                     return send_transfer_rsp(n, m, EN_ATBUS_ERR_ATNODE_CUSTOM_ROUTE_FAIL);
+                 }
+            } else{
+                return send_transfer_rsp(n, m, EN_ATBUS_ERR_ATNODE_INVALID_ID);
+            }
+        }
+
+
+
         int res         = 0;
         endpoint *to_ep = NULL;
         // 转发数据

@@ -89,8 +89,15 @@ namespace atbus {
                 CUSTOM_ROUTE_MULTICAST = 1,
                 CUSTOM_ROUTE_BROADCAST = 2,
             };
+            MSGPACK_DEFINE(name, tags, custom_route_type);
             custom_route_data():custom_route_type(0){
 
+            }
+
+            void copy_from( custom_route_data& data){
+                std::swap(name, data.name);
+                std::swap(tags, data.tags);
+                std::swap(custom_route_type, data.custom_route_type);
             }
             template <typename CharT, typename Traits>
             friend std::basic_ostream<CharT, Traits> &operator<<(std::basic_ostream<CharT, Traits> &os, const custom_route_data &mbc) {
@@ -116,7 +123,7 @@ namespace atbus {
             std::vector<ATBUS_MACRO_BUSID_TYPE> router; // ID: 2
             bin_data_block content;                     // ID: 3
             int flags;                                  // ID: 4 | require a response message even success
-            custom_route_data route_data;              // ID: 5
+            std::shared_ptr<custom_route_data> route_data;              // ID: 5
 
             enum flag_t {
                 FLAG_REQUIRE_RSP = 0,
@@ -422,7 +429,7 @@ namespace msgpack {
     MSGPACK_API_VERSION_NAMESPACE(MSGPACK_DEFAULT_API_NS) {
         namespace adaptor {
 
-            template <>
+            /*template <>
             struct convert<atbus::protocol::custom_route_data> {
                 msgpack::object const &operator()(msgpack::object const &o, atbus::protocol::custom_route_data &) const {
                     if (o.type != msgpack::type::BIN) throw msgpack::type_error();
@@ -446,7 +453,7 @@ namespace msgpack {
                 void operator()(msgpack::object::with_zone &o, atbus::protocol::custom_route_data const &) const {
                     o.type         = type::BIN;
                 }
-            };
+            };*/
 
 
 

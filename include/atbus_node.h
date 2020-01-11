@@ -33,6 +33,7 @@
 #include "detail/libatbus_error.h"
 
 #include "atbus_endpoint.h"
+#include "libatbus_protocol.h"
 
 namespace atbus {
 
@@ -90,6 +91,10 @@ namespace atbus {
         typedef std::map<bus_id_t, endpoint::ptr_t> endpoint_collection_t;
 
         struct evt_msg_t {
+            //
+            typedef std::function<int(const node &, const protocol::custom_route_data&, std::vector<uint64_t >& )>
+                    on_custom_route_fn_t;
+
             // 接收消息事件回调 => 参数列表: 发起节点，来源对端，来源连接，消息体，数据地址，数据长度
             typedef std::function<int(const node &, const endpoint *, const connection *, const protocol::msg &, const void *, size_t)>
                 on_recv_msg_fn_t;
@@ -131,6 +136,7 @@ namespace atbus {
             on_custom_rsp_fn_t on_custom_rsp;
             on_add_endpoint_fn_t on_endpoint_added;
             on_remove_endpoint_fn_t on_endpoint_removed;
+            on_custom_route_fn_t  on_custom_route;
         };
 
         struct flag_guard_t {
@@ -240,7 +246,9 @@ namespace atbus {
          * @note 接收端收到的数据很可能不是地址对齐的，所以这里不建议发送内存数据
          *       如果非要发送内存数据的话，一定要memcpy，不能直接类型转换，除非手动设置了地址对齐规则
          */
-        int send_data(bus_id_t tid, int type, const void *buffer, size_t s, bool require_rsp = false);
+        int send_data(bus_id_t tid, int type, const void *buffer, size_t s, bool require_rsp = false,  std::shared_ptr<protocol::custom_route_data> custom_route_data = NULL);
+
+        /*int send_data(bus_id_t tid, int type, const void *buffer, size_t s, bool require_rsp , const protocol::custom_route_data*custom_route_data = NULL);*/
 
         /**
          * @brief 发送数据消息
@@ -446,6 +454,9 @@ namespace atbus {
         void set_on_recv_handle(evt_msg_t::on_recv_msg_fn_t fn);
         const evt_msg_t::on_recv_msg_fn_t &get_on_recv_handle() const;
 
+        void set_on_custom_route_handle(evt_msg_t::on_custom_route_fn_t fn);
+        const evt_msg_t::on_custom_route_fn_t &get_on_custom_route_handle() const;
+
         void set_on_send_data_failed_handle(evt_msg_t::on_send_data_failed_fn_t fn);
         const evt_msg_t::on_send_data_failed_fn_t &get_on_send_data_failed_handle() const;
 
@@ -581,6 +592,9 @@ namespace atbus {
     public:
         void (*on_debug)(const char *file_path, size_t line, const node &, const endpoint *, const connection *, const protocol::msg *,
                          const char *fmt, ...);
+
+
+
     };
 } // namespace atbus
 
