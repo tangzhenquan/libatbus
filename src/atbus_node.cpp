@@ -526,6 +526,8 @@ namespace atbus {
     int node::disconnect(bus_id_t id) {
         if (node_father_.node_ && id == node_father_.node_->get_id()) {
             endpoint::ptr_t ep_ptr;
+            ATBUS_FUNC_NODE_DEBUG(*this, NULL, NULL, NULL, "father swap");
+
             ep_ptr.swap(node_father_.node_);
 
             // event
@@ -893,6 +895,8 @@ namespace atbus {
         if (0 != get_id() && ep->get_children_mask() > self_->get_children_mask() && ep->is_child_node(get_id())) {
             if (!node_father_.node_) {
                 node_father_.node_ = ep;
+                ATBUS_FUNC_NODE_DEBUG(*this, NULL, NULL, NULL, "fathersssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssss");
+
                 add_ping_timer(ep);
 
                 if ((state_t::LOST_PARENT == get_state() || state_t::CONNECTING_PARENT == get_state()) &&
@@ -945,6 +949,7 @@ namespace atbus {
         // 父节点单独判定，由于防止测试兄弟节点
         if (is_parent_node(tid)) {
             endpoint::ptr_t ep = node_father_.node_;
+            ATBUS_FUNC_NODE_DEBUG(*this, NULL, NULL, NULL, "father xxxxxxxxxxxxxxxxxxxxxxx node_father_.node_.reset()");
 
             node_father_.node_.reset();
             state_ = state_t::LOST_PARENT;
