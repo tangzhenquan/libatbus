@@ -895,7 +895,6 @@ namespace atbus {
         if (0 != get_id() && ep->get_children_mask() > self_->get_children_mask() && ep->is_child_node(get_id())) {
             if (!node_father_.node_) {
                 node_father_.node_ = ep;
-                ATBUS_FUNC_NODE_DEBUG(*this, NULL, NULL, NULL, "fathersssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssss");
 
                 add_ping_timer(ep);
 
