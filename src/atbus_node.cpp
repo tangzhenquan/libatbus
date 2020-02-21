@@ -577,7 +577,6 @@ namespace atbus {
         if (s >= conf_.msg_size) {
             return EN_ATBUS_ERR_BUFF_LIMIT;
         }
-
         atbus::protocol::msg m;
         if (tid == get_id()) {
             // 发送给自己的数据直接回调数据接口

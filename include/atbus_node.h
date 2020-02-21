@@ -354,7 +354,7 @@ namespace atbus {
 
         inline const endpoint *get_self_endpoint() const { return self_ ? self_.get() : NULL; }
 
-        inline const endpoint *get_parent_endpoint() const { return node_father_.node_.get(); }
+        inline const endpoint *get_parent_endpoint() const { return node_father_.node_? node_father_.node_.get(): NULL; }
 
         inline const endpoint_collection_t &get_children() const { return node_children_; };
 

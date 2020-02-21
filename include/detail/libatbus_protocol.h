@@ -81,7 +81,7 @@ namespace atbus {
         };
 
         struct custom_route_data{
-            std::string name;
+            std::string type_name;
             std::vector<std::string> tags;
             int custom_route_type;
             enum custom_route_type_t {
@@ -89,19 +89,19 @@ namespace atbus {
                 CUSTOM_ROUTE_MULTICAST = 1,
                 CUSTOM_ROUTE_BROADCAST = 2,
             };
-            MSGPACK_DEFINE(name, tags, custom_route_type);
+            MSGPACK_DEFINE(type_name, tags, custom_route_type);
             custom_route_data():custom_route_type(0){
 
             }
 
             void copy_from( custom_route_data& data){
-                std::swap(name, data.name);
+                std::swap(type_name, data.type_name);
                 std::swap(tags, data.tags);
                 std::swap(custom_route_type, data.custom_route_type);
             }
             template <typename CharT, typename Traits>
             friend std::basic_ostream<CharT, Traits> &operator<<(std::basic_ostream<CharT, Traits> &os, const custom_route_data &mbc) {
-                os << "{" << std::endl << "      name: " << mbc.name << std::endl << "      custom_route_type: " << mbc.custom_route_type << std::endl;
+                os << "{" << std::endl << "      type_name: " << mbc.type_name << std::endl << "      custom_route_type: " << mbc.custom_route_type << std::endl;
                 if (!mbc.tags.empty()){
                     os << "      tags: ";
                     for (size_t i = 0; i < mbc.tags.size(); ++i) {
