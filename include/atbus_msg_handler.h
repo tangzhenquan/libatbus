@@ -53,6 +53,9 @@ namespace atbus {
         static int on_recv_node_conn_syn(node &n, connection *conn, protocol::msg &, int status, int errcode);
         static int on_recv_node_ping(node &n, connection *conn, protocol::msg &, int status, int errcode);
         static int on_recv_node_pong(node &n, connection *conn, protocol::msg &, int status, int errcode);
+
+
+        static int send_transfer_req(node &n, protocol::msg &, bool broadcast= false);
     };
 } // namespace atbus
 

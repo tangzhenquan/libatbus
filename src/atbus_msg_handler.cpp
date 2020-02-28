@@ -184,27 +184,52 @@ namespace atbus {
             return send_transfer_rsp(n, m, EN_ATBUS_ERR_ATNODE_TTL);
         }
 
+
         if (m.body.forward->to == 0){
             if (n.get_on_custom_route_handle()){
                 std::vector<uint64_t > bus_ids;
-                 int res =  n.get_on_custom_route_handle()(n, *(m.body.forward->route_data), bus_ids);
+                 int res =  n.get_on_custom_route_handle()(n, m.body.forward->from, *(m.body.forward->route_data), bus_ids);
                  if (res >= 0 && bus_ids.size() > 0){
                     //unicast
-                    m.body.forward->to = bus_ids[0];
-                    m.body.forward->route_data.reset();
-                    ATBUS_FUNC_NODE_DEBUG(n, nullptr, nullptr, nullptr, "route_data null %d",
-                                          m.body.forward->route_data == nullptr);
-                    //Todo multicast broadcast
+                    int  custom_route_type = m.body.forward->route_data->custom_route_type;
+                     m.body.forward->route_data.reset();
+                     ATBUS_FUNC_NODE_DEBUG(n, nullptr, nullptr, nullptr, "route_data null %d",
+                                           m.body.forward->route_data == nullptr);
+
+                    if (custom_route_type == protocol::custom_route_data::CUSTOM_ROUTE_UNICAST){
+                        m.body.forward->to = bus_ids[0];
+                        return send_transfer_req(n, m);
+
+                    } else if(custom_route_type == protocol::custom_route_data::CUSTOM_ROUTE_BROADCAST){
+                        //广播包设置不需要回复
+                        m.body.forward->set_flag(protocol::forward_data::FLAG_IGNORE_ERROR_RSP);
+                        int succ = 0;
+                        for(std::vector<uint64_t >::iterator it = bus_ids.begin(); it != bus_ids.end(); ++it ){
+                            m.body.forward->to = *it;
+                            if(send_transfer_req(n, m, true)==EN_ATBUS_ERR_SUCCESS){
+                                 succ++;
+                            }
+                            if (succ==0){
+                                return send_transfer_rsp(n, m, EN_ATBUS_ERR_ATNODE_BROADCAST_FAIL);
+                            }
+                        }
+                        return EN_ATBUS_ERR_SUCCESS;
+                    }
                  } else{
                      return send_transfer_rsp(n, m, EN_ATBUS_ERR_ATNODE_CUSTOM_ROUTE_FAIL);
                  }
             } else{
                 return send_transfer_rsp(n, m, EN_ATBUS_ERR_ATNODE_INVALID_ID);
             }
+        } else{
+            return send_transfer_req(n, m);
         }
 
+        return EN_ATBUS_ERR_SUCCESS;
 
+    }
 
+    int msg_handler::send_transfer_req(node &n,  protocol::msg &m, bool broadcast){
         int res         = 0;
         endpoint *to_ep = NULL;
         // 转发数据
@@ -213,7 +238,7 @@ namespace atbus {
         res = n.send_data_msg(m.body.forward->to, m, &to_ep, NULL);
 
         // 子节点转发成功
-        if (res >= 0 && n.is_child_node(m.body.forward->to)) {
+        if (res >= 0 && n.is_child_node(m.body.forward->to)&&!broadcast) {
             // 如果来源和目标消息都来自于子节点，则通知建立直连
             if (NULL != to_ep && to_ep->get_flag(endpoint::flag_t::HAS_LISTEN_FD) && n.is_child_node(direct_from_bus_id) &&
                 n.is_child_node(to_ep->get_id())) {
@@ -264,7 +289,7 @@ namespace atbus {
         }
 
         // 只有失败或请求方要求回包，才下发通知，类似ICMP协议
-        if (res < 0 || m.body.forward->check_flag(atbus::protocol::forward_data::FLAG_REQUIRE_RSP)) {
+        if ((res < 0 || m.body.forward->check_flag(atbus::protocol::forward_data::FLAG_REQUIRE_RSP))&& !m.body.forward->check_flag(atbus::protocol::forward_data::FLAG_IGNORE_ERROR_RSP)) {
             res = send_transfer_rsp(n, m, res);
         }
 
@@ -273,6 +298,7 @@ namespace atbus {
         }
 
         return res;
+
     }
 
     int msg_handler::on_recv_data_transfer_rsp(node &n, connection *conn, protocol::msg &m, int /*status*/, int /*errcode*/) {

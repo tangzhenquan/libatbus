@@ -33,6 +33,7 @@ typedef enum {
 
 
     EN_ATBUS_ERR_ATNODE_CUSTOM_ROUTE_FAIL              = -80, //自定义路由失败
+    EN_ATBUS_ERR_ATNODE_BROADCAST_FAIL              = -81, //广播全失败
 
 
     EN_ATBUS_ERR_CHANNEL_SIZE_TOO_SMALL = -101,

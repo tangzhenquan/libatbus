@@ -84,21 +84,17 @@ namespace atbus {
             std::string type_name;
             std::vector<std::string> tags;
             int custom_route_type;
+            std::string src_type_name;
             enum custom_route_type_t {
                 CUSTOM_ROUTE_UNICAST = 0,
                 CUSTOM_ROUTE_MULTICAST = 1,
                 CUSTOM_ROUTE_BROADCAST = 2,
             };
-            MSGPACK_DEFINE(type_name, tags, custom_route_type);
+            MSGPACK_DEFINE(type_name, tags, custom_route_type, src_type_name);
             custom_route_data():custom_route_type(0){
 
             }
 
-            void copy_from( custom_route_data& data){
-                std::swap(type_name, data.type_name);
-                std::swap(tags, data.tags);
-                std::swap(custom_route_type, data.custom_route_type);
-            }
             template <typename CharT, typename Traits>
             friend std::basic_ostream<CharT, Traits> &operator<<(std::basic_ostream<CharT, Traits> &os, const custom_route_data &mbc) {
                 os << "{" << std::endl << "      type_name: " << mbc.type_name << std::endl << "      custom_route_type: " << mbc.custom_route_type << std::endl;
@@ -112,6 +108,7 @@ namespace atbus {
                     }
                     os << std::endl;
                 }
+                os << "      src_type_name: " << mbc.src_type_name << std::endl;
                 os << "    }";
                 return os;
             }
@@ -127,6 +124,7 @@ namespace atbus {
 
             enum flag_t {
                 FLAG_REQUIRE_RSP = 0,
+                FLAG_IGNORE_ERROR_RSP,
             };
 
             forward_data() : from(0), to(0), flags(0) {

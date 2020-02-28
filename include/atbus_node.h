@@ -92,7 +92,7 @@ namespace atbus {
 
         struct evt_msg_t {
             //
-            typedef std::function<int(const node &, const protocol::custom_route_data&, std::vector<uint64_t >& )>
+            typedef std::function<int(const node &, bus_id_t, const protocol::custom_route_data&, std::vector<uint64_t >& )>
                     on_custom_route_fn_t;
 
             // 接收消息事件回调 => 参数列表: 发起节点，来源对端，来源连接，消息体，数据地址，数据长度
