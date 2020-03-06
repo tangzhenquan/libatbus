@@ -36,6 +36,7 @@
 #include "atbus_node.h"
 
 #include "detail/libatbus_protocol.h"
+#include "time/time_utility.h"
 
 namespace atbus {
     node::flag_guard_t::flag_guard_t(const node *o, flag_t::type f) : owner(const_cast<node *>(o)), flag(f), holder(false) {
@@ -258,6 +259,7 @@ namespace atbus {
     }
 
     int node::proc(time_t sec, time_t usec) {
+        util::time::time_utility::update();
         if (sec > event_timer_.sec) {
             event_timer_.sec  = sec;
             event_timer_.usec = usec;
@@ -347,6 +349,7 @@ namespace atbus {
             if (ep) {
                 // 忽略错误
                 ping_endpoint(*ep);
+
                 event_timer_.ping_list.push_back(std::make_pair(sec + conf_.ping_interval, ep));
             }
         }
@@ -526,7 +529,6 @@ namespace atbus {
     int node::disconnect(bus_id_t id) {
         if (node_father_.node_ && id == node_father_.node_->get_id()) {
             endpoint::ptr_t ep_ptr;
-            ATBUS_FUNC_NODE_DEBUG(*this, NULL, NULL, NULL, "father swap");
 
             ep_ptr.swap(node_father_.node_);
 
@@ -947,7 +949,6 @@ namespace atbus {
         // 父节点单独判定，由于防止测试兄弟节点
         if (is_parent_node(tid)) {
             endpoint::ptr_t ep = node_father_.node_;
-            ATBUS_FUNC_NODE_DEBUG(*this, NULL, NULL, NULL, "father xxxxxxxxxxxxxxxxxxxxxxx node_father_.node_.reset()");
 
             node_father_.node_.reset();
             state_ = state_t::LOST_PARENT;
@@ -1724,7 +1725,6 @@ namespace atbus {
         if (conf_.ping_interval <= 0) {
             return;
         }
-
         event_timer_.ping_list.push_back(std::make_pair(event_timer_.sec + conf_.ping_interval, ep));
     }
 

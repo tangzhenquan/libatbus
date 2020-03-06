@@ -86,6 +86,7 @@ namespace atbus {
             size_t recv_buffer_size;   /** 接收缓冲区，和数据包大小有关 **/
             size_t send_buffer_size;   /** 发送缓冲区限制 **/
             size_t send_buffer_number; /** 发送缓冲区静态Buffer数量限制，0则为动态缓冲区 **/
+            std::list<std::string> advertise_addrs;
         } conf_t;
 
         typedef std::map<bus_id_t, endpoint::ptr_t> endpoint_collection_t;
@@ -393,6 +394,7 @@ namespace atbus {
         static bool set_hostname(const std::string &hn, bool force = false);
 
         inline const std::list<std::string> &get_listen_list() const { return self_->get_listen(); }
+        inline const std::list<std::string>  &get_channels() const{ return conf_.advertise_addrs.empty()?self_->get_listen():conf_.advertise_addrs ;}
 
         bool add_proc_connection(connection::ptr_t conn);
         bool remove_proc_connection(const std::string &conn_key);

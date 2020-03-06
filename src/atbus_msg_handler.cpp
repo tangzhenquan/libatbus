@@ -121,7 +121,8 @@ namespace atbus {
         reg->pid      = n.get_pid();
         reg->hostname = n.get_hostname();
 
-        for (std::list<std::string>::const_iterator iter = n.get_listen_list().begin(); iter != n.get_listen_list().end(); ++iter) {
+
+        for (std::list<std::string>::const_iterator iter = n.get_channels().begin(); iter != n.get_channels().end(); ++iter) {
             reg->channels.push_back(protocol::channel_data());
             reg->channels.back().address = *iter;
         }
@@ -155,9 +156,9 @@ namespace atbus {
             return EN_ATBUS_ERR_BUFF_LIMIT;
         }
 
-        ATBUS_FUNC_NODE_DEBUG(n, conn.get_binding(), &conn, &m, "node send msg(cmd=%s, type=%d, sequence=%u, ret=%d, length=%llu)",
+        ATBUS_FUNC_NODE_DEBUG(n, conn.get_binding(), &conn, &m, "node send msg(cmd=%s, type=%d, sequence=%u, ret=%d, length=%u)",
                               detail::get_cmd_name(m.head.cmd), m.head.type, m.head.sequence, m.head.ret,
-                              static_cast<unsigned long long>(packed_buffer.size()));
+                              packed_buffer.size());
 
         return conn.push(packed_buffer.data(), packed_buffer.size());
         ;

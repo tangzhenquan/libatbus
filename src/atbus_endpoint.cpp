@@ -46,6 +46,7 @@ namespace atbus {
     }
 
     void endpoint::reset() {
+        ATBUS_FUNC_NODE_DEBUG(*owner_, this, nullptr, nullptr, "endpoint::reset");
         // 这个函数可能会在析构时被调用，这时候不能使用watcher_.lock()
         if (flags_.test(flag_t::RESETTING)) {
             return;
@@ -137,6 +138,7 @@ namespace atbus {
         }
 
         if (force_data || ctrl_conn_) {
+
             data_conn_.push_back(conn->watcher_.lock());
             flags_.set(flag_t::CONNECTION_SORTED, false); // 置为未排序状态
         } else {
@@ -164,7 +166,6 @@ namespace atbus {
 
         return false;
     }
-
     bool endpoint::remove_connection(connection *conn) {
         if (!conn) {
             return false;

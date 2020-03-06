@@ -693,7 +693,6 @@ namespace atbus {
     int connection::shm_free_fn(node &, connection &conn) { return channel::shm_close(conn.conn_data_.shared.shm.shm_key); }
 
     int connection::shm_push_fn(connection &conn, const void *buffer, size_t s) {
-        ATBUS_FUNC_NODE_DEBUG(*conn.owner_, NULL, NULL , NULL, "shm_push_fn");
         int ret = channel::shm_send(conn.conn_data_.shared.shm.channel, buffer, s);
         if (ret >= 0) {
             ++conn.stat_.push_success_times;
@@ -771,7 +770,6 @@ namespace atbus {
     }
 
     int connection::ios_push_fn(connection &conn, const void *buffer, size_t s) {
-        ATBUS_FUNC_NODE_DEBUG(*conn.owner_, NULL, NULL , NULL, "ios_push_fn");
         int ret = channel::io_stream_send(conn.conn_data_.shared.ios_fd.conn, buffer, s);
         if (ret < 0) {
             ++conn.stat_.push_failed_times;
