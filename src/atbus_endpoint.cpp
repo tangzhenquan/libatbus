@@ -17,7 +17,7 @@
 #include "detail/libatbus_protocol.h"
 
 namespace atbus {
-    endpoint::ptr_t endpoint::create(node *owner, bus_id_t id, uint32_t children_mask, int32_t pid, const std::string &hn) {
+    endpoint::ptr_t endpoint::create(node *owner, bus_id_t id, uint32_t children_mask, int32_t pid, const std::string &hn, const std::string& type_name, const std::vector<std::string>& tags) {
         if (NULL == owner) {
             return endpoint::ptr_t();
         }
@@ -34,6 +34,9 @@ namespace atbus {
 
         ret->owner_   = owner;
         ret->watcher_ = ret;
+
+        ret->type_name_ = type_name;
+        ret->tags_ = tags;
         return ret;
     }
 

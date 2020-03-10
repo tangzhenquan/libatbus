@@ -47,6 +47,9 @@ namespace atbus {
             const void *ptr;
             size_t size;
 
+            bin_data_block():ptr(NULL), size(0){
+            }
+
             template <typename CharT, typename Traits>
             friend std::basic_ostream<CharT, Traits> &operator<<(std::basic_ostream<CharT, Traits> &os, const bin_data_block &mbc) {
                 if (NULL != mbc.ptr && mbc.size > 0) {
@@ -88,7 +91,8 @@ namespace atbus {
             enum custom_route_type_t {
                 CUSTOM_ROUTE_UNICAST = 0,
                 CUSTOM_ROUTE_MULTICAST = 1,
-                CUSTOM_ROUTE_BROADCAST = 2,
+                CUSTOM_ROUTE_BROADCAST = 2, //通过服务发现方式广播
+                CUSTOM_ROUTE_BROADCAST2 = 3, //通过bus系统广播
             };
             MSGPACK_DEFINE(type_name, tags, custom_route_type, src_type_name);
             custom_route_data():custom_route_type(0){
@@ -240,11 +244,13 @@ namespace atbus {
             std::vector<channel_data> channels; // ID: 3
             uint32_t children_id_mask;          // ID: 4
             uint32_t flags;                     // ID: 5
+            std::string type_name;              // ID: 6
+            std::vector<std::string> tags;      // ID: 7
 
 
             reg_data() : bus_id(0), pid(0), children_id_mask(0), flags(0) {}
 
-            MSGPACK_DEFINE(bus_id, pid, hostname, channels, children_id_mask, flags);
+            MSGPACK_DEFINE(bus_id, pid, hostname, channels, children_id_mask, flags, type_name, tags);
 
             template <typename CharT, typename Traits>
             friend std::basic_ostream<CharT, Traits> &operator<<(std::basic_ostream<CharT, Traits> &os, const reg_data &mbc) {
@@ -255,9 +261,15 @@ namespace atbus {
                 for (size_t i = 0; i < mbc.channels.size(); ++i) {
                     os << "      channels: " << mbc.channels[i] << std::endl;
                 }
+                for (size_t i = 0; i < mbc.tags.size(); ++i) {
+                    os << "      tags: " << mbc.tags[i] << std::endl;
+                }
                 os << "      children_id_mask: " << mbc.children_id_mask << std::endl
                    << "      flags: " << mbc.flags << std::endl
+                   << "      type_name: " << mbc.type_name << std::endl
                    << "    }";
+
+
 
                 return os;
             }

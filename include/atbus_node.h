@@ -86,7 +86,14 @@ namespace atbus {
             size_t recv_buffer_size;   /** 接收缓冲区，和数据包大小有关 **/
             size_t send_buffer_size;   /** 发送缓冲区限制 **/
             size_t send_buffer_number; /** 发送缓冲区静态Buffer数量限制，0则为动态缓冲区 **/
-            std::list<std::string> advertise_addrs;
+
+
+            std::list<std::string> advertise_addrs;  /** 广告地址 **/
+
+            std::string type_name;                  /** 类型 **/
+            std::vector<std::string> tags;          /** tags **/
+
+            bool pure_forward;  /** 纯转发节点一般用于顶级节点，字节点不能是业务进程 **/
         } conf_t;
 
         typedef std::map<bus_id_t, endpoint::ptr_t> endpoint_collection_t;

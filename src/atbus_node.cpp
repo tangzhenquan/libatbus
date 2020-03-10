@@ -99,6 +99,7 @@ namespace atbus {
         conf->send_buffer_number = 0; // 默认不使用静态缓冲区，所以设为0
 
         conf->flags.reset();
+        conf->pure_forward = false;
     }
 
     node::ptr_t node::create() {
@@ -123,7 +124,7 @@ namespace atbus {
         }
 
         ev_loop_ = conf_.ev_loop;
-        self_    = endpoint::create(this, id, conf_.children_mask, get_pid(), get_hostname());
+        self_    = endpoint::create(this, id, conf_.children_mask, get_pid(), get_hostname(), conf->type_name, conf->tags);
         if (!self_) {
             return EN_ATBUS_ERR_MALLOC;
         }
@@ -769,19 +770,6 @@ namespace atbus {
         }
 
         do {
-
-            // tid 为0直接发给父节点
-            if (tid == 0){
-                if (node_father_.node_){
-                    target = node_father_.node_.get();
-                    conn   = (self_.get()->*fn)(target);
-
-                    ASSIGN_EPCONN();
-                    break;
-                }else{
-                    return EN_ATBUS_ERR_ATNODE_INVALID_ID;
-                }
-            }
 
             // 父节点单独判定，防止父节点被判定为兄弟节点
             if (node_father_.node_ && is_parent_node(tid)) {

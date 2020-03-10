@@ -71,7 +71,7 @@ namespace atbus {
         /**
          * @brief 创建端点
          */
-        static ptr_t create(node *owner, bus_id_t id, uint32_t children_mask, int32_t pid, const std::string &hn);
+        static ptr_t create(node *owner, bus_id_t id, uint32_t children_mask, int32_t pid, const std::string &hn, const std::string& type_name, const std::vector<std::string>& tags);
         ~endpoint();
 
         void reset();
@@ -130,6 +130,10 @@ namespace atbus {
         inline const std::list<std::string> &get_listen() const { return listen_address_; }
         void add_listen(const std::string &addr);
 
+
+        inline  const std::vector<std::string> &get_tags() const { return tags_; }
+        inline  const std::string& get_type_name() const { return type_name_; }
+
     private:
         static bool sort_connection_cmp_fn(const connection::ptr_t &left, const connection::ptr_t &right);
 
@@ -180,6 +184,11 @@ namespace atbus {
         std::list<std::string> listen_address_;
         connection::ptr_t ctrl_conn_;
         std::list<connection::ptr_t> data_conn_;
+
+
+        //
+        std::string type_name_;
+        std::vector<std::string> tags_;
 
         // 统计数据
         struct stat_t {

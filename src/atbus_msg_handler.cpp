@@ -129,6 +129,8 @@ namespace atbus {
 
         reg->children_id_mask = n.get_self_endpoint()->get_children_mask();
         reg->flags            = n.get_self_endpoint()->get_flags();
+        reg->type_name = n.get_conf().type_name;
+        reg->tags = n.get_conf().tags;
 
         return send_msg(n, conn, m);
     }
@@ -170,7 +172,7 @@ namespace atbus {
             return EN_ATBUS_ERR_BAD_DATA;
         }
 
-        if (m.body.forward->to == n.get_id()) {
+        if (m.body.forward->to == n.get_id()&&!m.body.forward->route_data) {
             ATBUS_FUNC_NODE_DEBUG(n, (NULL == conn ? NULL : conn->get_binding()), conn, &m, "node recv data length = %lld",
                                   static_cast<unsigned long long>(m.body.forward->content.size));
             n.on_recv_data(conn->get_binding(), conn, m, m.body.forward->content.ptr, m.body.forward->content.size);
@@ -186,41 +188,83 @@ namespace atbus {
         }
 
 
-        if (m.body.forward->to == 0){
-            if (n.get_on_custom_route_handle()){
-                std::vector<uint64_t > bus_ids;
-                 int res =  n.get_on_custom_route_handle()(n, m.body.forward->from, *(m.body.forward->route_data), bus_ids);
-                 if (res >= 0 && bus_ids.size() > 0){
-                    //unicast
-                    int  custom_route_type = m.body.forward->route_data->custom_route_type;
-                     m.body.forward->route_data.reset();
-                     ATBUS_FUNC_NODE_DEBUG(n, nullptr, nullptr, nullptr, "route_data null %d",
-                                           m.body.forward->route_data == nullptr);
+        if (m.body.forward->route_data){
 
-                    if (custom_route_type == protocol::custom_route_data::CUSTOM_ROUTE_UNICAST){
-                        m.body.forward->to = bus_ids[0];
-                        return send_transfer_req(n, m);
+            int  custom_route_type = m.body.forward->route_data->custom_route_type;
+            if (custom_route_type == protocol::custom_route_data::CUSTOM_ROUTE_BROADCAST2){
+                m.body.forward->set_flag(protocol::forward_data::FLAG_IGNORE_ERROR_RSP);
+                atbus::node::bus_id_t src_bus_id = m.head.src_bus_id;
+                //来源子节点需要向父节点转发广播和兄弟节点广播
+                if (n.is_child_node(src_bus_id)){
+                    if (n.get_parent_endpoint()!= NULL){
+                        m.body.forward->to = n.get_parent_endpoint()->get_id();
+                        send_transfer_req(n, m, true);
+                    }
+                    //兄弟节点广播
+                    for(atbus::node::endpoint_collection_t::const_iterator it= n.get_brother().begin(); it != n.get_brother().end(); ++it ){
+                        m.body.forward->to = it->second->get_id();
+                        send_transfer_req(n, m, true);
+                    }
+                }else {
+                    if(n.get_conf().pure_forward){
+                        //向子节点发广播
+                        for(atbus::node::endpoint_collection_t::const_iterator it= n.get_children().begin(); it != n.get_brother().end(); ++it ){
+                            m.body.forward->to = it->second->get_id();
+                            send_transfer_req(n, m, true);
+                        }
+                    }
+                }
 
-                    } else if(custom_route_type == protocol::custom_route_data::CUSTOM_ROUTE_BROADCAST){
-                        //广播包设置不需要回复
-                        m.body.forward->set_flag(protocol::forward_data::FLAG_IGNORE_ERROR_RSP);
+                if(!n.get_conf().pure_forward&& n.get_on_custom_route_handle()){
+                    std::vector<uint64_t > bus_ids;
+                    int res =  n.get_on_custom_route_handle()(n, m.body.forward->from, *(m.body.forward->route_data), bus_ids);
+                    if (res >= 0 && bus_ids.size() > 0){
+                        m.body.forward->route_data.reset();
                         int succ = 0;
                         for(std::vector<uint64_t >::iterator it = bus_ids.begin(); it != bus_ids.end(); ++it ){
                             m.body.forward->to = *it;
                             if(send_transfer_req(n, m, true)==EN_ATBUS_ERR_SUCCESS){
-                                 succ++;
+                                succ++;
                             }
                             if (succ==0){
-                                return send_transfer_rsp(n, m, EN_ATBUS_ERR_ATNODE_BROADCAST_FAIL);
+                                ATBUS_FUNC_NODE_DEBUG(n, nullptr, nullptr, nullptr, "send transfer success count 0");
                             }
                         }
                         return EN_ATBUS_ERR_SUCCESS;
                     }
-                 } else{
-                     return send_transfer_rsp(n, m, EN_ATBUS_ERR_ATNODE_CUSTOM_ROUTE_FAIL);
-                 }
-            } else{
-                return send_transfer_rsp(n, m, EN_ATBUS_ERR_ATNODE_INVALID_ID);
+                }
+            } else {
+                //向叶子业务进程节点广播
+                if (n.get_on_custom_route_handle()){
+                    std::vector<uint64_t > bus_ids;
+                    int res =  n.get_on_custom_route_handle()(n, m.body.forward->from, *(m.body.forward->route_data), bus_ids);
+                    if (res >= 0 && bus_ids.size() > 0){
+                        m.body.forward->route_data.reset();
+                        if (custom_route_type == protocol::custom_route_data::CUSTOM_ROUTE_UNICAST){
+                            m.body.forward->to = bus_ids[0];
+                            return send_transfer_req(n, m);
+
+                        } else if(custom_route_type == protocol::custom_route_data::CUSTOM_ROUTE_BROADCAST){
+                            //广播包设置不需要回复
+                            m.body.forward->set_flag(protocol::forward_data::FLAG_IGNORE_ERROR_RSP);
+                            int succ = 0;
+                            for(std::vector<uint64_t >::iterator it = bus_ids.begin(); it != bus_ids.end(); ++it ){
+                                m.body.forward->to = *it;
+                                if(send_transfer_req(n, m, true)==EN_ATBUS_ERR_SUCCESS){
+                                    succ++;
+                                }
+                                if (succ==0){
+                                    return send_transfer_rsp(n, m, EN_ATBUS_ERR_ATNODE_BROADCAST_FAIL);
+                                }
+                            }
+                            return EN_ATBUS_ERR_SUCCESS;
+                        }
+                    } else{
+                        return send_transfer_rsp(n, m, EN_ATBUS_ERR_ATNODE_CUSTOM_ROUTE_FAIL);
+                    }
+                } else{
+                    return send_transfer_rsp(n, m, EN_ATBUS_ERR_ATNODE_INVALID_ID);
+                }
             }
         } else{
             return send_transfer_req(n, m);
@@ -467,7 +511,7 @@ namespace atbus {
             }
 
             endpoint::ptr_t new_ep =
-                endpoint::create(&n, m.body.reg->bus_id, m.body.reg->children_id_mask, m.body.reg->pid, m.body.reg->hostname);
+                    endpoint::create(&n, m.body.reg->bus_id, m.body.reg->children_id_mask, m.body.reg->pid, m.body.reg->hostname, m.body.reg->type_name, m.body.reg->tags);
             if (!new_ep) {
                 ATBUS_FUNC_NODE_ERROR(n, NULL, conn, EN_ATBUS_ERR_MALLOC, 0);
                 rsp_code = EN_ATBUS_ERR_MALLOC;
