@@ -198,18 +198,22 @@ namespace atbus {
                 if (n.is_child_node(src_bus_id)){
                     if (n.get_parent_endpoint()!= NULL){
                         m.body.forward->to = n.get_parent_endpoint()->get_id();
+                        ATBUS_FUNC_NODE_DEBUG(n, NULL, NULL, &m, "send to parent node ");
                         send_transfer_req(n, m, true);
                     }
                     //兄弟节点广播
                     for(atbus::node::endpoint_collection_t::const_iterator it= n.get_brother().begin(); it != n.get_brother().end(); ++it ){
                         m.body.forward->to = it->second->get_id();
+                        ATBUS_FUNC_NODE_DEBUG(n, NULL, NULL, &m, "send to brother node ");
                         send_transfer_req(n, m, true);
+
                     }
                 }else {
                     if(n.get_conf().pure_forward){
                         //向子节点发广播
                         for(atbus::node::endpoint_collection_t::const_iterator it= n.get_children().begin(); it != n.get_children().end(); ++it ){
                             m.body.forward->to = it->second->get_id();
+                            ATBUS_FUNC_NODE_DEBUG(n, NULL, NULL, &m, "send to child node ");
                             send_transfer_req(n, m, true);
                         }
                     }
