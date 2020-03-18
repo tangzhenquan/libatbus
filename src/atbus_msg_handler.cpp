@@ -208,7 +208,7 @@ namespace atbus {
                 }else {
                     if(n.get_conf().pure_forward){
                         //向子节点发广播
-                        for(atbus::node::endpoint_collection_t::const_iterator it= n.get_children().begin(); it != n.get_brother().end(); ++it ){
+                        for(atbus::node::endpoint_collection_t::const_iterator it= n.get_children().begin(); it != n.get_children().end(); ++it ){
                             m.body.forward->to = it->second->get_id();
                             send_transfer_req(n, m, true);
                         }
