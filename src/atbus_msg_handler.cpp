@@ -189,14 +189,13 @@ namespace atbus {
 
 
         if (m.body.forward->route_data){
-
             int  custom_route_type = m.body.forward->route_data->custom_route_type;
             if (custom_route_type == protocol::custom_route_data::CUSTOM_ROUTE_BROADCAST2){
                 m.body.forward->set_flag(protocol::forward_data::FLAG_IGNORE_ERROR_RSP);
                 atbus::node::bus_id_t src_bus_id = m.head.src_bus_id;
                 //来源子节点需要向父节点转发广播和兄弟节点广播
                 if (n.is_child_node(src_bus_id)){
-                    if (n.get_parent_endpoint()!= NULL){
+                    if (n.get_parent_endpoint()!= NULL && m.body.forward->route_data->broadcast_cross_group){
                         m.body.forward->to = n.get_parent_endpoint()->get_id();
                         ATBUS_FUNC_NODE_DEBUG(n, NULL, NULL, &m, "send to parent node ");
                         send_transfer_req(n, m, true);

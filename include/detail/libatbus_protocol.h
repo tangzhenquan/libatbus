@@ -88,14 +88,15 @@ namespace atbus {
             std::vector<std::string> tags;
             int custom_route_type;
             std::string src_type_name;
+            bool broadcast_cross_group; //
             enum custom_route_type_t {
                 CUSTOM_ROUTE_UNICAST = 0,
                 CUSTOM_ROUTE_MULTICAST = 1,
                 CUSTOM_ROUTE_BROADCAST = 2, //通过服务发现方式广播
                 CUSTOM_ROUTE_BROADCAST2 = 3, //通过bus系统广播
             };
-            MSGPACK_DEFINE(type_name, tags, custom_route_type, src_type_name);
-            custom_route_data():custom_route_type(0){
+            MSGPACK_DEFINE(type_name, tags, custom_route_type, src_type_name, broadcast_cross_group);
+            custom_route_data():custom_route_type(0), broadcast_cross_group(false){
 
             }
 
@@ -113,6 +114,7 @@ namespace atbus {
                     os << std::endl;
                 }
                 os << "      src_type_name: " << mbc.src_type_name << std::endl;
+                os << "      broadcast_cross_group: " << mbc.broadcast_cross_group << std::endl;
                 os << "    }";
                 return os;
             }
